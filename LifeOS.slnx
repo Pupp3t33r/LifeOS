@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/aspire/">
+    <Project Path="aspire/LifeOS.AppHost/LifeOS.AppHost.csproj" />
+    <Project Path="aspire/LifeOS.ServiceDefaults/LifeOS.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/services/" />
+  <Folder Name="/services/gateway/">
+    <Project Path="services/gateway/LifeOS.Gateway/LifeOS.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/services/money/">
+    <Project Path="services/money/LifeOS.Money.Api/LifeOS.Money.Api.csproj" />
+  </Folder>
+</Solution>

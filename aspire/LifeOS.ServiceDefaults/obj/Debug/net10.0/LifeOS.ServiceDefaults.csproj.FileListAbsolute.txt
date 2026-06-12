@@ -1,0 +1,12 @@
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\bin\Debug\net10.0\LifeOS.ServiceDefaults.deps.json
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\bin\Debug\net10.0\LifeOS.ServiceDefaults.dll
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\bin\Debug\net10.0\LifeOS.ServiceDefaults.pdb
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\obj\Debug\net10.0\LifeOS.ServiceDefaults.csproj.AssemblyReference.cache
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\obj\Debug\net10.0\LifeOS.ServiceDefaults.GeneratedMSBuildEditorConfig.editorconfig
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\obj\Debug\net10.0\LifeOS.ServiceDefaults.AssemblyInfoInputs.cache
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\obj\Debug\net10.0\LifeOS.ServiceDefaults.AssemblyInfo.cs
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\obj\Debug\net10.0\LifeOS.ServiceDefaults.csproj.CoreCompileInputs.cache
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\obj\Debug\net10.0\LifeOS.ServiceDefaults.dll
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\obj\Debug\net10.0\refint\LifeOS.ServiceDefaults.dll
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\obj\Debug\net10.0\LifeOS.ServiceDefaults.pdb
+D:\Proj\LifeOS\aspire\LifeOS.ServiceDefaults\obj\Debug\net10.0\ref\LifeOS.ServiceDefaults.dll
