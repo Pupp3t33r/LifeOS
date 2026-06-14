@@ -1,1 +1,93 @@
-/.vs
+# ------------------------------
+# User-specific / IDE
+# ------------------------------
+/.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# JetBrains Rider
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# ------------------------------
+# .NET build output
+# ------------------------------
+**/bin/
+**/obj/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+*.publishproj
+*.publishsettings
+PublishScripts/
+
+# NuGet (legacy packages.config)
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# ------------------------------
+# Test / coverage
+# ------------------------------
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+TestResults/
+*.coverage
+*.coveragexml
+coverage/
+
+# ------------------------------
+# Aspire / tooling
+# ------------------------------
+.aspire/
+
+# ------------------------------
+# OS files
+# ------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ------------------------------
+# Logs / temp
+# ------------------------------
+*.log
+*.tlog
+*.tmp
+*.cache
+*.bak
+
+# ------------------------------
+# Secrets / local environment
+# ------------------------------
+*.env
+.env
+.env.*
+secrets.json
+appsettings.*.User.json
+*.pfx
+*.p12
+*.key
+
+# ------------------------------
+# Frontend (reserved for apps/web)
+# ------------------------------
+**/node_modules/
+**/dist/
+**/.angular/
+npm-debug.log*
+yarn-error.log*
+
+# ------------------------------
+# Mobile (reserved for apps/mobile - Flutter)
+# ------------------------------
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/build/

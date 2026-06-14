@@ -12,6 +12,7 @@ See [`template.md`](./template.md) to start a new ADR.
 | [0002](./0002-event-versioning-strategy.md) | Event versioning strategy | 2026-06-14 |
 | [0003](./0003-idempotency-via-client-assigned-uuids.md) | Idempotency via client-assigned UUIDs | 2026-06-14 |
 | [0004](./0004-zero-trust-jwt-validation.md) | Zero-trust JWT validation | 2026-06-14 |
+| [0005](./0005-aggregate-boundaries.md) | Aggregate boundaries | 2026-06-14 |
 
 ## Deferred decisions
 
@@ -20,7 +21,6 @@ The following decisions have been identified but **intentionally deferred** unti
 | Decision | Deferred until |
 |---|---|
 | CloudEvents envelope for Kafka events | The first Money event is published to Kafka |
-| Aggregate boundaries (Account, TransactionStream, etc.) | The first Money domain feature is implemented |
 | Wolverine outbox conventions (topic naming, partition keys) | The first cross-domain event is wired |
 | Projection strategy (inline vs async, snapshots, rebuild) | UI work begins that consumes Money read models |
 | Cron jobs (Quartz vs alternatives, job list, failure semantics) | A recurring or scheduled task is actually needed |
