@@ -58,10 +58,15 @@ Architecture decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/). The f
 ```
 Features/
   Transactions/
-    RecordExpense.cs              (endpoint + handler + request + response)
+    RecordExpense.cs              (endpoint + handler)
+    RecordExpenseRequest.cs       (request record)
+    RecordExpenseResponse.cs      (response record)
     RecordExpenseValidator.cs
   Recurring/
     CreateSchedule.cs
+    CreateScheduleRequest.cs
+    CreateScheduleResponse.cs
+    CreateScheduleValidator.cs
 ```
 
 ### No EF Core

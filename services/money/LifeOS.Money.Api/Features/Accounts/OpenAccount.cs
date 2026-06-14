@@ -8,15 +8,6 @@ using Microsoft.AspNetCore.Routing;
 
 namespace LifeOS.Money.Api.Features.Accounts;
 
-public sealed record OpenAccountRequest(Guid AccountId, string Name);
-
-public sealed record AccountResponse(
-    Guid AccountId,
-    string OwnerId,
-    string Name,
-    IReadOnlyDictionary<string, decimal> Balances,
-    DateTimeOffset OpenedAt);
-
 public static class OpenAccount
 {
     public static RouteHandlerBuilder Register(IEndpointRouteBuilder endpoints)

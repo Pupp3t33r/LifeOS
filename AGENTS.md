@@ -146,6 +146,7 @@ services/
 
 ### Rules
 
+- **1 class / record / struct / enum — 1 file.** No co-locating multiple public types in a single file. Each type gets its own file named after the type.
 - **No `Controllers/` folder.** Use Minimal API route registration in `Program.cs` or extension methods.
 - **No generic `Services/` or `Repositories/` folders.** Use feature folders (`Features/Transactions/`).
 - **Tests mirror feature structure.** `Features/Transactions/RecordExpenseTests.cs`.
