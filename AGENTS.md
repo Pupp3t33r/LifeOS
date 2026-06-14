@@ -71,7 +71,7 @@ Rules that apply to **all** services regardless of language or stack:
 1. **No MediatR.** Use Wolverine handlers in .NET. Use raw Kafka consumers in Rust.
 2. **No gRPC.** HTTP REST + JSON for sync. Kafka for async.
 3. **No shared class libraries across services.** Each service is self-contained. Common contracts use Protobuf (Phase 2) or JSON with agreed schemas.
-4. **No distributed transactions / sagas (yet).** Use Draft status + cron cleanup until saga pattern is explicitly implemented (ADR-019).
+4. **No distributed transactions / sagas (yet).** Use Draft status + cron cleanup until a Saga pattern ADR is written (deferred — see root `docs/adr/` when platform-wide decisions land).
 5. **Idempotent endpoints.** All mutation endpoints must handle duplicate requests safely (idempotency keys or natural keys).
 6. **Structured logging only.** Use Serilog with JSON output. Include `trace_id`, `span_id`, `service_name` in every log.
 7. **OpenTelemetry instrumentation.** All HTTP handlers, DB calls, and Kafka producers/consumers must emit traces.
@@ -195,7 +195,7 @@ An agent MUST pause and ask the user when:
 3. **Modifying the Money event model** (this is the core domain — changes ripple everywhere).
 4. **Introducing a new database technology** (e.g., Redis, MongoDB, Elasticsearch).
 5. **Changing auth strategy** (e.g., moving away from Keycloak, adding OAuth providers).
-6. **Adding a saga or distributed transaction pattern.** This is explicitly deferred (ADR-019).
+6. **Adding a saga or distributed transaction pattern.** This is explicitly deferred (no ADR written yet — see root `docs/adr/` when platform-wide decisions land).
 7. **Scope creep that adds new domains** (e.g., "let's add a Calorie Tracker module").
 
 ---

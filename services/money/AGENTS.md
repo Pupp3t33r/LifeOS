@@ -27,6 +27,17 @@ Money owns all financial state. No other service stores cost, payment schedules,
 | Logging | Serilog (JSON output) |
 | Cron | Quartz.NET |
 
+## Decisions
+
+Architecture decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/). The full index lives in [`docs/adr/README.md`](./docs/adr/README.md).
+
+| # | Decision |
+|---|---|
+| [0001](./docs/adr/0001-rest-contract-approach.md) | Code-first REST with Minimal APIs and vertical-slice folders |
+| [0002](./docs/adr/0002-event-versioning-strategy.md) | Event versioning: dev mode drops freely; post-release uses new event types only |
+| [0003](./docs/adr/0003-idempotency-via-client-assigned-uuids.md) | Idempotency via client-assigned UUIDs as primary keys |
+| [0004](./docs/adr/0004-zero-trust-jwt-validation.md) | Zero-trust JWT validation (Money re-validates signatures) |
+
 ## Service-Specific Standards
 
 ### Event Sourcing
