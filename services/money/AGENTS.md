@@ -46,7 +46,7 @@ Architecture decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/). The f
 | [0005](./docs/adr/0005-aggregate-boundaries.md) | Aggregate boundaries (partially superseded by 0008) |
 | [0006](./docs/adr/0006-budget-aggregate.md) | Budget aggregate — light monthly category targets, no envelopes, no rollover |
 | [0007](./docs/adr/0007-monthly-review-and-projection.md) | MonthlyReview aggregate + Month projection read-model + month-close flow |
-| [0008](./docs/adr/0008-multi-currency-and-fx.md) | Multi-currency `Money` value object, single-currency-per-account, Frankfurter FX rate service |
+| [0008](./docs/adr/0008-multi-currency-and-fx.md) | Multi-currency `CurrencyAmount` value object, single-currency-per-account, Frankfurter FX rate service |
 | [0009](./docs/adr/0009-savings-accounts-and-month-close.md) | Savings accounts as the only account type |
 | [0010](./docs/adr/0010-asset-aggregate.md) | Asset aggregate (financial fields only) — Phase 3 implementation, data model locked now |
 
@@ -59,9 +59,9 @@ Architecture decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/). The f
 - **Projections live in `Projections/`**. Example: `Projections/TransactionRecord.cs`, `Projections/MonthProjection.cs`.
 - **Do not expose raw event streams.** Always query projections for read models.
 
-### Money value object (ADR-0008)
+### CurrencyAmount value object (ADR-0008)
 
-All monetary amounts are `Money(decimal Amount, string Currency)`, not bare `decimal`. This applies to events, projections, DTOs, and aggregates. The Wallet app renders multi-currency values as "original + converted inline" (e.g., "€80 (~$86)") in the user's chosen display currency.
+All monetary amounts are `CurrencyAmount(decimal Amount, string Currency)`, not bare `decimal`. This applies to events, projections, DTOs, and aggregates. The Wallet app renders multi-currency values as "original + converted inline" (e.g., "€80 (~$86)") in the user's chosen display currency.
 
 ### Cross-service references
 
@@ -129,7 +129,7 @@ Budgets target either track via `CategoryKey`: `domain:<serviceType>` or `tag:<t
 - ❌ **Do not create generic repositories.** Use Marten `IDocumentSession` directly.
 - ❌ **Do not store item descriptive metadata (title, ISBN, BGG ID, cover).** Other services own that; Money holds only `ExternalReference` pointers.
 - ❌ **Do not add account types beyond savings.** All accounts are savings accounts (ADR-0009).
-- ❌ **Do not store bare `decimal` monetary amounts.** Use `Money(decimal, string)` (ADR-0008).
+- ❌ **Do not store bare `decimal` monetary amounts.** Use `CurrencyAmount(decimal, string)` (ADR-0008).
 
 ---
 

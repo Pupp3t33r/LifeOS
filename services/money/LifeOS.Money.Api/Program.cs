@@ -3,11 +3,14 @@ using JasperFx;
 using JasperFx.Events.Projections;
 using LifeOS.Money.Api.Domain;
 using LifeOS.Money.Api.Features.Accounts;
-using LifeOS.Money.Api.Features.Transactions;
+using LifeOS.Money.Api.Http;
 using LifeOS.Money.Api.Projections;
 using Marten;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Serilog;
+using Wolverine;
+using Wolverine.Http;
+using Wolverine.Marten;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,11 +30,16 @@ builder.Services.AddMarten(options =>
 {
     options.Connection(connectionString);
     options.AutoCreateSchemaObjects = AutoCreate.All;
+    options.Events.UseIdentityMapForAggregates = true;
     options.Projections.Snapshot<Account>(SnapshotLifecycle.Inline);
     options.Projections.Add<TransactionRecordProjection>(ProjectionLifecycle.Inline);
-});
+}).IntegrateWithWolverine();
 
 builder.Services.AddValidatorsFromAssemblyContaining<OpenAccountValidator>();
+builder.Services.AddWolverineHttp();
+
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ProblemExceptionHandler>();
 
 var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
     ?? throw new InvalidOperationException("Keycloak:Authority is not configured.");
@@ -52,7 +60,16 @@ builder.Services.AddAuthorization();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
+builder.Host.UseWolverine(options =>
+{
+    options.Policies.AutoApplyTransactions();
+    options.Durability.MessageStorageSchemaName = "wolverine";
+    options.Durability.Mode = DurabilityMode.Solo;
+});
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -62,9 +79,10 @@ app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Money A
 
 app.MapDefaultEndpoints();
 
-var api = app.MapGroup("/api").RequireAuthorization();
-OpenAccount.Register(api);
-GetAccount.Register(api);
-RecordTransaction.Register(api);
+app.MapWolverineEndpoints(opts =>
+{
+    opts.RoutePrefix("api");
+    opts.RequireAuthorizeOnAll();
+});
 
 app.Run();

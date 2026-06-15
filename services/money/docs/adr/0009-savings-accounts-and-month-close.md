@@ -34,11 +34,15 @@ If future requirements demand other account types (e.g., a credit account for in
 
 A savings account has:
 
-- `Balance: Money` — the current balance, single currency (ADR-0008).
-- `BalanceOverride: Money?` — nullable. When set, this is the truth; otherwise `Balance` is the sum of opening balance + recorded transactions.
+- `Balance: Money` — the current balance, single currency (ADR-0008). Computed as the sum of opening balance + recorded transactions.
+- `Currency: string` — ISO 4217 (3-letter). Declared at account open; immutable.
 - `OpenedAt: DateTimeOffset`.
 
-The override is the honesty valve: the user can enter the real number ("I actually have \$3,847 in this account, not the \$4,231 my transactions suggest") at any time. When set, the projection surfaces the override rather than the computed sum. Clearing the override returns to transaction-derived balance.
+~~- `BalanceOverride: Money?` — nullable. When set, this is the truth; otherwise `Balance` is the sum of opening balance + recorded transactions.~~ *(Removed 2026-06-15 — see amendment below.)*
+
+The savings account balance is always transaction-derived (opening + all recorded transactions). The single honesty valve for monthly savings reconciliation is `MonthlyReview.ActualSavingsOverride` (ADR-0007), applied to the account at month close via the surplus/deficit deposit/withdrawal flow below. This avoids two overlapping override mechanisms and keeps "user-truth" at the monthly delta level where the planning UX operates.
+
+> **Amendment (2026-06-15):** `BalanceOverride` was removed. The original rationale was an absolute-balance honesty valve on the account, but this overlaps with the monthly delta override on `MonthlyReview` (ADR-0007). The month-close flow already reconciles the account balance by applying the confirmed savings delta. One honesty valve (monthly, flow-based) is cleaner than two (absolute stock + monthly flow). If per-account absolute override is needed later, a new ADR will scope it.
 
 ### Interactions with month close (ADR-0007)
 
@@ -58,7 +62,7 @@ The user can record a transfer between two savings accounts as two transactions 
 
 Positive:
 
-- The Account aggregate stays simple: one type, one currency, one (optionally overridden) balance.
+- The Account aggregate stays simple: one type, one currency, one transaction-derived balance.
 - The Wallet UI does not need account-type pickers or type-specific behavior.
 - Multi-currency is solved by "multiple accounts," not by "one account with many balances" — matches user mental model.
 - The honesty-valve override is consistent with the `ActualSavingsOverride` pattern on MonthlyReview (ADR-0007): user-truth beats computed-truth wherever a "real number" matters.
@@ -67,7 +71,7 @@ Negative:
 
 - Users with complex finances (checking + credit + cash + investment accounts) are not served. Accepted: this is a deliberate scope limit.
 - No first-class Transfer aggregate means transfer UI is purely cosmetic — two ledger entries. Weak for audit ("was this a transfer or two unrelated transactions?"). Mitigated by the `TransferId` link, which the projection can surface.
-- Balance override is a manual honesty valve; without it, balance drifts. The UI must make this affordance obvious.
+- Balance is transaction-derived; no manual override on the account. Reconciliation happens at month close via the ADR-0007 delta flow.
 
 Neutral:
 

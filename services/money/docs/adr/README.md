@@ -15,7 +15,7 @@ See [`template.md`](./template.md) to start a new ADR.
 | [0005](./0005-aggregate-boundaries.md) | Aggregate boundaries | 2026-06-14 |
 | [0006](./0006-budget-aggregate.md) | Budget aggregate (light monthly category targets) | 2026-06-15 |
 | [0007](./0007-monthly-review-and-projection.md) | MonthlyReview aggregate, Month projection, month-close flow | 2026-06-15 |
-| [0008](./0008-multi-currency-and-fx.md) | Multi-currency Money value object and FX rate service (supersedes part of 0005) | 2026-06-15 |
+| [0008](./0008-multi-currency-and-fx.md) | Multi-currency CurrencyAmount value object and FX rate service (supersedes part of 0005) | 2026-06-15 |
 | [0009](./0009-savings-accounts-and-month-close.md) | Savings accounts as the only account type | 2026-06-15 |
 | [0010](./0010-asset-aggregate.md) | Asset aggregate (financial fields only) | 2026-06-15 |
 

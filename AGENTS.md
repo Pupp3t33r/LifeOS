@@ -80,7 +80,7 @@ Rules that apply to **all** services regardless of language or stack:
 
 ### .NET Universal
 
-10. **Minimal APIs, not controllers.** Use `app.MapGet`, `app.MapPost`, etc. Group routes with `app.MapGroup("/api/books")`.
+10. **Minimal APIs, not controllers.** Use `app.MapGet`, `app.MapPost`, etc. Group routes with `app.MapGroup("/api/books")`. Wolverine.Http attribute routing (`[WolverineGet]`, `[WolverinePost]`) is permitted for services using Wolverine's aggregate handler workflow — these are static handler methods, not MVC controllers.
 11. **Vertical slice or handler-per-feature.** Do not create `Controllers/`, `Services/`, `Repositories/` folders by default. Co-locate request, handler, and response.
 12. **FluentValidation** for request validation. Return `ProblemDetails` on failure.
 

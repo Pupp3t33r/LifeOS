@@ -7,26 +7,39 @@ public sealed partial class Account
     public Guid Id { get; set; }
     public string OwnerId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string Currency { get; set; } = string.Empty;
+    public CurrencyAmount Balance { get; set; } = new(0, string.Empty);
     public DateTimeOffset OpenedAt { get; set; }
-    public Dictionary<string, decimal> Balances { get; set; } = new();
     public HashSet<Guid> RecordedTransactionIds { get; set; } = new();
 
-    public static AccountOpened Open(Guid id, string ownerId, string name, DateTimeOffset openedAt)
+    public static AccountOpened Open(
+        Guid id,
+        string ownerId,
+        string name,
+        string currency,
+        CurrencyAmount? openingBalance = null,
+        DateTimeOffset? openedAt = null)
     {
-        return new AccountOpened(id, ownerId, name, openedAt);
+        var balance = openingBalance ?? new CurrencyAmount(0, currency);
+        return new AccountOpened(id, ownerId, name, currency, balance, openedAt ?? DateTimeOffset.UtcNow);
     }
 
     public TransactionRecorded RecordTransaction(
         Guid transactionId,
-        decimal amount,
-        string currency,
+        CurrencyAmount amount,
         string description,
         DateTimeOffset occurredAt,
         DateTimeOffset recordedAt)
     {
-        if (amount == 0)
+        if (amount.Amount == 0)
         {
             throw new ArgumentException("Amount must be non-zero.", nameof(amount));
+        }
+
+        if (amount.Currency != Currency)
+        {
+            throw new InvalidOperationException(
+                $"Transaction currency '{amount.Currency}' does not match account currency '{Currency}'.");
         }
 
         if (RecordedTransactionIds.Contains(transactionId))
@@ -38,7 +51,6 @@ public sealed partial class Account
             Id,
             transactionId,
             amount,
-            currency,
             description,
             occurredAt,
             recordedAt);
@@ -49,12 +61,14 @@ public sealed partial class Account
         Id = @event.AccountId;
         OwnerId = @event.OwnerId;
         Name = @event.Name;
+        Currency = @event.Currency;
+        Balance = @event.OpeningBalance;
         OpenedAt = @event.OpenedAt;
     }
 
     public void Apply(TransactionRecorded @event)
     {
-        Balances[@event.Currency] = Balances.GetValueOrDefault(@event.Currency) + @event.Amount;
+        Balance = new CurrencyAmount(Balance.Amount + @event.Amount.Amount, Currency);
         RecordedTransactionIds.Add(@event.TransactionId);
     }
 }

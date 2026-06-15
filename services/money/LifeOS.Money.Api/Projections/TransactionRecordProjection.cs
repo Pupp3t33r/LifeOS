@@ -13,7 +13,6 @@ public sealed partial class TransactionRecordProjection : EventProjection
             AccountId = @event.AccountId,
             TransactionId = @event.TransactionId,
             Amount = @event.Amount,
-            Currency = @event.Currency,
             Description = @event.Description,
             OccurredAt = @event.OccurredAt,
             RecordedAt = @event.RecordedAt

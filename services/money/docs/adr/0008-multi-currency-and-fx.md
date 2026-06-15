@@ -1,4 +1,4 @@
-# ADR-0008: Multi-currency Money value object and FX rate service
+# ADR-0008: Multi-currency CurrencyAmount value object and FX rate service
 
 ## Status
 
@@ -22,21 +22,23 @@ Forces at play:
 - ADR-0005's per-account multi-currency dictionary (`Balances: Dictionary<string, decimal>`) allows one account to hold balances in many currencies at once. The Wallet UX, however, treats an account as a *single-currency store* — "my USD savings account," "my EUR savings account." Per-account multi-currency is a data model that does not match the mental model.
 - Without an FX rate source, every cross-currency computation (canvas aggregation, month-close conversion, net-worth in Phase 3) is impossible. The deferred-decisions note "FX events are out of scope for v1" must be reversed.
 - Free FX rate APIs exist that do not require API keys (Frankfurter, ECB-based). For a self-hosted personal app, a free source with daily refresh is sufficient.
-- Per ADR-0002, dev-mode event versioning is flexible; introducing a `Money` value object on existing events (TransactionRecorded) is acceptable during v1 development but must be settled before any production freeze.
+- Per ADR-0002, dev-mode event versioning is flexible; introducing a `CurrencyAmount` value object on existing events (TransactionRecorded) is acceptable during v1 development but must be settled before any production freeze.
 
 ## Decision
 
-### Money value object
+### CurrencyAmount value object
 
-Introduce a **`Money` value object** used everywhere a monetary amount appears:
+Introduce a **`CurrencyAmount` value object** used everywhere a monetary amount appears:
 
 ```
-public sealed record Money(decimal Amount, string Currency);
+public sealed record CurrencyAmount(decimal Amount, string Currency);
 ```
+
+> **Naming note (2026-06-15):** This value object was originally named `Money` in this ADR. It ships as `CurrencyAmount` to avoid ambiguity with the `LifeOS.Money` service namespace. The two names are interchangeable in any earlier prose; the type is `CurrencyAmount`.
 
 `Currency` is an ISO 4217 code (`USD`, `EUR`, etc.). `Amount` is a `decimal` with application-layer precision rules (typically 2 decimal places for display, full precision for storage and computation).
 
-`Money` replaces bare `decimal` on:
+`CurrencyAmount` replaces bare `decimal` on:
 
 - `AccountOpened` / account balance fields (now singular — see below)
 - `TransactionRecorded` amount
@@ -50,7 +52,7 @@ public sealed record Money(decimal Amount, string Currency);
 
 ### Single-currency-per-account (revises ADR-0005)
 
-Each **Account** has exactly one currency, declared at `AccountOpened`. The `Balances` dictionary from ADR-0005 becomes a single `Balance: Money`. To hold USD and EUR, the user creates two accounts. This matches the Wallet UX model and simplifies balance computation (no per-currency folds inside one account).
+Each **Account** has exactly one currency, declared at `AccountOpened`. The `Balances` dictionary from ADR-0005 becomes a single `Balance: CurrencyAmount`. To hold USD and EUR, the user creates two accounts. This matches the Wallet UX model and simplifies balance computation (no per-currency folds inside one account).
 
 This **supersedes** the "Multi-currency" subsection of ADR-0005. The rest of ADR-0005 (transaction-on-account-stream, aggregate taxonomy, tenancy) stands unchanged.
 
@@ -97,7 +99,7 @@ Positive:
 
 Negative:
 
-- `Money` introduction is a refactor of existing events and code. Mitigated by ADR-0002's flexible dev-mode versioning; must be settled before v1 freeze.
+- `CurrencyAmount` introduction is a refactor of existing events and code. Mitigated by ADR-0002's flexible dev-mode versioning; must be settled before v1 freeze.
 - FX rate coverage is limited to ECB's published currency set (~30 currencies). Users with exotic currency needs are not served. Accepted for v1.
 - The cron job is a new failure surface. Mitigation: structured logging, retry policy, alert on stale rates (no `FxRate` row within N days).
 - Latest-known-rate for projections means the canvas shifts slightly day-to-day as rates move. This is honest but may surprise users. UI should label "converted at today's rate."
