@@ -55,8 +55,8 @@
 | Auth | Keycloak (self-hosted OIDC) |
 | Broker | Kafka API (Redpanda local, Kafka if clustered) |
 | Gateway | YARP |
-| Frontend | Angular (full), React (Money), Vue (Inventory), Blazor (Admin) |
-| Mobile | Flutter + drift (SQLite) |
+| Frontend | Flutter (Wallet app — Android, Web, Windows, Linux; see [Wallet PLAN](apps/wallet/PLAN.md)). Other web apps (Angular/React/Vue/Blazor) deferred until a forcing function arrives. |
+| Mobile | Flutter (Wallet; Android is the primary mobile target) |
 | Observability | OpenTelemetry → Collector → Grafana (Prometheus + Loki + Tempo) |
 | Dev Orchestration | .NET Aspire |
 | CI/CD | GitHub Actions → GHCR |
@@ -154,6 +154,35 @@ services/
 
 > **Service-specific conventions:** See each service's `AGENTS.md` for details.
 
+### Client App Template (Flutter)
+
+```
+apps/
+  <AppName>/                      (e.g., wallet)
+    AGENTS.md                     (app identity, stack, conventions)
+    PLAN.md                       (phased vision, scope, deferred work)
+    pubspec.yaml
+    lib/
+      main.dart
+      app/                        (shell: auth, nav, theme, sync)
+      features/
+        <domain>/                 (e.g., money)
+          data/                   (drift tables, API client, outbox)
+          domain/                 (Dart models)
+          ui/
+            <screen>/             (vertical slice per screen)
+      shared/                     (cross-feature widgets, utils)
+```
+
+**Rules:**
+
+- **One app per consumer surface.** Wallet is one app for all platforms (Android, Web, Windows, Linux). Do not split into per-platform projects.
+- **Feature modules, not per-feature apps.** Wallet's `features/money/` is the only module in Phase 1; later domains slot in as additional `features/` folders.
+- **Cross-feature communication goes through the shell.** Feature modules do not call each other directly.
+- **No client-side event sourcing.** Server is the single source of truth; the client caches read models and queues mutations in an outbox (see [Wallet AGENTS.md](apps/wallet/AGENTS.md)).
+
+> **App-specific conventions:** See each app's `AGENTS.md` for details.
+
 ---
 
 ## 7. Testing Strategy
@@ -212,6 +241,6 @@ Use this to calibrate implementation effort:
 
 ---
 
-*Last updated: 2026-05-25*  
+*Last updated: 2026-06-15*  
 *Maintained by: System Architect*  
 *Next expected update: After Money service event model is finalized.*

@@ -6,11 +6,11 @@
 
 ## Service Identity
 
-Gateway is the single entry point for all clients (web apps, mobile, admin). It handles:
+Gateway is the single entry point for all clients (web apps, mobile, desktop, admin). It handles:
 
 - **Routing:** Path-based reverse proxy to backend services (`/api/money/*` → Money service).
 - **Auth proxy:** JWT validation (Keycloak), passing `sub` claim downstream.
-- **Composition:** BFF pattern — may compose multiple service calls for mobile/frontend needs.
+- **Composition:** BFF pattern — may compose multiple service calls for app clients (the Wallet Flutter app targets Android, Web, Windows, and Linux from a single codebase, so BFF composition serves all of them).
 - **Rate limiting / CORS:** Centralized at the edge.
 
 ## Tech Stack
@@ -61,7 +61,9 @@ var moneyUrl = builder.Configuration["services:money:http:0"]
 | `/api/steam/*` | Steam |
 | `/api/media/*` | Media |
 | `/api/planner/*` | Planner |
-| `/mobile/v1/*` | Gateway BFF composition |
+| `/app/v1/*` | Gateway BFF composition |
+
+> **Note:** The BFF prefix is `/app/v1/*` (renamed from `/mobile/v1/*` on 2026-06-15). The Wallet Flutter app is multi-platform (Android, Web, Windows, Linux), not mobile-only, so the prefix reflects all app clients. BFF endpoints compose data across services for app consumption (e.g., `GET /app/v1/inventory` enriches Money Asset rows with descriptive data from Books/Board Games per `apps/wallet/PLAN.md`).
 
 ## Anti-Patterns
 
@@ -72,4 +74,4 @@ var moneyUrl = builder.Configuration["services:money:http:0"]
 
 ---
 
-*Last updated: 2026-05-25*
+*Last updated: 2026-06-15*
