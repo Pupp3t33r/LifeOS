@@ -9,7 +9,7 @@ namespace LifeOS.Money.Api.Features.Accounts;
 public static class OpenAccountEndpoint
 {
     [WolverinePost("/accounts")]
-    public static async Task<(CreationResponse, AccountResponse)> Handle(
+    public static async Task<IResult> Handle(
         OpenAccountRequest request,
         HttpContext context,
         IDocumentSession session)
@@ -30,9 +30,7 @@ public static class OpenAccountEndpoint
                     $"Account '{request.AccountId}' already exists with different data.");
             }
 
-            return (
-                new CreationResponse($"/api/accounts/{request.AccountId}"),
-                ToResponse(existing));
+            return Results.Created($"/api/accounts/{request.AccountId}", ToResponse(existing));
         }
 
         var openingBalance = request.OpeningBalanceAmount.HasValue
@@ -50,9 +48,7 @@ public static class OpenAccountEndpoint
         await session.SaveChangesAsync();
 
         var created = await session.LoadAsync<Account>(request.AccountId);
-        return (
-            new CreationResponse($"/api/accounts/{request.AccountId}"),
-            ToResponse(created!));
+        return Results.Created($"/api/accounts/{request.AccountId}", ToResponse(created!));
     }
 
     private static AccountResponse ToResponse(Account account) =>

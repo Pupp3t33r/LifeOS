@@ -1,6 +1,5 @@
 using LifeOS.Money.Api.Auth;
 using LifeOS.Money.Api.Domain;
-using LifeOS.Money.Api.Domain.Events;
 using LifeOS.Money.Api.Http;
 using Wolverine.Http;
 using Wolverine.Marten;
@@ -10,12 +9,11 @@ namespace LifeOS.Money.Api.Features.Transactions;
 public static class RecordTransactionEndpoint
 {
     [WolverinePost("/accounts/{accountId}/transactions")]
-    public static RecordTransactionResponse Handle(
+    public static (RecordTransactionResponse, Events) Handle(
         Guid accountId,
         RecordTransactionRequest request,
         HttpContext context,
-        [WriteAggregate] Domain.Account account,
-        ref TransactionRecorded created)
+        [WriteAggregate] Domain.Account account)
     {
         var userId = context.GetUserId();
         if (account.OwnerId != userId)
@@ -37,7 +35,7 @@ public static class RecordTransactionEndpoint
 
         var amount = new CurrencyAmount(request.Amount, request.Currency);
         var recordedAt = DateTimeOffset.UtcNow;
-        created = account.RecordTransaction(
+        var recorded = account.RecordTransaction(
             request.TransactionId,
             amount,
             request.Description,
@@ -46,7 +44,7 @@ public static class RecordTransactionEndpoint
 
         var newBalance = new CurrencyAmount(account.Balance.Amount + request.Amount, account.Currency);
 
-        return new RecordTransactionResponse(
+        var response = new RecordTransactionResponse(
             accountId,
             request.TransactionId,
             amount,
@@ -54,5 +52,7 @@ public static class RecordTransactionEndpoint
             request.OccurredAt,
             recordedAt,
             newBalance);
+
+        return (response, [recorded]);
     }
 }

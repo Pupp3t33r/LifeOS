@@ -204,4 +204,20 @@ These can be settled during implementation, not before:
 
 ---
 
-*Last updated: 2026-06-15*
+## 8. Production schema migration (deferred — do properly at CI/CD)
+
+`AutoCreate` is now environment-gated in `Program.cs`: `All` in Development (startup creates/updates the schema for fast iteration), `None` everywhere else (the app never mutates the schema at runtime and fails fast if it is missing). This is the correct *target* setting, but the operational machinery to apply migrations is **not yet wired** — that work lands with CI/CD.
+
+When CI/CD is set up, do it properly:
+
+1. **Enable the JasperFx command line** — change the entry point to `return await app.RunJasperFxCommands(args);` so the same executable can run admin commands.
+2. **Pre-deploy migration step** — run `dotnet run -- resources setup` as a dedicated job / init-container (never at app start). It covers *all three* schema owners in one pass: Marten document/event tables, Marten projection tables, and the Wolverine durability/outbox tables (`wolverine` schema). Use a DDL-privileged DB role for this step; run the app itself under a least-privilege (DML-only) role.
+3. **CI gate** — `dotnet run -- resources check` (and/or `db-assert`) to fail the pipeline on schema drift *before* deploy.
+4. **AOT codegen** — `dotnet run -- codegen write` at build time plus `TypeLoadMode.Static` in production, so Wolverine/Marten stop compiling handler code at runtime (currently logs "code generation mode is Dynamic").
+5. **SQL review (optional, stricter)** — `dotnet run -- db-patch` / `db-dump` to produce reviewable DDL fed through Flyway/DbUp instead of tool-applied `resources setup`.
+
+Local dev and integration tests are unaffected: both run as Development and auto-create against the Aspire Postgres / Testcontainers instance.
+
+---
+
+*Last updated: 2026-06-16*

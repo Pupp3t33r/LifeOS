@@ -49,6 +49,8 @@ Architecture decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/). The f
 | [0008](./docs/adr/0008-multi-currency-and-fx.md) | Multi-currency `CurrencyAmount` value object, single-currency-per-account, Frankfurter FX rate service |
 | [0009](./docs/adr/0009-savings-accounts-and-month-close.md) | Savings accounts as the only account type |
 | [0010](./docs/adr/0010-asset-aggregate.md) | Asset aggregate (financial fields only) — Phase 3 implementation, data model locked now |
+| [0011](./docs/adr/0011-wolverine-http-conventions.md) | Wolverine.Http endpoint/handler conventions (supersedes the Minimal APIs mechanism of 0001) |
+| [0012](./docs/adr/0012-production-schema-migration.md) | Production schema migration policy — no runtime auto-create; migrate via pre-deploy step |
 
 ## Service-Specific Standards
 
@@ -133,4 +135,4 @@ Budgets target either track via `CategoryKey`: `domain:<serviceType>` or `tag:<t
 
 ---
 
-*Last updated: 2026-06-15*
+*Last updated: 2026-06-16*

@@ -9,5 +9,6 @@
   </Folder>
   <Folder Name="/services/money/">
     <Project Path="services/money/LifeOS.Money.Api/LifeOS.Money.Api.csproj" />
+    <Project Path="services/money/LifeOS.Money.Tests/LifeOS.Money.Tests.csproj" />
   </Folder>
 </Solution>

@@ -18,12 +18,15 @@ See [`template.md`](./template.md) to start a new ADR.
 | [0008](./0008-multi-currency-and-fx.md) | Multi-currency CurrencyAmount value object and FX rate service (supersedes part of 0005) | 2026-06-15 |
 | [0009](./0009-savings-accounts-and-month-close.md) | Savings accounts as the only account type | 2026-06-15 |
 | [0010](./0010-asset-aggregate.md) | Asset aggregate (financial fields only) | 2026-06-15 |
+| [0011](./0011-wolverine-http-conventions.md) | Wolverine.Http endpoint and handler conventions (supersedes part of 0001) | 2026-06-16 |
+| [0012](./0012-production-schema-migration.md) | Production schema migration policy (no runtime auto-create) | 2026-06-16 |
 
 ## Superseded
 
 | # | Title | Superseded by | Notes |
 |---|---|---|---|
 | 0005 §Multi-currency | Per-account `Dictionary<string, decimal>` balances; FX out of scope for v1 | [0008](./0008-multi-currency-and-fx.md) | Only the Multi-currency subsection is superseded. The rest of ADR-0005 stands. |
+| 0001 §endpoint mechanism | Minimal APIs as the endpoint framework | [0011](./0011-wolverine-http-conventions.md) | Only the endpoint mechanism is superseded. ADR-0001's code-first OpenAPI decision stands. |
 
 ## Deferred decisions
 
