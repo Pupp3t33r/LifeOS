@@ -8,20 +8,17 @@ var postgres = builder.AddPostgres("postgres")
 
 var moneyDb = postgres.AddDatabase("money-db");
 
-// Keycloak: dev realm "lifeos" with a public "money-api" client and a dev user.
-// Host port is fixed to 8080 so the JWT issuer URL (http://localhost:8080/realms/lifeos)
-// matches what downstream services configure as their Authority (ADR-0004).
-var keycloak = builder.AddContainer("keycloak", "quay.io/keycloak/keycloak", "26.0")
-    .WithHttpEndpoint(port: 8080, targetPort: 8080, name: "http")
-    .WithHttpHealthCheck("/realms/lifeos")
-    .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
-    .WithEnvironment("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
-    .WithEnvironment("KC_HOSTNAME", "localhost")
-    .WithBindMount(
-        Path.Combine(builder.AppHostDirectory!, "keycloak"),
-        "/opt/keycloak/data/import",
-        isReadOnly: true)
-    .WithArgs("start-dev", "--import-realm");
+// Keycloak: dev realm "lifeos" with a confidential "money-api" client and seeded test users
+// (see keycloak/lifeos-realm.json). Host port is fixed to 8080 so the JWT issuer URL
+// (http://localhost:8080/realms/lifeos) matches what downstream services configure as their
+// Authority (ADR-0004). Admin credentials default to admin/admin for dev; override via
+// configuration (Parameters:keycloak-username / keycloak-password) elsewhere.
+var keycloakUsername = builder.AddParameter("keycloak-username", "admin");
+var keycloakPassword = builder.AddParameter("keycloak-password", "admin", secret: true);
+
+var keycloak = builder.AddKeycloak("keycloak", 8080, keycloakUsername, keycloakPassword)
+    .WithRealmImport("keycloak")
+    .WithHttpHealthCheck("/realms/lifeos");
 
 var keycloakAuthority = ReferenceExpression.Create($"{keycloak.GetEndpoint("http")}/realms/lifeos");
 

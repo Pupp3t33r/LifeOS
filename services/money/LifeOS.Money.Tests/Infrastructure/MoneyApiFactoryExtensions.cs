@@ -12,6 +12,11 @@ public static class MoneyApiFactoryExtensions
         return client;
     }
 
+    public static HttpClient CreateClientFor(this MoneyApiFactory factory, TestUser user)
+    {
+        return factory.CreateClientForUser(user.Id);
+    }
+
     public static HttpClient CreateClientWithoutAuth(this MoneyApiFactory factory)
     {
         return factory.CreateClient();

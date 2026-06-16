@@ -14,7 +14,7 @@ public class GetAccountEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns200_WhenOwnedByCaller()
     {
-        var client = _factory.CreateClientForUser("user-a");
+        var client = _factory.CreateClientFor(TestUsers.Alice);
         var accountId = await CreateAccountAsync(client, "Mine", "EUR");
 
         var response = await client.GetAsync($"/api/accounts/{accountId}");
@@ -29,8 +29,8 @@ public class GetAccountEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns404_WhenOwnedByAnotherUser()
     {
-        var userA = _factory.CreateClientForUser("user-a");
-        var userB = _factory.CreateClientForUser("user-b");
+        var userA = _factory.CreateClientFor(TestUsers.Alice);
+        var userB = _factory.CreateClientFor(TestUsers.Bob);
         var accountId = await CreateAccountAsync(userA, "Private", "EUR");
 
         var response = await userB.GetAsync($"/api/accounts/{accountId}");
@@ -41,7 +41,7 @@ public class GetAccountEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns404_WhenAccountDoesNotExist()
     {
-        var client = _factory.CreateClientForUser("user-a");
+        var client = _factory.CreateClientFor(TestUsers.Alice);
 
         var response = await client.GetAsync($"/api/accounts/{Guid.NewGuid()}");
 

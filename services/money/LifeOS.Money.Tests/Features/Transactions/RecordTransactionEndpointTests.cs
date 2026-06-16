@@ -15,7 +15,7 @@ public class RecordTransactionEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns200_OnIncome_AndIncreasesBalance()
     {
-        var client = _factory.CreateClientForUser("user-a");
+        var client = _factory.CreateClientFor(TestUsers.Alice);
         var accountId = await CreateAccountAsync(client, "EUR", 1000m);
 
         var response = await client.PostAsJsonAsync(
@@ -31,7 +31,7 @@ public class RecordTransactionEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns200_OnExpense_AndDecreasesBalance_VisibleInSubsequentGet()
     {
-        var client = _factory.CreateClientForUser("user-a");
+        var client = _factory.CreateClientFor(TestUsers.Alice);
         var accountId = await CreateAccountAsync(client, "EUR", 1000m);
 
         var txResponse = await client.PostAsJsonAsync(
@@ -48,8 +48,8 @@ public class RecordTransactionEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns404_WhenAccountOwnedByAnotherUser()
     {
-        var userA = _factory.CreateClientForUser("user-a");
-        var userB = _factory.CreateClientForUser("user-b");
+        var userA = _factory.CreateClientFor(TestUsers.Alice);
+        var userB = _factory.CreateClientFor(TestUsers.Bob);
         var accountId = await CreateAccountAsync(userA, "EUR", null);
 
         var response = await userB.PostAsJsonAsync(
@@ -62,7 +62,7 @@ public class RecordTransactionEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns409_OnCurrencyMismatch()
     {
-        var client = _factory.CreateClientForUser("user-a");
+        var client = _factory.CreateClientFor(TestUsers.Alice);
         var accountId = await CreateAccountAsync(client, "EUR", null);
 
         var response = await client.PostAsJsonAsync(
@@ -75,7 +75,7 @@ public class RecordTransactionEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns409_OnDuplicateTransactionId()
     {
-        var client = _factory.CreateClientForUser("user-a");
+        var client = _factory.CreateClientFor(TestUsers.Alice);
         var accountId = await CreateAccountAsync(client, "EUR", null);
         var txId = Guid.NewGuid();
 
@@ -94,7 +94,7 @@ public class RecordTransactionEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns400_WhenAmountIsZero()
     {
-        var client = _factory.CreateClientForUser("user-a");
+        var client = _factory.CreateClientFor(TestUsers.Alice);
         var accountId = await CreateAccountAsync(client, "EUR", null);
 
         var response = await client.PostAsJsonAsync(
@@ -107,7 +107,7 @@ public class RecordTransactionEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task Returns400_WhenOccurredAtIsInTheFuture()
     {
-        var client = _factory.CreateClientForUser("user-a");
+        var client = _factory.CreateClientFor(TestUsers.Alice);
         var accountId = await CreateAccountAsync(client, "EUR", null);
 
         var response = await client.PostAsJsonAsync(

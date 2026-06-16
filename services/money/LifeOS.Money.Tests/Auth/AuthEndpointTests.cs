@@ -25,7 +25,7 @@ public class AuthEndpointTests : IClassFixture<MoneyApiFactory>
     public async Task Returns401_WhenBearerTokenIsExpired()
     {
         var client = _factory.CreateClient();
-        var token = _factory.Jwt.Create("user-a", TimeSpan.FromSeconds(-1));
+        var token = _factory.Jwt.Create(TestUsers.Alice.Id, TimeSpan.FromSeconds(-1));
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
@@ -39,8 +39,8 @@ public class AuthEndpointTests : IClassFixture<MoneyApiFactory>
     [Fact]
     public async Task HonorsUserIdFromToken_AndEnforcesOwnershipAcrossUsers()
     {
-        var userA = _factory.CreateClientForUser("user-a");
-        var userB = _factory.CreateClientForUser("user-b");
+        var userA = _factory.CreateClientFor(TestUsers.Alice);
+        var userB = _factory.CreateClientFor(TestUsers.Bob);
 
         var accountId = Guid.NewGuid();
         var created = await userA.PostAsJsonAsync(
