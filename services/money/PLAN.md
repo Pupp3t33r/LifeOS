@@ -220,4 +220,20 @@ Local dev and integration tests are unaffected: both run as Development and auto
 
 ---
 
+## 9. Social login: "Log in with Google" (deferred — not started)
+
+Add Google as an upstream identity provider that Keycloak **brokers**. Free (plain Google OAuth 2.0, no per-user cost; only a consent-screen verification step for prod external users). Deliberately not built yet.
+
+**Why it's low-impact:** Keycloak still issues the same `lifeos`-realm token regardless of how the user authenticated, so **Money and the integration tests need no changes** (`iss`/`aud`/`sub` semantics are unchanged; `sub` is the brokered Keycloak user id). The "Log in with Google" button renders automatically once the IdP is enabled. Google login is interactive-only, so it stays a manual/e2e concern — not covered by the xUnit suite.
+
+When we pick it up:
+
+1. **Google Cloud Console** — create an OAuth 2.0 Web client; set the authorized redirect URI to the Keycloak broker endpoint `http://localhost:8080/realms/lifeos/broker/google/endpoint` (relies on the fixed port 8080, ADR-0004). Separate client per environment (prod uses the real domain).
+2. **Realm IdP** — add an `identityProviders` entry (`alias: google`, `providerId: google`, `trustEmail: true`, `syncMode: IMPORT`) to `keycloak/lifeos-realm.json`, with `clientId`/`clientSecret` as `${GOOGLE_CLIENT_ID}` / `${GOOGLE_CLIENT_SECRET}` placeholders (Keycloak substitutes from env on realm import — keeps secrets out of git).
+3. **Secret wiring (Aspire)** — `AddParameter("google-client-id")` + `AddParameter("google-client-secret", secret: true)`, passed to the Keycloak resource via `.WithEnvironment(...)`; real values set with `dotnet user-secrets` on the AppHost. Prod: secrets from the vault/secret store, IdP managed via IaC (per §8 / ADR-0012 stance).
+
+Do **not** use Google Cloud Identity Platform / Firebase Auth (paid, managed) — Keycloak is already the auth server; Google is only an upstream OAuth provider.
+
+---
+
 *Last updated: 2026-06-16*
