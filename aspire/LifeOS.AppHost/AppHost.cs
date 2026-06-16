@@ -18,7 +18,13 @@ var keycloakPassword = builder.AddParameter("keycloak-password", "admin", secret
 
 var keycloak = builder.AddKeycloak("keycloak", 8080, keycloakUsername, keycloakPassword)
     .WithRealmImport("keycloak")
-    .WithHttpHealthCheck("/realms/lifeos");
+    .WithHttpHealthCheck("/realms/lifeos")
+    // Custom "lifeos" login theme (keycloak/themes/lifeos), selected by the realm's loginTheme.
+    .WithBindMount("keycloak/themes", "/opt/keycloak/themes")
+    // Shared design tokens are the single source of truth (/design/themes); mount the "calm"
+    // theme's CSS binding into the login theme so the page and the Wallet app stay visually in
+    // sync (see design/README.md). Point this at a different theme to reskin the login.
+    .WithBindMount("../../design/themes/calm/bindings/tokens.css", "/opt/keycloak/themes/lifeos/login/resources/css/tokens.css");
 
 var keycloakAuthority = ReferenceExpression.Create($"{keycloak.GetEndpoint("http")}/realms/lifeos");
 

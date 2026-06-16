@@ -1,0 +1,44 @@
+/* LifeOS — "Calm" theme · WEB / CSS binding.
+ *
+ * DERIVED FROM design/themes/calm/tokens.json (this theme's source of truth).
+ * If you change a value here, change tokens.json too — see design/README.md.
+ *
+ * Token names are this theme's own vocabulary (sage/clay/bone...); other themes
+ * define their own. Consumed live by the Keycloak login theme
+ * (keycloak/themes/lifeos/login), which mounts this file into its resources.
+ */
+:root {
+  /* ---- color ---- */
+  --lifeos-bone:        #F4F1EA;
+  --lifeos-surface:     #FBFAF6;
+  --lifeos-ink:         #2C2A26;
+  --lifeos-muted:       #7C766B;
+  --lifeos-line:        #E6E1D6;
+  --lifeos-sage:        #5E7E6B;
+  --lifeos-sage-deep:   #4E6B5A;
+  --lifeos-clay:        #C07A52;
+  --lifeos-white:       #FFFFFF;
+  --lifeos-focus-ring:  rgba(94, 126, 107, 0.22);
+
+  /* ---- type ---- */
+  --lifeos-font-display:    "Bricolage Grotesque", sans-serif;
+  --lifeos-font-body:       "Spline Sans", sans-serif;
+  --lifeos-weight-regular:  400;
+  --lifeos-weight-medium:   500;
+  --lifeos-weight-semibold: 600;
+  --lifeos-weight-bold:     700;
+
+  /* ---- radius ---- */
+  --lifeos-radius-sm:   14px;
+  --lifeos-radius-md:   18px;
+  --lifeos-radius-lg:   28px;
+  --lifeos-radius-pill: 999px;
+
+  /* ---- gradient ---- */
+  --lifeos-gradient-brand: linear-gradient(150deg, #5E7E6B, #4E6B5A);
+
+  /* ---- shadow ---- */
+  --lifeos-shadow-card:   0 30px 60px -34px rgba(44, 42, 38, 0.40);
+  --lifeos-shadow-focus:  0 0 0 4px rgba(94, 126, 107, 0.22);
+  --lifeos-shadow-raised: 0 14px 26px -12px rgba(94, 126, 107, 0.22);
+}

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LifeOS — Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:      #F4EEE3;
+    --paper-2:    #ECE3D3;
+    --espresso:   #1B1714;
+    --espresso-2: #241E19;
+    --ink:        #221C17;
+    --ink-soft:   #6A5F52;
+    --line:       #D9CDB7;
+    --line-dark:  rgba(244, 238, 227, 0.14);
+    --claret:     #8A2B2B;
+    --claret-700: #6E2020;
+    --gold:       #B0863F;
+    --cream:      #F4EEE3;
+    --shadow:     28px 40px 80px -40px rgba(27, 23, 20, 0.55);
+    --ease:       cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: "Hanken Grotesk", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* ---- grain overlay ---- */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.4;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  }
+
+  .stage {
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+  }
+
+  /* ====================  LEFT — BRAND PANEL  ==================== */
+  .brand {
+    position: relative;
+    background: var(--espresso);
+    color: var(--cream);
+    padding: 4.5rem 4.5rem 3.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+
+  /* ruled ledger lines */
+  .brand::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 43px,
+      var(--line-dark) 43px,
+      var(--line-dark) 44px
+    );
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+            mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  }
+  /* claret margin rule, like a ledger's left column */
+  .brand::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 3.1rem;
+    width: 1.5px;
+    background: linear-gradient(to bottom, transparent, var(--claret) 20%, var(--claret) 80%, transparent);
+    opacity: 0.55;
+  }
+
+  .brand > * { position: relative; z-index: 1; }
+
+  .mark {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    opacity: 0;
+    animation: rise 0.9s var(--ease) 0.05s forwards;
+  }
+  .mark .glyph {
+    width: 34px; height: 34px;
+    border: 1.5px solid var(--gold);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: "Fraunces", serif;
+    font-weight: 500;
+    font-size: 1.1rem;
+    color: var(--gold);
+  }
+  .mark .wordmark {
+    font-family: "Hanken Grotesk", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: rgba(244, 238, 227, 0.78);
+  }
+
+  .lede { max-width: 27ch; }
+  .lede .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: rise 0.9s var(--ease) 0.18s forwards;
+  }
+  .lede h1 {
+    font-family: "Fraunces", serif;
+    font-optical-sizing: auto;
+    font-weight: 340;
+    font-size: clamp(2.6rem, 4vw, 3.9rem);
+    line-height: 1.04;
+    letter-spacing: -0.01em;
+  }
+  .lede h1 em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--gold);
+  }
+  .lede h1 .ln {
+    display: block;
+    opacity: 0;
+    transform: translateY(18px);
+    animation: rise 1s var(--ease) forwards;
+  }
+  .lede h1 .ln:nth-child(1) { animation-delay: 0.26s; }
+  .lede h1 .ln:nth-child(2) { animation-delay: 0.34s; }
+  .lede h1 .ln:nth-child(3) { animation-delay: 0.42s; }
+
+  .colophon {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 0.72rem;
+    color: rgba(244, 238, 227, 0.45);
+    letter-spacing: 0.04em;
+    opacity: 0;
+    animation: rise 0.9s var(--ease) 0.55s forwards;
+  }
+  .colophon .tag { font-variant-numeric: tabular-nums; }
+
+  /* ====================  RIGHT — FORM  ==================== */
+  .panel {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 3rem;
+  }
+  .panel::before { /* thin keyline frame */
+    content: "";
+    position: absolute;
+    inset: 1.4rem;
+    border: 1px solid var(--line);
+    pointer-events: none;
+  }
+
+  .form-wrap {
+    width: 100%;
+    max-width: 372px;
+  }
+
+  .form-head { margin-bottom: 2.4rem; }
+  .form-head .kicker {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--claret);
+    display: block;
+    margin-bottom: 0.85rem;
+    opacity: 0;
+    animation: rise 0.8s var(--ease) 0.4s forwards;
+  }
+  .form-head h2 {
+    font-family: "Fraunces", serif;
+    font-weight: 360;
+    font-size: 2.15rem;
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+    opacity: 0;
+    animation: rise 0.8s var(--ease) 0.48s forwards;
+  }
+
+  /* error banner (Keycloak ${message.summary}) */
+  .alert {
+    display: flex;
+    gap: 0.65rem;
+    align-items: flex-start;
+    background: rgba(138, 43, 43, 0.07);
+    border-left: 2.5px solid var(--claret);
+    padding: 0.8rem 0.95rem;
+    margin-bottom: 1.6rem;
+    font-size: 0.85rem;
+    color: var(--claret-700);
+    line-height: 1.4;
+  }
+  .alert svg { flex: none; margin-top: 1px; }
+
+  .field {
+    position: relative;
+    margin-bottom: 1.65rem;
+    opacity: 0;
+    animation: rise 0.8s var(--ease) forwards;
+  }
+  .field:nth-of-type(1) { animation-delay: 0.56s; }
+  .field:nth-of-type(2) { animation-delay: 0.64s; }
+
+  .field input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    padding: 0.65rem 0 0.55rem;
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.4s var(--ease);
+  }
+  .field input::placeholder { color: transparent; }
+  .field label {
+    position: absolute;
+    left: 0;
+    top: 0.65rem;
+    font-size: 1rem;
+    color: var(--ink-soft);
+    pointer-events: none;
+    transition: all 0.35s var(--ease);
+  }
+  .field input:focus ~ label,
+  .field input:not(:placeholder-shown) ~ label {
+    top: -0.72rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--claret);
+  }
+  .field .underline {
+    position: absolute;
+    left: 0; bottom: -1.5px;
+    height: 1.5px; width: 0;
+    background: var(--claret);
+    transition: width 0.45s var(--ease);
+  }
+  .field input:focus ~ .underline { width: 100%; }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: -0.4rem 0 1.9rem;
+    opacity: 0;
+    animation: rise 0.8s var(--ease) 0.72s forwards;
+  }
+  .remember {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.85rem; color: var(--ink-soft);
+    cursor: pointer; user-select: none;
+  }
+  .remember input { display: none; }
+  .remember .box {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--line);
+    display: grid; place-items: center;
+    transition: all 0.3s var(--ease);
+  }
+  .remember input:checked + .box {
+    background: var(--claret);
+    border-color: var(--claret);
+  }
+  .remember .box svg { opacity: 0; transition: opacity 0.2s; }
+  .remember input:checked + .box svg { opacity: 1; }
+
+  .link {
+    font-size: 0.85rem;
+    color: var(--claret);
+    text-decoration: none;
+    position: relative;
+  }
+  .link::after {
+    content: ""; position: absolute; left: 0; bottom: -2px;
+    width: 100%; height: 1px; background: currentColor;
+    transform: scaleX(0); transform-origin: right;
+    transition: transform 0.4s var(--ease);
+  }
+  .link:hover::after { transform: scaleX(1); transform-origin: left; }
+
+  .btn {
+    width: 100%;
+    border: none;
+    background: var(--claret);
+    color: var(--cream);
+    font-family: "Hanken Grotesk", sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    padding: 1rem;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+    opacity: 0;
+    animation: rise 0.8s var(--ease) 0.8s forwards;
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 30px -14px rgba(138, 43, 43, 0.7);
+  }
+  .btn:active { transform: translateY(0); }
+  .btn .sheen {
+    position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(244,238,227,0.22) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.7s var(--ease);
+  }
+  .btn:hover .sheen { transform: translateX(100%); }
+
+  .divider {
+    display: flex; align-items: center; gap: 1rem;
+    margin: 1.9rem 0 1.55rem;
+    color: var(--ink-soft);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: rise 0.8s var(--ease) 0.88s forwards;
+  }
+  .divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
+  }
+
+  .social {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+    background: transparent;
+    border: 1.5px solid var(--line);
+    color: var(--ink);
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 0.92rem;
+    padding: 0.85rem;
+    cursor: pointer;
+    transition: border-color 0.35s var(--ease), background 0.35s var(--ease);
+    opacity: 0;
+    animation: rise 0.8s var(--ease) 0.96s forwards;
+    text-decoration: none;
+  }
+  .social:hover { border-color: var(--ink); background: var(--paper-2); }
+
+  .foot {
+    margin-top: 2.2rem;
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    opacity: 0;
+    animation: rise 0.8s var(--ease) 1.04s forwards;
+  }
+
+  @keyframes rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ====================  RESPONSIVE  ==================== */
+  @media (max-width: 880px) {
+    body { overflow: auto; }
+    .stage { grid-template-columns: 1fr; min-height: 100%; }
+    .brand { padding: 3rem 2rem 2.25rem; min-height: 42vh; }
+    .lede h1 { font-size: clamp(2.2rem, 9vw, 3rem); }
+    .panel { padding: 2.5rem 1.5rem; }
+    .panel::before { inset: 0.8rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; }
+    .mark, .lede .eyebrow, .lede h1 .ln, .colophon,
+    .form-head .kicker, .form-head h2, .field, .row,
+    .btn, .divider, .social, .foot { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="stage">
+    <!-- ===== BRAND PANEL ===== -->
+    <section class="brand">
+      <div class="mark">
+        <span class="glyph">L</span>
+        <span class="wordmark">LifeOS</span>
+      </div>
+
+      <div class="lede">
+        <span class="eyebrow">One identity · every service</span>
+        <h1>
+          <span class="ln">Sign in once.</span>
+          <span class="ln"><em>Everything</em> else</span>
+          <span class="ln">follows.</span>
+        </h1>
+      </div>
+
+      <div class="colophon">
+        <span>Encrypted · Zero-trust</span>
+        <span class="tag">EST. MMXXVI</span>
+      </div>
+    </section>
+
+    <!-- ===== FORM PANEL ===== -->
+    <section class="panel">
+      <div class="form-wrap">
+        <div class="form-head">
+          <span class="kicker">Account access</span>
+          <h2>Welcome back.</h2>
+        </div>
+
+        <!-- error state — render only when Keycloak has a message -->
+        <div class="alert" role="alert">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="7" stroke="#8A2B2B" stroke-width="1.4"/>
+            <path d="M8 4.5v4M8 11h.01" stroke="#8A2B2B" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Invalid username or password. Please try again.
+        </div>
+
+        <form id="kc-form-login" action="#" method="post" novalidate>
+          <div class="field">
+            <input type="text" id="username" name="username" placeholder=" " autocomplete="username" autofocus />
+            <label for="username">Username or email</label>
+            <span class="underline"></span>
+          </div>
+
+          <div class="field">
+            <input type="password" id="password" name="password" placeholder=" " autocomplete="current-password" />
+            <label for="password">Password</label>
+            <span class="underline"></span>
+          </div>
+
+          <div class="row">
+            <label class="remember">
+              <input type="checkbox" name="rememberMe" />
+              <span class="box">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M1.5 5.2 4 7.5 8.5 2.5" stroke="#F4EEE3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Remember me
+            </label>
+            <a href="#" class="link">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn">
+            <span class="sheen"></span>
+            Sign in
+          </button>
+        </form>
+
+        <div class="divider">or</div>
+
+        <a href="#" class="social">
+          <svg width="18" height="18" viewBox="0 0 18 18">
+            <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z"/>
+            <path fill="#FBBC05" d="M3.97 10.72A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33Z"/>
+            <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z"/>
+          </svg>
+          Continue with Google
+        </a>
+
+        <p class="foot">New to LifeOS? <a href="#" class="link">Create an account</a></p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

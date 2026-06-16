@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LifeOS — Sign in (Calm)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bone:   #F4F1EA;
+    --card:   #FBFAF6;
+    --ink:    #2C2A26;
+    --muted:  #7C766B;
+    --sage:   #5E7E6B;
+    --sage-2: #4E6B5A;
+    --clay:   #C07A52;
+    --line:   #E6E1D6;
+    --ring:   rgba(94,126,107,0.22);
+    --ease:   cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Spline Sans", sans-serif;
+    background: var(--bone);
+    color: var(--ink);
+    display: grid; place-items: center;
+    -webkit-font-smoothing: antialiased;
+    position: relative; overflow: hidden;
+  }
+  /* soft pastel blobs */
+  body::before {
+    content: ""; position: fixed; inset: -10%; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(34% 40% at 18% 22%, rgba(94,126,107,0.22), transparent 70%),
+      radial-gradient(30% 38% at 84% 78%, rgba(192,122,82,0.18), transparent 70%),
+      radial-gradient(40% 50% at 70% 12%, rgba(94,126,107,0.10), transparent 70%);
+    filter: blur(8px);
+  }
+
+  .card {
+    position: relative; z-index: 1;
+    width: min(92vw, 396px);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    padding: 2.6rem 2.2rem 2.3rem;
+    box-shadow: 0 1px 0 #fff inset, 0 30px 60px -34px rgba(44,42,38,0.4);
+    animation: float 0.8s var(--ease);
+  }
+
+  .badge {
+    width: 52px; height: 52px; border-radius: 18px;
+    background: linear-gradient(150deg, var(--sage), var(--sage-2));
+    display: grid; place-items: center; margin-bottom: 1.6rem;
+    font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 1.6rem; color: #fff;
+    box-shadow: 0 10px 20px -8px var(--ring);
+  }
+
+  h1 { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 1.95rem;
+       letter-spacing: -0.02em; line-height: 1.05; margin-bottom: 0.5rem; }
+  .sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.9rem; line-height: 1.45; }
+
+  .field { margin-bottom: 1.05rem; }
+  .field label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--muted); margin-bottom: 0.4rem; }
+  .field input {
+    width: 100%; font-family: inherit; font-size: 0.97rem; color: var(--ink);
+    background: var(--bone); border: 1.5px solid var(--line); border-radius: 14px;
+    padding: 0.85rem 1rem; outline: none;
+    transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease), background 0.3s;
+  }
+  .field input:focus { border-color: var(--sage); background: #fff; box-shadow: 0 0 0 4px var(--ring); }
+
+  .row { display: flex; justify-content: space-between; align-items: center; margin: 0.4rem 0 1.5rem; font-size: 0.86rem; }
+  .row a { color: var(--sage-2); text-decoration: none; font-weight: 500; }
+  .row a:hover { text-decoration: underline; }
+  .check { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); cursor: pointer; user-select: none; }
+  .check input { accent-color: var(--sage); width: 16px; height: 16px; }
+
+  .btn {
+    width: 100%; cursor: pointer; border: none;
+    background: linear-gradient(150deg, var(--sage), var(--sage-2));
+    color: #fff; font-family: inherit; font-weight: 600; font-size: 0.97rem;
+    padding: 0.95rem; border-radius: 14px;
+    box-shadow: 0 14px 26px -12px var(--ring);
+    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 20px 34px -14px var(--ring); }
+  .btn:active { transform: translateY(0); }
+
+  .div { display: flex; align-items: center; gap: 0.9rem; margin: 1.5rem 0 1.2rem; color: var(--muted); font-size: 0.82rem; }
+  .div::before, .div::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  .social {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    background: #fff; border: 1.5px solid var(--line); border-radius: 14px; color: var(--ink);
+    font-family: inherit; font-weight: 500; font-size: 0.92rem; padding: 0.85rem; cursor: pointer;
+    text-decoration: none; transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+  }
+  .social:hover { border-color: var(--sage); transform: translateY(-1px); box-shadow: 0 10px 20px -12px var(--ring); }
+
+  .foot { margin-top: 1.7rem; text-align: center; font-size: 0.9rem; color: var(--muted); }
+  .foot a { color: var(--sage-2); font-weight: 600; text-decoration: none; }
+
+  @keyframes float { from { transform: translateY(18px) scale(0.98); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">L</div>
+    <h1>Welcome back</h1>
+    <p class="sub">Sign in to LifeOS — one calm place for everything you keep.</p>
+
+    <form action="#" method="post">
+      <div class="field">
+        <label for="u">Username or email</label>
+        <input type="text" id="u" autocomplete="username" autofocus />
+      </div>
+      <div class="field">
+        <label for="p">Password</label>
+        <input type="password" id="p" autocomplete="current-password" />
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" /> Remember me</label>
+        <a href="#">Forgot password?</a>
+      </div>
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+
+    <div class="div">or</div>
+    <a href="#" class="social">
+      <svg width="18" height="18" viewBox="0 0 18 18">
+        <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z"/>
+        <path fill="#FBBC05" d="M3.97 10.72A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33Z"/>
+        <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z"/>
+      </svg>
+      Continue with Google
+    </a>
+    <p class="foot">New here? <a href="#">Create an account</a></p>
+  </div>
+</body>
+</html>

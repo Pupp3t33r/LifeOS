@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LifeOS — Sign in (Terminal)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Archivo:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:  #EAE8DF;
+    --paper-2:#E0DDD1;
+    --ink:    #131210;
+    --ink-2:  #3A382F;
+    --acc:    #1F2BFF;     /* electric blue */
+    --acc-2:  #FF3B1D;     /* alarm accent for errors */
+    --line:   #131210;
+    --ease:   cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--paper);
+    color: var(--ink);
+    display: grid; place-items: center;
+    /* faint grid */
+    background-image:
+      linear-gradient(var(--paper-2) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-2) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .frame {
+    width: min(94vw, 440px);
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    box-shadow: 7px 7px 0 var(--ink);
+    animation: pop 0.5s var(--ease);
+  }
+
+  .chrome {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1.5px solid var(--line);
+    padding: 0.6rem 0.9rem;
+    font-size: 0.72rem; letter-spacing: 0.05em;
+    background: var(--ink); color: var(--paper);
+  }
+  .chrome .dots { display: flex; gap: 6px; }
+  .chrome .dots i { width: 9px; height: 9px; border: 1.5px solid var(--paper); display: block; }
+  .chrome .dots i:last-child { background: var(--paper); }
+
+  .body { padding: 1.9rem 1.7rem 2rem; }
+
+  .head { font-family: "Archivo", sans-serif; font-weight: 800; text-transform: uppercase;
+          font-size: 2.2rem; line-height: 0.95; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+  .head .blink { color: var(--acc); animation: blink 1.1s steps(1) infinite; }
+  .lead { font-size: 0.8rem; color: var(--ink-2); margin-bottom: 1.8rem; }
+  .lead b { color: var(--ink); font-weight: 600; }
+
+  /* error line */
+  .err {
+    border: 1.5px solid var(--acc-2); border-left-width: 6px;
+    padding: 0.55rem 0.7rem; margin-bottom: 1.4rem;
+    font-size: 0.74rem; color: var(--acc-2); text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .err::before { content: "! "; font-weight: 700; }
+
+  .field { margin-bottom: 1.3rem; }
+  .field label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 0.4rem; }
+  .field label::before { content: "> "; color: var(--acc); }
+  .field input {
+    width: 100%; font-family: inherit; font-size: 0.95rem; color: var(--ink);
+    background: var(--paper-2); border: 1.5px solid var(--line);
+    padding: 0.7rem 0.8rem; outline: none;
+    transition: box-shadow 0.15s, background 0.15s;
+  }
+  .field input:focus { background: #fff; box-shadow: inset 3px 3px 0 rgba(31,43,255,0.18); }
+
+  .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.6rem; font-size: 0.74rem; }
+  .row a { color: var(--ink); text-decoration: none; border-bottom: 1.5px solid var(--acc); }
+  .row a:hover { color: var(--acc); }
+  .check { display: flex; align-items: center; gap: 0.45rem; cursor: pointer; user-select: none; text-transform: uppercase; letter-spacing: 0.06em; }
+  .check input { appearance: none; width: 14px; height: 14px; border: 1.5px solid var(--line); cursor: pointer; }
+  .check input:checked { background: var(--acc); box-shadow: inset 0 0 0 2px var(--paper); }
+
+  .btn {
+    width: 100%; cursor: pointer; font-family: inherit; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem;
+    background: var(--ink); color: var(--paper); border: 1.5px solid var(--line);
+    padding: 0.95rem; transition: transform 0.12s, background 0.12s, color 0.12s, box-shadow 0.12s;
+  }
+  .btn:hover { background: var(--acc); box-shadow: 4px 4px 0 var(--ink); transform: translate(-2px,-2px); }
+  .btn:active { transform: translate(0,0); box-shadow: none; }
+
+  .div { text-align: center; margin: 1.4rem 0; font-size: 0.7rem; letter-spacing: 0.2em; color: var(--ink-2); }
+  .div::before, .div::after { content: "————"; color: var(--line); margin: 0 0.5rem; opacity: 0.4; }
+
+  .social {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    background: var(--paper); border: 1.5px solid var(--line); color: var(--ink);
+    font-family: inherit; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 0.8rem; cursor: pointer; text-decoration: none;
+    transition: box-shadow 0.12s, transform 0.12s;
+  }
+  .social:hover { box-shadow: 4px 4px 0 var(--ink); transform: translate(-2px,-2px); }
+
+  .foot { margin-top: 1.7rem; font-size: 0.74rem; color: var(--ink-2); }
+  .foot a { color: var(--ink); border-bottom: 1.5px solid var(--acc); text-decoration: none; }
+
+  @keyframes pop { from { transform: translateY(14px); opacity: 0; box-shadow: 0 0 0 var(--ink); } }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .frame { animation: none; } .head .blink { animation: none; } }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="chrome">
+      <span>// lifeos.auth — secure session</span>
+      <span class="dots"><i></i><i></i><i></i></span>
+    </div>
+    <div class="body">
+      <div class="head">SIGN&nbsp;IN<span class="blink">_</span></div>
+      <p class="lead">Authenticate once. Token grants access to <b>every LifeOS service</b>.</p>
+
+      <div class="err">invalid credentials — retry</div>
+
+      <form action="#" method="post">
+        <div class="field">
+          <label for="u">user</label>
+          <input type="text" id="u" autocomplete="username" autofocus />
+        </div>
+        <div class="field">
+          <label for="p">password</label>
+          <input type="password" id="p" autocomplete="current-password" />
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" /> keep session</label>
+          <a href="#">reset password</a>
+        </div>
+        <button class="btn" type="submit">Authenticate →</button>
+      </form>
+
+      <div class="div">OR</div>
+      <a href="#" class="social">
+        <svg width="16" height="16" viewBox="0 0 18 18">
+          <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"/>
+          <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z"/>
+          <path fill="#FBBC05" d="M3.97 10.72A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33Z"/>
+          <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z"/>
+        </svg>
+        Continue with Google
+      </a>
+      <p class="foot">no account? <a href="#">request access</a></p>
+    </div>
+  </div>
+</body>
+</html>

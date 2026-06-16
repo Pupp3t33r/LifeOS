@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LifeOS · Keycloak login — design options</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Hanken Grotesk", sans-serif; background: #15120F; color: #EDE6D8; padding: 3rem clamp(1rem, 4vw, 3rem); }
+  header { max-width: 1400px; margin: 0 auto 2.4rem; }
+  h1 { font-family: "Fraunces", serif; font-weight: 400; font-size: 2.4rem; letter-spacing: -0.01em; }
+  p.sub { color: #968A78; margin-top: 0.5rem; max-width: 60ch; line-height: 1.5; }
+  .grid { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 1.6rem; }
+  .cell { border: 1px solid rgba(237,230,216,0.12); border-radius: 12px; overflow: hidden; background: #100E0C; }
+  .bar { display: flex; align-items: baseline; justify-content: space-between; padding: 0.9rem 1.1rem; border-bottom: 1px solid rgba(237,230,216,0.1); }
+  .bar .name { font-weight: 600; }
+  .bar .name b { color: #C8A24B; font-weight: 600; }
+  .bar .tag { font-size: 0.78rem; color: #968A78; }
+  .bar a { color: #C8A24B; text-decoration: none; font-size: 0.82rem; border-bottom: 1px solid currentColor; }
+  .viewport { position: relative; height: 560px; overflow: hidden; }
+  /* render each full-size page at 0.62 scale so the whole screen fits */
+  iframe { border: none; width: 161.3%; height: 903px; transform: scale(0.62); transform-origin: top left; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>LifeOS — login, four directions</h1>
+    <p class="sub">Shared Keycloak sign-in for the whole system (Money today, every module next). Previews are scaled to ~62%; click <em>open full</em> for the real thing. Pick one and I'll extract it into a live Keycloak theme.</p>
+  </header>
+  <div class="grid">
+    <div class="cell">
+      <div class="bar"><span class="name"><b>A</b> · Private Ledger</span><span class="tag">warm editorial duotone · Fraunces</span><a href="option-a-private-ledger.html" target="_blank">open full ↗</a></div>
+      <div class="viewport"><iframe src="option-a-private-ledger.html" title="A"></iframe></div>
+    </div>
+    <div class="cell">
+      <div class="bar"><span class="name"><b>B</b> · Vault</span><span class="tag">dark luxe · Instrument Serif + gold</span><a href="option-b-vault.html" target="_blank">open full ↗</a></div>
+      <div class="viewport"><iframe src="option-b-vault.html" title="B"></iframe></div>
+    </div>
+    <div class="cell">
+      <div class="bar"><span class="name"><b>C</b> · Terminal</span><span class="tag">brutalist mono · IBM Plex Mono</span><a href="option-c-terminal.html" target="_blank">open full ↗</a></div>
+      <div class="viewport"><iframe src="option-c-terminal.html" title="C"></iframe></div>
+    </div>
+    <div class="cell">
+      <div class="bar"><span class="name"><b>D</b> · Calm</span><span class="tag">soft organic · Bricolage + sage</span><a href="option-d-calm.html" target="_blank">open full ↗</a></div>
+      <div class="viewport"><iframe src="option-d-calm.html" title="D"></iframe></div>
+    </div>
+  </div>
+</body>
+</html>

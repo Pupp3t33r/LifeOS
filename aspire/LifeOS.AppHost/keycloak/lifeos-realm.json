@@ -1,6 +1,8 @@
 {
   "realm": "lifeos",
+  "displayName": "LifeOS",
   "enabled": true,
+  "loginTheme": "lifeos",
   "sslRequired": "none",
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,

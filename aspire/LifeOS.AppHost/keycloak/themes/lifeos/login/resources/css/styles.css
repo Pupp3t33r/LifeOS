@@ -1,0 +1,147 @@
+@import "tokens.css";
+
+/* LifeOS login theme — "Calm".
+ * Colours, type, radii, gradient and shadows come from the shared tokens in tokens.css,
+ * which the AppHost mounts here from design/themes/calm/bindings/tokens.css (see design/README.md).
+ * To reskin the login, mount a different theme's binding at this path. */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+
+body.lifeos {
+  font-family: var(--lifeos-font-body);
+  background: var(--lifeos-bone);
+  color: var(--lifeos-ink);
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow: hidden;
+}
+/* soft pastel blobs */
+body.lifeos::before {
+  content: "";
+  position: fixed; inset: -10%;
+  pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(34% 40% at 18% 22%, rgba(94, 126, 107, 0.22), transparent 70%),
+    radial-gradient(30% 38% at 84% 78%, rgba(192, 122, 82, 0.18), transparent 70%),
+    radial-gradient(40% 50% at 70% 12%, rgba(94, 126, 107, 0.10), transparent 70%);
+  filter: blur(8px);
+}
+
+.card {
+  position: relative; z-index: 1;
+  width: min(92vw, 396px);
+  background: var(--lifeos-surface);
+  border: 1px solid var(--lifeos-line);
+  border-radius: var(--lifeos-radius-lg);
+  padding: 2.6rem 2.2rem 2.3rem;
+  box-shadow: 0 1px 0 #fff inset, var(--lifeos-shadow-card);
+  animation: lifeos-float 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.badge {
+  width: 52px; height: 52px;
+  border-radius: var(--lifeos-radius-md);
+  background: var(--lifeos-gradient-brand);
+  display: grid; place-items: center;
+  margin-bottom: 1.6rem;
+  font-family: var(--lifeos-font-display);
+  font-weight: var(--lifeos-weight-bold);
+  font-size: 1.6rem; color: #fff;
+  box-shadow: var(--lifeos-shadow-raised);
+}
+
+h1#kc-page-title {
+  font-family: var(--lifeos-font-display);
+  font-weight: var(--lifeos-weight-bold);
+  font-size: 1.95rem; letter-spacing: -0.02em; line-height: 1.05;
+  margin-bottom: 0.5rem;
+}
+.head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.required-hint { font-size: 0.78rem; color: var(--lifeos-muted); white-space: nowrap; }
+.required-hint .req { color: var(--lifeos-clay); }
+
+.sub { color: var(--lifeos-muted); font-size: 0.95rem; margin-bottom: 1.9rem; line-height: 1.45; }
+
+/* alerts (Keycloak message.type: error | success | warning | info) */
+.alert {
+  border-radius: var(--lifeos-radius-sm);
+  padding: 0.8rem 1rem; margin-bottom: 1.4rem;
+  font-size: 0.88rem; line-height: 1.4;
+  border: 1px solid var(--lifeos-line);
+}
+.alert-error   { background: rgba(192, 122, 82, 0.10); border-color: rgba(192, 122, 82, 0.45); color: #8A4A2B; }
+.alert-warning { background: rgba(192, 122, 82, 0.10); border-color: rgba(192, 122, 82, 0.40); color: #8A4A2B; }
+.alert-success { background: rgba(94, 126, 107, 0.12); border-color: rgba(94, 126, 107, 0.45); color: var(--lifeos-sage-deep); }
+.alert-info    { background: rgba(94, 126, 107, 0.10); border-color: rgba(94, 126, 107, 0.35); color: var(--lifeos-sage-deep); }
+
+/* fields */
+.field { margin-bottom: 1.05rem; }
+.field label { display: block; font-size: 0.78rem; font-weight: var(--lifeos-weight-medium); color: var(--lifeos-muted); margin-bottom: 0.4rem; }
+.field input {
+  width: 100%;
+  font-family: inherit; font-size: 0.97rem; color: var(--lifeos-ink);
+  background: var(--lifeos-bone);
+  border: 1.5px solid var(--lifeos-line);
+  border-radius: var(--lifeos-radius-sm);
+  padding: 0.85rem 1rem; outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+}
+.field input:focus { border-color: var(--lifeos-sage); background: #fff; box-shadow: var(--lifeos-shadow-focus); }
+.field input[aria-invalid="true"] { border-color: var(--lifeos-clay); }
+.field-error { display: block; margin-top: 0.4rem; font-size: 0.8rem; color: #8A4A2B; }
+
+/* row: remember-me + forgot link */
+.row { display: flex; justify-content: space-between; align-items: center; margin: 0.4rem 0 1.5rem; font-size: 0.86rem; }
+.row a { color: var(--lifeos-sage-deep); text-decoration: none; font-weight: var(--lifeos-weight-medium); }
+.row a:hover { text-decoration: underline; }
+.check { display: flex; align-items: center; gap: 0.5rem; color: var(--lifeos-muted); cursor: pointer; user-select: none; }
+.check input { accent-color: var(--lifeos-sage); width: 16px; height: 16px; }
+
+/* primary button */
+.btn {
+  width: 100%; cursor: pointer; border: none;
+  background: var(--lifeos-gradient-brand);
+  color: #fff; font-family: inherit;
+  font-weight: var(--lifeos-weight-semibold); font-size: 0.97rem;
+  padding: 0.95rem; border-radius: var(--lifeos-radius-sm);
+  box-shadow: var(--lifeos-shadow-raised);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+
+/* divider */
+.div { display: flex; align-items: center; gap: 0.9rem; margin: 1.5rem 0 1.2rem; color: var(--lifeos-muted); font-size: 0.82rem; }
+.div::before, .div::after { content: ""; flex: 1; height: 1px; background: var(--lifeos-line); }
+
+/* social providers */
+.social-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.social {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  background: #fff; border: 1.5px solid var(--lifeos-line);
+  border-radius: var(--lifeos-radius-sm); color: var(--lifeos-ink);
+  font-family: inherit; font-weight: var(--lifeos-weight-medium); font-size: 0.92rem;
+  padding: 0.85rem; cursor: pointer; text-decoration: none;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+.social:hover { border-color: var(--lifeos-sage); transform: translateY(-1px); box-shadow: var(--lifeos-shadow-raised); }
+
+/* footer / registration info */
+.foot { margin-top: 1.7rem; text-align: center; font-size: 0.9rem; color: var(--lifeos-muted); }
+.foot a { color: var(--lifeos-sage-deep); font-weight: var(--lifeos-weight-semibold); text-decoration: none; }
+.foot a:hover { text-decoration: underline; }
+
+/* locale switcher */
+.locale { margin-top: 1.2rem; text-align: center; font-size: 0.82rem; }
+.locale a { color: var(--lifeos-muted); text-decoration: none; margin: 0 0.4rem; }
+.locale a[aria-current="true"] { color: var(--lifeos-sage-deep); font-weight: var(--lifeos-weight-semibold); }
+
+.try-another-way { margin-top: 1rem; text-align: center; font-size: 0.85rem; }
+.try-another-way a { color: var(--lifeos-sage-deep); }
+
+@keyframes lifeos-float { from { transform: translateY(18px) scale(0.98); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
