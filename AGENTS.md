@@ -60,7 +60,7 @@
 | Observability | OpenTelemetry → Collector → Grafana (Prometheus + Loki + Tempo) |
 | Dev Orchestration | .NET Aspire |
 | CI/CD | GitHub Actions → GHCR |
-| Theming | Style Dictionary (W3C tokens) |
+| Theming | [`design/`](design/README.md) shared theme registry — per-theme `tokens.json` + platform bindings (`tokens.css` live; Flutter `tokens.dart` next). Style Dictionary deferred until a theme needs >1 generated binding. |
 
 ---
 
@@ -183,6 +183,27 @@ apps/
 
 > **App-specific conventions:** See each app's `AGENTS.md` for details.
 
+### Design System (shared themes)
+
+Cross-cutting visual language lives in [`design/`](design/README.md) — a **registry of shared themes**, owned by no single service or app. **Calm** is the first theme.
+
+```
+design/
+  themes/
+    <theme>/
+      tokens.json              (source of truth — platform-neutral)
+      bindings/
+        tokens.css             (web / Keycloak)
+        tokens.dart            (Flutter — added when Wallet starts)
+```
+
+**Rules:**
+
+- **`tokens.json` is authoritative.** Edit it first, then update each binding to match (sync rule in `design/README.md`). No generator yet — Style Dictionary arrives only when a theme has a second binding.
+- **Per-theme vocabulary.** Each theme names its own tokens (Calm: `sage` / `clay` / `bone`); there is no shared semantic contract. A consumer is bound to one theme's names.
+- **Consumers never hardcode values.** They reference the tokens. The Keycloak `lifeos` login theme (`aspire/LifeOS.AppHost/keycloak/themes/lifeos`) `@import`s a mounted `tokens.css`; the Wallet app will mirror `tokens.dart` into `ThemeData`.
+- **Keycloak is the system-wide sign-in surface.** Its login theme is shared infra (lives with the AppHost), not owned by Money.
+
 ---
 
 ## 7. Testing Strategy
@@ -241,6 +262,6 @@ Use this to calibrate implementation effort:
 
 ---
 
-*Last updated: 2026-06-15*  
+*Last updated: 2026-06-16*  
 *Maintained by: System Architect*  
 *Next expected update: After Money service event model is finalized.*

@@ -22,7 +22,7 @@
 | HTTP client | Dio + OpenAPI codegen (`openapi-generator`, dart-dio template) consuming Money's `/openapi/v1.json` |
 | Routing | go_router |
 | Auth | `flutter_appauth` (Keycloak OIDC) + `flutter_secure_storage` (token storage) |
-| Theming | Style Dictionary (W3C tokens) → Flutter `ThemeData` |
+| Theming | Shared [`design/`](../../design/README.md) theme registry → `tokens.dart` binding → Flutter `ThemeData`. Wallet wears the **Calm** theme. Style Dictionary deferred. |
 
 ## Architecture
 
@@ -99,6 +99,7 @@ Per `apps/wallet/PLAN.md`: render multi-currency values as **original + converte
 - **Money value object in Dart** mirrors `Money(decimal Amount, string Currency)` from the Money service. Always pass the pair, never a bare `double` or `num`.
 - **Editable honesty valves** are first-class UI patterns: `ActualSavingsOverride` on MonthlyReview (ADR-0007), `BalanceOverride` on savings accounts (ADR-0009), `CurrentEstimatedValue` on Assets (ADR-0010). The user-truth beats computed-truth wherever a "real number" matters.
 - **Solo-only in v1** — no UI for "whose money is this," no shared accounts, no permissions. The data model is family-aware (every request carries `OwnerId` from JWT `sub`), but the UI is single-user.
+- **Theme from the shared registry, don't hardcode.** Wallet wears the **Calm** theme. Map its Dart binding (`design/themes/calm/bindings/tokens.dart`, added when app work starts) into `app/theme/`; reference tokens for colors/fonts/radii rather than literals. Token values are owned by `design/themes/calm/tokens.json` — change them there, not in the app (see [design/README.md](../../design/README.md)). The Keycloak sign-in (`flutter_appauth`) already wears Calm via its own binding, so login and app stay visually consistent.
 
 ## Anti-Patterns
 
@@ -122,4 +123,4 @@ Per `apps/wallet/PLAN.md`: render multi-currency values as **original + converte
 
 ---
 
-*Last updated: 2026-06-15*
+*Last updated: 2026-06-16*
