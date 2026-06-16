@@ -6,9 +6,16 @@
  * Token names are this theme's own vocabulary (sage/clay/bone...); other themes
  * define their own. Consumed live by the Keycloak login theme
  * (keycloak/themes/lifeos/login), which mounts this file into its resources.
+ *
+ * DARK MODE — same variable names, different values. Resolution order:
+ *   1. [data-theme="dark"] / [data-theme="light"]  → explicit user choice (wins)
+ *   2. prefers-color-scheme                          → OS default (when no choice)
+ * The two dark blocks below are intentional duplicates (no preprocessor yet);
+ * keep them in sync. They collapse into one generated block once Style
+ * Dictionary lands (see design/README.md).
  */
 :root {
-  /* ---- color ---- */
+  /* ---- color (light) ---- */
   --lifeos-bone:        #F4F1EA;
   --lifeos-surface:     #FBFAF6;
   --lifeos-ink:         #2C2A26;
@@ -20,7 +27,7 @@
   --lifeos-white:       #FFFFFF;
   --lifeos-focus-ring:  rgba(94, 126, 107, 0.22);
 
-  /* ---- type ---- */
+  /* ---- type (mode-independent) ---- */
   --lifeos-font-display:    "Bricolage Grotesque", sans-serif;
   --lifeos-font-body:       "Spline Sans", sans-serif;
   --lifeos-weight-regular:  400;
@@ -28,17 +35,46 @@
   --lifeos-weight-semibold: 600;
   --lifeos-weight-bold:     700;
 
-  /* ---- radius ---- */
+  /* ---- radius (mode-independent) ---- */
   --lifeos-radius-sm:   14px;
   --lifeos-radius-md:   18px;
   --lifeos-radius-lg:   28px;
   --lifeos-radius-pill: 999px;
 
-  /* ---- gradient ---- */
+  /* ---- gradient (mode-independent: white text stays legible on it) ---- */
   --lifeos-gradient-brand: linear-gradient(150deg, #5E7E6B, #4E6B5A);
 
   /* ---- shadow ---- */
   --lifeos-shadow-card:   0 30px 60px -34px rgba(44, 42, 38, 0.40);
-  --lifeos-shadow-focus:  0 0 0 4px rgba(94, 126, 107, 0.22);
   --lifeos-shadow-raised: 0 14px 26px -12px rgba(94, 126, 107, 0.22);
+}
+
+/* dark — OS default (unless the user forced light) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --lifeos-bone:        #15120E;
+    --lifeos-surface:     #211C16;
+    --lifeos-ink:         #EDE7DC;
+    --lifeos-muted:       #9C9384;
+    --lifeos-line:        #332D24;
+    --lifeos-sage:        #8FB39E;
+    --lifeos-sage-deep:   #A7C6B6;
+    --lifeos-clay:        #D9966E;
+    --lifeos-focus-ring:  rgba(143, 179, 158, 0.32);
+    --lifeos-shadow-card: 0 30px 60px -28px rgba(0, 0, 0, 0.62);
+  }
+}
+
+/* dark — explicit user choice (wins over OS) */
+[data-theme="dark"] {
+  --lifeos-bone:        #15120E;
+  --lifeos-surface:     #211C16;
+  --lifeos-ink:         #EDE7DC;
+  --lifeos-muted:       #9C9384;
+  --lifeos-line:        #332D24;
+  --lifeos-sage:        #8FB39E;
+  --lifeos-sage-deep:   #A7C6B6;
+  --lifeos-clay:        #D9966E;
+  --lifeos-focus-ring:  rgba(143, 179, 158, 0.32);
+  --lifeos-shadow-card: 0 30px 60px -28px rgba(0, 0, 0, 0.62);
 }

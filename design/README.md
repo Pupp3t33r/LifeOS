@@ -47,6 +47,43 @@ shared semantic contract would be introduced — deferred until a second theme a
 
 The `--lifeos-` prefix is the org namespace; the token name after it belongs to the theme.
 
+## Light / dark modes
+
+**Modes live *inside* a theme, not as separate themes.** Dark mode is the same brand (same token
+vocabulary) with different values, so light and dark share token *names* — a consumer flips mode
+with zero code change. A genuinely different look (e.g. a Terminal aesthetic) gets its own theme
+folder; light/dark/high-contrast of one brand do not.
+
+In `tokens.json`, a token value is **either**:
+
+- a **string** — mode-independent (fonts, radii, the brand gradient), or
+- an **object `{ "light": …, "dark": … }`** — mode-aware (most colors, the card shadow).
+
+The CSS binding emits light values in `:root`, then a dark override applied two ways:
+
+```css
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { /* dark vars */ }   /* OS default */
+}
+[data-theme="dark"] { /* dark vars */ }                  /* explicit choice — wins */
+```
+
+Resolution: an explicit `data-theme` on `<html>` wins; otherwise the OS `prefers-color-scheme`
+decides. Setting `data-theme="light"` forces light even when the OS is dark.
+
+### Toggle + persistence (Keycloak login)
+
+The login theme renders a corner toggle that sets `data-theme` on `<html>` and stores the choice
+in **`localStorage` (key `lifeos-theme`) on the Keycloak origin**. An inline `<head>` script
+applies it before first paint (no flash). Notes:
+
+- Persistence is **scoped to the Keycloak origin** — it survives across logins there, but does
+  **not** automatically carry to the Wallet app (a different origin). Each app stores its own
+  choice and defaults to the OS preference. There is no pre-auth way to read a server-side user
+  attribute, so client storage is the correct mechanism for the sign-in screen.
+- The Flutter binding will expose `ThemeData.light()` + `ThemeData.dark()` and let the app drive
+  mode from `ThemeMode.system` + a stored override, mirroring this behavior.
+
 ## The sync rule (within a theme)
 
 1. **Change `themes/<t>/tokens.json` first.** It is authoritative for that theme.
