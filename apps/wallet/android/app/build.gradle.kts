@@ -23,6 +23,11 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // OIDC (oidc_android / AppAuth) redirect scheme. Must match the native
+        // redirectUri in lib/app/auth/auth_config.dart (dev.lifeos.wallet:/…)
+        // and the redirect URIs registered on the `wallet-app` Keycloak client.
+        manifestPlaceholders["appAuthRedirectScheme"] = "dev.lifeos.wallet"
     }
 
     buildTypes {

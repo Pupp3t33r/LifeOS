@@ -1,12 +1,84 @@
 import 'package:flutter/material.dart';
+import 'calm_tokens.dart';
 
-/// TEMPORARY placeholder theme.
-///
-/// Phase 5 replaces this with the **Calm** theme bound from
-/// `design/themes/calm/bindings/tokens.dart` (see apps/wallet/AGENTS.md line 102).
-/// Do not hardcode colors in feature code — reference the theme instead.
-/// The seed below is a stand-in sage tone so the shell isn't default purple.
-final ThemeData walletTheme = ThemeData(
-  colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF7C8C7A)),
-  useMaterial3: true,
-);
+/// The **Calm** theme, bound from [CalmTokens] (derived from
+/// `design/themes/calm/tokens.json`). Wallet wears Calm so the app matches the
+/// themed Keycloak sign-in page. Do not hardcode colors in feature code —
+/// reference `Theme.of(context)` (or `CalmTokens` for tokens Material doesn't
+/// model) instead.
+ThemeData _buildTheme(CalmTokens t, Brightness brightness) {
+  final scheme = ColorScheme.fromSeed(
+    seedColor: t.sage,
+    brightness: brightness,
+  ).copyWith(
+    primary: t.sage,
+    onPrimary: CalmTokens.white,
+    secondary: t.clay,
+    onSecondary: CalmTokens.white,
+    surface: t.surface,
+    onSurface: t.ink,
+    outline: t.line,
+    outlineVariant: t.line,
+  );
+
+  final cardShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(CalmTokens.radiusLg),
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: t.bone,
+    fontFamily: CalmTokens.fontBody,
+    appBarTheme: AppBarTheme(
+      backgroundColor: t.bone,
+      foregroundColor: t.ink,
+      elevation: 0,
+      centerTitle: false,
+    ),
+    cardTheme: CardThemeData(
+      color: t.surface,
+      elevation: 0,
+      shape: cardShape,
+      shadowColor: t.shadowCard,
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(52),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
+        ),
+        textStyle: const TextStyle(
+          fontFamily: CalmTokens.fontDisplay,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(52),
+        side: BorderSide(color: t.line),
+        foregroundColor: t.ink,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
+        ),
+        textStyle: const TextStyle(
+          fontFamily: CalmTokens.fontDisplay,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(foregroundColor: t.sageDeep),
+    ),
+    dividerTheme: DividerThemeData(color: t.line, space: 1, thickness: 1),
+  );
+}
+
+/// Calm — light mode.
+final ThemeData walletLightTheme = _buildTheme(CalmTokens.light, Brightness.light);
+
+/// Calm — dark mode.
+final ThemeData walletDarkTheme = _buildTheme(CalmTokens.dark, Brightness.dark);

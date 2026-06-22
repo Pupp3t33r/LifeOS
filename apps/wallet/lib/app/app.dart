@@ -14,7 +14,9 @@ class WalletApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
       title: 'Wallet',
-      theme: walletTheme,
+      theme: walletLightTheme,
+      darkTheme: walletDarkTheme,
+      themeMode: ThemeMode.system,
       routerConfig: router,
     );
   }

@@ -21,7 +21,7 @@
 | Local database | drift (SQLite via `sqlite3_flutter_libs` on mobile/desktop; WASM backend on web) |
 | HTTP client | Dio + OpenAPI codegen (`openapi-generator`, dart-dio template) consuming Money's `/openapi/v1.json` |
 | Routing | go_router |
-| Auth | `flutter_appauth` (Keycloak OIDC) + `flutter_secure_storage` (token storage) |
+| Auth | `oidc` (Keycloak OIDC, Authorization Code + PKCE, all platforms incl. Web/Windows/Linux) + `OidcDefaultStore`/`flutter_secure_storage` (token storage). Login/registration/reset are Keycloak-hosted pages, not in-app forms — see [app/auth/README.md](./lib/app/auth/README.md). |
 | Theming | Shared [`design/`](../../design/README.md) theme registry → `tokens.dart` binding → Flutter `ThemeData`. Wallet wears the **Calm** theme. Style Dictionary deferred. |
 
 ## Architecture
@@ -99,7 +99,7 @@ Per `apps/wallet/PLAN.md`: render multi-currency values as **original + converte
 - **Money value object in Dart** mirrors `Money(decimal Amount, string Currency)` from the Money service. Always pass the pair, never a bare `double` or `num`.
 - **Editable honesty valves** are first-class UI patterns: `ActualSavingsOverride` on MonthlyReview (ADR-0007), `BalanceOverride` on savings accounts (ADR-0009), `CurrentEstimatedValue` on Assets (ADR-0010). The user-truth beats computed-truth wherever a "real number" matters.
 - **Solo-only in v1** — no UI for "whose money is this," no shared accounts, no permissions. The data model is family-aware (every request carries `OwnerId` from JWT `sub`), but the UI is single-user.
-- **Theme from the shared registry, don't hardcode.** Wallet wears the **Calm** theme. Map its Dart binding (`design/themes/calm/bindings/tokens.dart`, added when app work starts) into `app/theme/`; reference tokens for colors/fonts/radii rather than literals. Token values are owned by `design/themes/calm/tokens.json` — change them there, not in the app (see [design/README.md](../../design/README.md)). The Keycloak sign-in (`flutter_appauth`) already wears Calm via its own binding, so login and app stay visually consistent.
+- **Theme from the shared registry, don't hardcode.** Wallet wears the **Calm** theme. The Dart binding is vendored at `lib/app/theme/calm_tokens.dart` (a Flutter package can't import files outside its own `lib/`, unlike the CSS binding Keycloak bind-mounts); `app/theme/app_theme.dart` maps it into light/dark `ThemeData`. Reference the theme (or `CalmTokens`) for colors/fonts/radii rather than literals. Token values are owned by `design/themes/calm/tokens.json` — change them there and mirror into the binding (see [design/README.md](../../design/README.md)). The Keycloak sign-in wears Calm via the CSS binding, so login and app stay visually consistent.
 
 ## Anti-Patterns
 
