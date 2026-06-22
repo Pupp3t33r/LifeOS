@@ -2,7 +2,10 @@ using Aspire.Hosting;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+// Pin the Postgres image tag: 18+ changed the data directory layout, which broke
+// upgrades from pre-18 volumes. Pinning prevents silent breakage on future pulls.
 var postgres = builder.AddPostgres("postgres")
+    .WithImageTag("18.3")
     .WithDataVolume("postgres-data")
     .WithLifetime(ContainerLifetime.Persistent);
 
@@ -34,10 +37,17 @@ var money = builder.AddProject<Projects.LifeOS_Money_Api>("money")
     .WithEnvironment("Keycloak__Audience", "money-api")
     .WaitFor(keycloak);
 
+// Absolute path to the Wallet Flutter web build output. Served by the Gateway as
+// static files (same origin → no CORS). Only exists after `flutter build web` runs;
+// the Gateway starts fine without it (Directory.Exists guard in Program.cs).
+var walletWebRoot = Path.GetFullPath(
+    Path.Combine(builder.AppHostDirectory, "..", "..", "apps", "wallet", "build", "web"));
+
 var gateway = builder.AddProject<Projects.LifeOS_Gateway>("gateway")
     .WithReference(money)
     .WithEnvironment("Keycloak__Authority", keycloakAuthority)
     .WithEnvironment("Keycloak__Audience", "money-api")
+    .WithEnvironment("Wallet__WebRoot", walletWebRoot)
     .WaitFor(keycloak)
     .WithExternalHttpEndpoints();
 

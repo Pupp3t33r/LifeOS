@@ -11,7 +11,28 @@ Gateway is the single entry point for all clients (web apps, mobile, desktop, ad
 - **Routing:** Path-based reverse proxy to backend services (`/api/money/*` → Money service).
 - **Auth proxy:** JWT validation (Keycloak), passing `sub` claim downstream.
 - **Composition:** BFF pattern — may compose multiple service calls for app clients (the Wallet Flutter app targets Android, Web, Windows, and Linux from a single codebase, so BFF composition serves all of them).
+- **Static hosting (Web):** Serves the Wallet Flutter web build as static files, same-origin as the API — no CORS. The AppHost passes the build path via `Wallet__WebRoot`; the Gateway guards on `Directory.Exists` so it starts fine even when the build is stale or missing.
 - **Rate limiting / CORS:** Centralized at the edge.
+
+### Wallet Web Hosting
+
+The Gateway serves the Flutter web build from `apps/wallet/build/web/`. The flow:
+
+1. Developer runs `flutter build web` in `apps/wallet/` (output → `build/web/`).
+2. The AppHost passes the absolute build path as `Wallet__WebRoot` to the Gateway.
+3. `Program.cs` registers `UseStaticFiles` + `UseDefaultFiles` with a `PhysicalFileProvider` pointing at the build root.
+4. A SPA fallback (`MapFallback`) serves `index.html` for non-file paths (client-side routes like `/home`).
+5. YARP API routes (`/api/*`, `/app/v1/*`) take precedence over the SPA fallback.
+
+**Request resolution order:**
+
+| Request | Resolved by |
+|---|---|
+| `/api/money/*` | YARP reverse proxy → Money service |
+| `/flutter.js`, `/main.dart.js`, `/assets/*` | Static file middleware (Flutter build) |
+| `/` | `index.html` (default files) |
+| `/home`, `/transactions` (no extension) | SPA fallback → `index.html` |
+| `/missing.js`, `/broken.png` (extension, not found) | 404 (not index.html) |
 
 ## Tech Stack
 
@@ -74,4 +95,4 @@ var moneyUrl = builder.Configuration["services:money:http:0"]
 
 ---
 
-*Last updated: 2026-06-15*
+*Last updated: 2026-06-23*

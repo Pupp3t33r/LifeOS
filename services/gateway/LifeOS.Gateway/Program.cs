@@ -1,3 +1,4 @@
+using Microsoft.Extensions.FileProviders;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,7 +28,40 @@ builder.Services.AddReverseProxy()
 
 var app = builder.Build();
 
+// Serve the Wallet Flutter web build when configured. YARP API routes
+// (/api/*, /app/v1/*) are registered as endpoints and take precedence over
+// the SPA fallback below; static-asset requests (/flutter.js, /main.dart.js,
+// /assets/*, etc.) are resolved from the build output by the middleware.
+var walletWebRoot = builder.Configuration["Wallet:WebRoot"];
+var walletWebConfigured = !string.IsNullOrEmpty(walletWebRoot) && Directory.Exists(walletWebRoot);
+
+if (walletWebConfigured)
+{
+    var fileProvider = new PhysicalFileProvider(walletWebRoot!);
+    app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = fileProvider });
+    app.UseStaticFiles(new StaticFileOptions { FileProvider = fileProvider });
+}
+
 app.MapDefaultEndpoints();
 app.MapReverseProxy();
+
+if (walletWebConfigured)
+{
+    // SPA fallback: client-side routes (e.g. /home, /transactions) without a
+    // file extension serve index.html. Missing static assets (a .js/.png 404)
+    // fall through to a real 404 rather than confusing the browser with HTML.
+    app.MapFallback(async context =>
+    {
+        var path = context.Request.Path.Value;
+        if (!string.IsNullOrEmpty(path) && !Path.HasExtension(path))
+        {
+            context.Response.ContentType = "text/html; charset=utf-8";
+            await context.Response.SendFileAsync(Path.Combine(walletWebRoot!, "index.html"));
+            return;
+        }
+
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+    });
+}
 
 app.Run();

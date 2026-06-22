@@ -67,7 +67,7 @@
     {
       "clientId": "wallet-app",
       "name": "Wallet App",
-      "description": "Public native/web client for the Wallet Flutter app. Authorization Code + PKCE (S256), no client secret, no direct grants. Audience mapper adds 'aud: money-api' so its access tokens pass Money's zero-trust validation (ADR-0004). Shared lifeos realm: any LifeOS app uses these same credentials via SSO.",
+      "description": "Public native/web client for the Wallet Flutter app. Authorization Code + PKCE (S256), no secret. Audience mapper adds 'aud: money-api' for Money JWT validation (ADR-0004). Shared lifeos realm — any LifeOS app reuses these credentials via SSO.",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": true,
