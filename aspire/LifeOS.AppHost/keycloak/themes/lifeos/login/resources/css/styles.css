@@ -170,5 +170,78 @@ h1#kc-page-title {
 .try-another-way { margin-top: 1rem; text-align: center; font-size: 0.85rem; }
 .try-another-way a { color: var(--lifeos-sage-deep); }
 
+/* ──────────────────────────────────────────────────────────────────────────
+ * Fallback for Keycloak pages this theme does NOT override with a custom .ftl
+ * (register, reset-password, update-password, OTP, verify-email, …). They render
+ * the parent theme's default markup, so style native controls inside the card
+ * directly. The control selectors are kept at zero specificity (:where) so the
+ * custom login markup (.field, .btn, .theme-toggle, .foot a, .social) always wins
+ * and is left untouched; these only fill in where nothing more specific applies. */
+:where(.card) input:where(:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="submit"]):not([type="button"])),
+:where(.card) select,
+:where(.card) textarea {
+  width: 100%; margin-top: 0.4rem;
+  font-family: inherit; font-size: 0.97rem; color: var(--lifeos-ink);
+  background: var(--lifeos-bone);
+  border: 1.5px solid var(--lifeos-line);
+  border-radius: var(--lifeos-radius-sm);
+  padding: 0.85rem 1rem; outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+}
+:where(.card) input:focus, :where(.card) select:focus, :where(.card) textarea:focus {
+  border-color: var(--lifeos-sage); background: var(--lifeos-surface);
+  box-shadow: 0 0 0 4px var(--lifeos-focus-ring);
+}
+:where(.card) label {
+  display: block; margin-top: 1rem;
+  font-size: 0.82rem; font-weight: var(--lifeos-weight-medium); color: var(--lifeos-muted);
+}
+
+/* primary submit — NOT the password show/hide toggles (those are type="button") */
+:where(.card) input[type="submit"],
+:where(.card) button[type="submit"],
+:where(.card) .pf-m-primary {
+  width: 100%; margin-top: 1.6rem; cursor: pointer; border: none;
+  background: var(--lifeos-gradient-brand);
+  color: #fff; font-family: inherit;
+  font-weight: var(--lifeos-weight-semibold); font-size: 0.97rem;
+  padding: 0.95rem; border-radius: var(--lifeos-radius-sm);
+  box-shadow: var(--lifeos-shadow-raised);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+:where(.card) input[type="submit"]:hover,
+:where(.card) button[type="submit"]:hover,
+:where(.card) .pf-m-primary:hover { transform: translateY(-2px); }
+
+:where(.card) a { color: var(--lifeos-sage-deep); font-weight: var(--lifeos-weight-medium); text-decoration: none; }
+:where(.card) a:hover { text-decoration: underline; }
+
+/* password field + its show/hide toggle (Keycloak wraps them in pf-c-input-group) */
+:where(.card) .pf-c-input-group { display: flex; margin-top: 0.4rem; }
+:where(.card) .pf-c-input-group input { flex: 1; margin-top: 0; border-radius: var(--lifeos-radius-sm) 0 0 var(--lifeos-radius-sm); }
+:where(.card) [data-password-toggle] {
+  display: grid; place-items: center;
+  margin-top: 0; padding: 0 0.95rem; cursor: pointer; font-size: 0.82rem;
+  background: var(--lifeos-bone); color: var(--lifeos-muted);
+  border: 1.5px solid var(--lifeos-line); border-left: none;
+  border-radius: 0 var(--lifeos-radius-sm) var(--lifeos-radius-sm) 0;
+}
+:where(.card) [data-password-toggle]:hover { color: var(--lifeos-ink); }
+:where(.card) [data-password-toggle] i { display: none; }   /* FontAwesome glyphs aren't loaded */
+:where(.card) [data-password-toggle]::after { content: "Show"; }
+:where(.card) [data-password-toggle][aria-label^="Hide"]::after { content: "Hide"; }
+
+/* Register: wider card + two-column field grid, collapsing to one column on phones. */
+.card:has(#kc-register-form) { width: min(94vw, 680px); }
+#kc-register-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem 1.4rem; }
+#kc-register-form .form-group { margin: 0; min-width: 0; }
+#kc-register-form .form-group:has(#username),
+#kc-register-form .form-group:has(#email),
+#kc-register-form .form-group:last-child { grid-column: 1 / -1; }
+@media (max-width: 560px) {
+  #kc-register-form { grid-template-columns: 1fr; }
+  .card:has(#kc-register-form) { width: min(92vw, 396px); }
+}
+
 @keyframes lifeos-float { from { transform: translateY(18px) scale(0.98); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .card { animation: none; } }

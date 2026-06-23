@@ -5,10 +5,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Load routes from appsettings.json, destinations from code
+// Load routes from appsettings.json, destinations from code (Aspire service discovery).
 var moneyUrl = builder.Configuration["services:money:http:0"]
     ?? builder.Configuration["services:money:https:0"]
     ?? "http://localhost:5221";
+
+// Keycloak is fronted by the Gateway (same-origin, no CORS): "/realms/*" and "/resources/*"
+// proxy here. Prefer the plain-HTTP endpoint so we avoid Keycloak's self-signed dev cert.
+var keycloakUrl = builder.Configuration["services:keycloak:http:0"]
+    ?? builder.Configuration["services:keycloak:https:0"]
+    ?? "http://localhost:8080";
 
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
@@ -22,6 +28,14 @@ builder.Services.AddReverseProxy()
                 Destinations = new Dictionary<string, DestinationConfig>
                 {
                     ["money"] = new DestinationConfig { Address = moneyUrl }
+                }
+            },
+            new ClusterConfig
+            {
+                ClusterId = "keycloak",
+                Destinations = new Dictionary<string, DestinationConfig>
+                {
+                    ["keycloak"] = new DestinationConfig { Address = keycloakUrl }
                 }
             }
         });

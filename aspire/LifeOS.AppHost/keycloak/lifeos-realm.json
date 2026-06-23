@@ -84,6 +84,7 @@
       "redirectUris": [
         "dev.lifeos.wallet:/oauth2redirect",
         "dev.lifeos.wallet:/endsessionredirect",
+        "http://localhost:5022/*",
         "http://localhost/*",
         "http://127.0.0.1/*"
       ],

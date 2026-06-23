@@ -15,13 +15,20 @@ import 'package:flutter/foundation.dart'
 class AuthConfig {
   AuthConfig._();
 
-  /// Keycloak realm issuer. Dev default matches the Aspire-hosted Keycloak
-  /// (fixed host port 8080, see AppHost.cs). Override per environment with
-  /// `--dart-define=OIDC_ISSUER=https://auth.example.com/realms/lifeos`.
-  static const String issuer = String.fromEnvironment(
-    'OIDC_ISSUER',
-    defaultValue: 'http://localhost:8080/realms/lifeos',
-  );
+  /// Keycloak realm issuer.
+  ///
+  /// The Gateway reverse-proxies `/realms/*` to Keycloak and serves the web app
+  /// same-origin, so on web we derive the issuer from the app's own origin — the
+  /// same build works in dev, staging and prod with no per-environment config.
+  /// Native/desktop builds have no web origin, so they fall back to the local
+  /// Gateway. Either can be overridden with
+  /// `--dart-define=OIDC_ISSUER=https://app.example.com/realms/lifeos`.
+  static String get issuer {
+    const override = String.fromEnvironment('OIDC_ISSUER');
+    if (override.isNotEmpty) return override;
+    if (kIsWeb) return Uri.base.resolve('realms/lifeos').toString();
+    return 'http://localhost:5022/realms/lifeos';
+  }
 
   /// Public client id registered in the `lifeos` realm.
   static const String clientId = 'wallet-app';
