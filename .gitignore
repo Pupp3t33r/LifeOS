@@ -46,6 +46,9 @@ coverage/
 # ------------------------------
 .aspire/
 
+# playwright-cli session artifacts (console logs + page snapshots)
+.playwright-cli/
+
 # Docker bind-mount artifact: tokens.css is mounted from design/themes/
 aspire/LifeOS.AppHost/keycloak/themes/lifeos/login/resources/css/tokens.css
 
