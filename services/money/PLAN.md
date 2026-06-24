@@ -26,6 +26,7 @@ ADR-0001 through ADR-0010 — see [`docs/adr/README.md`](./docs/adr/README.md) f
 
 ### Not yet implemented (Phase 1 scope)
 
+- UserPreferences document (ADR-0013; display currency + configurable month start day — see §3.0)
 - RecurringPayment aggregate (defined in ADR-0005, not built)
 - InstallmentPlan aggregate (defined in ADR-0005, not built)
 - WishlistItem aggregate (defined in ADR-0005, not built)
@@ -80,6 +81,13 @@ These refactors touch existing code and should land first. They are scoped by AD
 ## 3. Phase 1 feature build order
 
 Each item is a discrete feature slice following the per-feature folder convention from Money AGENTS.md (`Features/<Domain>/<Action>.cs`).
+
+### 3.0 UserPreferences (ADR-0013) — *foundational config; precedes period-scoped and FX work*
+
+- Storage: a Marten **document** `UserPreferences` keyed by `OwnerId` (not event-sourced — see ADR-0013). Fields: `MonthStartDay` (int, 1–31, last-day clamped, default 1), `DisplayCurrency` (string?, ISO 4217, null until onboarding sets it).
+- Feature folder `Features/UserPreferences/`: `GET /api/money/preferences` (returns current or defaults), `PUT .../display-currency`, `PUT .../month-start-day` (409 if any `MonthlyReview` is `Closed`).
+- Period helper: `anchor(Y, M) = min(MonthStartDay, daysInMonth(Y, M))`; period `(Y, M) = [anchor(Y, M), anchor(next))`. This helper is consumed by Budget (§3.6) and MonthlyReview/MonthProjection (§3.7) bucketing.
+- Why first: §3.1 FX syncs "the user's display currency plus account currencies," and the period helper is a prerequisite for §3.6/§3.7. `DisplayCurrency` is the canvas/budget aggregation currency throughout.
 
 ### 3.1 FX rate service (ADR-0008) — *prerequisite for all multi-currency work*
 
@@ -158,6 +166,8 @@ Implementation deferred to Phase 3 per Wallet roadmap, but the data model is loc
 ```
 Refactors (CurrencyAmount VO, savings-only scope, ExternalReference)
     ↓
+3.0 UserPreferences                     (display currency + period anchor; prereq for FX and period-scoped work)
+    ↓
 3.1 FX rate service                     (prereq for all multi-currency)
     ↓
 3.2 RecurringPayment  →  3.3 InstallmentPlan  →  3.4 WishlistItem
@@ -199,7 +209,7 @@ These can be settled during implementation, not before:
 - Whether to expose raw `FxRate` rows or only via the "rate on date X" query.
 - Month-close confirmation flow specifics (frontend concern, but the API shape must support it).
 - Whether `ActualSavingsOverride` is one Money or split per currency (current assumption: one, in display currency).
-- **User-defined month boundaries** (start/end date set by user, not calendar month). Affects Budget (§3.6) and MonthlyReview (§3.7) stream keys — `Year/Month` may need to become a period identifier. Likely amends ADR-0007. Account and TransactionRecord are not month-scoped.
+- ~~**User-defined month boundaries**~~ — **Resolved by ADR-0013.** Configurable `MonthStartDay` (1–31, last-day clamped) lives on the new `UserPreferences` document; `(Year, Month)` is generalized to a start-anchored period (calendar months are the `MonthStartDay = 1` degeneracy). Amends the period-keying of ADR-0006 (§3.6) and ADR-0007 (§3.7); key shape unchanged. Account and TransactionRecord remain non-period-scoped. Build slice: §3.0.
 - **Multiple payments per month** (e.g., salary split into 2 payments). Naturally handled by RecurringPayment recurrence rules — verify at §3.2.
 
 ---

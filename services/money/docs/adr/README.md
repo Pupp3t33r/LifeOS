@@ -20,6 +20,7 @@ See [`template.md`](./template.md) to start a new ADR.
 | [0010](./0010-asset-aggregate.md) | Asset aggregate (financial fields only) | 2026-06-15 |
 | [0011](./0011-wolverine-http-conventions.md) | Wolverine.Http endpoint and handler conventions (supersedes part of 0001) | 2026-06-16 |
 | [0012](./0012-production-schema-migration.md) | Production schema migration policy (no runtime auto-create) | 2026-06-16 |
+| [0013](./0013-user-preferences-and-configurable-month.md) | UserPreferences document — configurable month start day and display currency (amends 0006, 0007) | 2026-06-24 |
 
 ## Superseded
 
@@ -27,6 +28,8 @@ See [`template.md`](./template.md) to start a new ADR.
 |---|---|---|---|
 | 0005 §Multi-currency | Per-account `Dictionary<string, decimal>` balances; FX out of scope for v1 | [0008](./0008-multi-currency-and-fx.md) | Only the Multi-currency subsection is superseded. The rest of ADR-0005 stands. |
 | 0001 §endpoint mechanism | Minimal APIs as the endpoint framework | [0011](./0011-wolverine-http-conventions.md) | Only the endpoint mechanism is superseded. ADR-0001's code-first OpenAPI decision stands. |
+| 0007 §period-keying | `(Year, Month)` means a calendar month | [0013](./0013-user-preferences-and-configurable-month.md) | `(Year, Month)` now means the user's configured period (start day from UserPreferences). Key shape unchanged; `MonthStartDay = 1` degenerates to calendar months. The rest of ADR-0007 stands. |
+| 0006 §period-keying | `(Year, Month)` means a calendar month | [0013](./0013-user-preferences-and-configurable-month.md) | Same generalization as 0007 for the `budget/{Owner}/{Year}/{Month}/...` key. The rest of ADR-0006 stands. |
 
 ## Deferred decisions
 

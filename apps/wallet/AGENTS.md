@@ -83,7 +83,7 @@ Budgets target either track (`domain:books`, `tag:coffee`).
 
 ### Multi-currency rendering
 
-Per `apps/wallet/PLAN.md`: render multi-currency values as **original + converted inline** (e.g., "€80 (~$86)") in the user's chosen display currency. The display currency equals the user's primary savings account currency.
+Per `apps/wallet/PLAN.md`: render multi-currency values as **original + converted inline** (e.g., "€80 (~$86)") in the user's chosen display currency. The display currency is an explicit user preference (`UserPreferences.DisplayCurrency`, Money ADR-0013) — it **defaults** to the currency of the first savings account opened, but the user may change it independently of account topology. (This supersedes the earlier "display currency equals the user's primary savings account currency"; the primary account's currency is the default, not a live derivation. Which account receives the month-close flow is a separate setting — see Money ADR-0009.)
 
 ## Coding Standards
 
