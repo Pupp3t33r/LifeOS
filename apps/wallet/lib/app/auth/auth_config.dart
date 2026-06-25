@@ -33,14 +33,17 @@ class AuthConfig {
   /// Public client id registered in the `lifeos` realm.
   static const String clientId = 'wallet-app';
 
-  /// `openid` is mandatory; `offline_access` yields a refresh token so the
-  /// session survives restarts via the token store.
-  static const List<String> scopes = <String>[
-    'openid',
-    'profile',
-    'email',
-    'offline_access',
-  ];
+  /// `openid` is mandatory. `offline_access` yields an **offline** token that
+  /// survives the SSO session ending — appropriate on native/desktop (secure OS
+  /// keychain) but not in a browser, where a long-lived token sits in browser
+  /// storage. So it is requested on native/desktop only and omitted on web; web
+  /// gets a shorter online SSO session instead (Money ADR-0014).
+  static List<String> get scopes => <String>[
+        'openid',
+        'profile',
+        'email',
+        if (!kIsWeb) 'offline_access',
+      ];
 
   /// Reverse-DNS scheme for native redirects. Mirrors the Android
   /// `appAuthRedirectScheme` manifest placeholder.
