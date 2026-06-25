@@ -3,6 +3,7 @@ using JasperFx;
 using JasperFx.Events.Projections;
 using LifeOS.Money.Api.Domain;
 using LifeOS.Money.Api.Features.Accounts;
+using LifeOS.Money.Api.Features.UserPreferences;
 using LifeOS.Money.Api.Http;
 using LifeOS.Money.Api.Projections;
 using Marten;
@@ -49,10 +50,19 @@ public class Program
             options.Events.UseIdentityMapForAggregates = true;
             options.Projections.Snapshot<Account>(SnapshotLifecycle.Inline);
             options.Projections.Add<TransactionRecordProjection>(ProjectionLifecycle.Inline);
+
+            // UserPreferences (ADR-0013) is a plain document keyed by the owner's
+            // Keycloak subject, not an event-sourced aggregate.
+            options.Schema.For<UserPreferences>().Identity(x => x.OwnerId);
         }).IntegrateWithWolverine();
 
         builder.Services.AddValidatorsFromAssemblyContaining<OpenAccountValidator>();
         builder.Services.AddWolverineHttp();
+
+        // ADR-0013: re-anchoring MonthStartDay is locked once a month is closed.
+        // MonthlyReview (PLAN §3.7) is not built yet, so nothing can be closed —
+        // swap this registration when §3.7 lands. See NoClosedMonthsGuard.
+        builder.Services.AddSingleton<IClosedMonthGuard, NoClosedMonthsGuard>();
 
         builder.Services.AddProblemDetails();
         builder.Services.AddExceptionHandler<ProblemExceptionHandler>();
