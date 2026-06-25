@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wallet — set up your first month</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ---- Calm tokens (from design/themes/calm/tokens.json) ---- */
+  :root {
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B;
+    --line:#E6E1D6; --sage:#5E7E6B; --sage-deep:#4E6B5A; --clay:#C07A52;
+    --focus:rgba(94,126,107,0.34); --shadow:rgba(32,30,26,0.13);
+    --canvas-tint:#EDF0EB; /* sage-washed bone for the preview card */
+    --f-display:'Bricolage Grotesque',system-ui,sans-serif;
+    --f-body:'Spline Sans',system-ui,sans-serif;
+    --r-sm:14px; --r-md:18px; --r-lg:28px; --r-pill:999px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bone:#15120E; --surface:#211C16; --ink:#EDE7DC; --muted:#9C9384;
+      --line:#332D24; --sage:#8FB39E; --sage-deep:#A7C6B6; --clay:#D9966E;
+      --focus:rgba(143,179,158,0.40); --shadow:rgba(0,0,0,0.55);
+      --canvas-tint:#1C1F1A;
+    }
+  }
+
+  * { box-sizing:border-box; }
+  html,body { margin:0; }
+  body {
+    background:var(--bone); color:var(--ink); font-family:var(--f-body);
+    font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased;
+    min-height:100vh; overflow-x:hidden;
+  }
+  h1,h2,h3 { font-family:var(--f-display); font-weight:600; margin:0; letter-spacing:-0.01em; }
+
+  /* ---- shell ---- */
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px clamp(20px,5vw,56px); max-width:1180px; margin:0 auto;
+  }
+  .wordmark { font-family:var(--f-display); font-weight:700; font-size:21px; letter-spacing:-0.02em; }
+  .wordmark span { color:var(--sage); }
+  .step-tag { font-size:13px; color:var(--muted); letter-spacing:0.06em; text-transform:lowercase; }
+
+  .stage {
+    max-width:1180px; margin:0 auto; padding:0 clamp(20px,5vw,56px) 64px;
+    display:grid; grid-template-columns:minmax(0,1fr); gap:28px;
+  }
+  @media (min-width:900px) {
+    .stage { grid-template-columns:minmax(0,0.92fr) minmax(0,1.08fr); gap:48px; align-items:start; }
+  }
+
+  /* ---- left: the question ---- */
+  .ask { order:2; min-width:0; }
+  @media (min-width:900px) { .ask { order:1; padding-top:18px; } }
+
+  .progress { display:flex; gap:7px; margin-bottom:26px; }
+  .progress i {
+    height:4px; flex:1; border-radius:var(--r-pill); background:var(--line);
+    transition:background .35s ease;
+  }
+  .progress i.on { background:var(--sage); }
+
+  .eyebrow {
+    font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--clay); font-weight:600; margin-bottom:14px;
+  }
+  .ask h1 { font-size:clamp(28px,4.4vw,40px); line-height:1.08; }
+  .lede { color:var(--muted); margin:14px 0 30px; max-width:42ch; font-size:16.5px; }
+
+  .panel { display:none; }
+  .panel.active { display:block; animation:rise .4s ease both; }
+  @media (prefers-reduced-motion:reduce){ .panel.active{ animation:none; } }
+  @keyframes rise { from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+
+  /* ---- fields ---- */
+  .field { margin-bottom:20px; }
+  .field > label { display:block; font-size:14px; font-weight:600; margin-bottom:8px; }
+  .hint { font-size:13.5px; color:var(--muted); margin-top:7px; }
+  .control {
+    width:100%; font:inherit; color:var(--ink); background:var(--surface);
+    border:1.5px solid var(--line); border-radius:var(--r-md);
+    padding:14px 16px; transition:border-color .18s, box-shadow .18s;
+  }
+  .control::placeholder { color:var(--muted); opacity:.7; }
+  .control:focus-visible, select.control:focus-visible {
+    outline:none; border-color:var(--sage); box-shadow:0 0 0 4px var(--focus);
+  }
+  .money-input { position:relative; display:flex; align-items:center; }
+  .money-input .sym {
+    position:absolute; left:16px; color:var(--muted); font-weight:600; pointer-events:none;
+  }
+  .money-input .control { padding-left:34px; }
+  .row2 { display:grid; grid-template-columns:1fr; gap:16px; }
+  @media (min-width:520px){ .row2 { grid-template-columns:1.3fr 1fr; } }
+
+  /* segmented choice cards */
+  .choices { display:grid; gap:12px; }
+  .choice {
+    display:flex; gap:13px; align-items:flex-start; cursor:pointer;
+    border:1.5px solid var(--line); border-radius:var(--r-md);
+    padding:15px 17px; background:var(--surface); transition:border-color .18s, background .18s;
+  }
+  .choice:hover { border-color:var(--sage); }
+  .choice .dot {
+    flex:none; width:20px; height:20px; border-radius:var(--r-pill);
+    border:2px solid var(--line); margin-top:2px; transition:border-color .18s; position:relative;
+  }
+  .choice .ctxt strong { display:block; font-size:15px; }
+  .choice .ctxt span { font-size:13.5px; color:var(--muted); }
+  .choice[aria-checked="true"] { border-color:var(--sage); background:var(--canvas-tint); }
+  .choice[aria-checked="true"] .dot { border-color:var(--sage); }
+  .choice[aria-checked="true"] .dot::after {
+    content:""; position:absolute; inset:3px; border-radius:var(--r-pill); background:var(--sage);
+  }
+  .choice:focus-visible { outline:none; border-color:var(--sage); box-shadow:0 0 0 4px var(--focus); }
+
+  .daywrap { margin-top:16px; padding:18px; border:1.5px dashed var(--line); border-radius:var(--r-md); }
+  .daywrap[hidden]{ display:none; }
+  .dayhead { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px; }
+  .dayhead b { font-family:var(--f-display); font-size:26px; }
+  .dayhead small { color:var(--muted); font-size:13px; }
+  input[type=range]{ width:100%; accent-color:var(--sage); margin-top:8px; }
+  .clampnote { font-size:13px; color:var(--clay); margin-top:12px; min-height:1.2em; }
+
+  .caveat {
+    display:flex; gap:9px; align-items:flex-start; margin-top:18px;
+    font-size:13.5px; color:var(--muted);
+  }
+  .caveat::before { content:"⌁"; color:var(--sage); font-size:15px; line-height:1.3; }
+
+  /* ---- actions ---- */
+  .actions { display:flex; align-items:center; gap:8px; margin-top:32px; }
+  .btn {
+    font-family:var(--f-display); font-weight:600; font-size:16px; cursor:pointer;
+    border-radius:var(--r-pill); padding:0 26px; height:52px; border:1.5px solid transparent;
+    transition:transform .12s, background .18s, border-color .18s;
+  }
+  .btn:active { transform:translateY(1px); }
+  .btn-primary { background:var(--sage); color:#fff; flex:1; }
+  .btn-primary:hover { background:var(--sage-deep); }
+  @media (prefers-color-scheme: dark) { .btn-primary { color:#15120E; } }
+  .btn-ghost { background:transparent; color:var(--ink); border-color:var(--line); }
+  .btn-ghost:hover { border-color:var(--sage); }
+  .btn-text { background:none; border:none; color:var(--sage-deep); font-family:var(--f-display); font-weight:600; cursor:pointer; padding:10px; }
+  .btn:focus-visible, .btn-text:focus-visible { outline:none; box-shadow:0 0 0 4px var(--focus); }
+  .back { background:none; border:none; color:var(--muted); cursor:pointer; font:inherit; padding:10px 4px; }
+  .back[hidden]{ display:none; }
+
+  /* ---- right: the living canvas ---- */
+  .preview { order:1; min-width:0; position:sticky; top:18px; }
+  @media (min-width:900px) { .preview { order:2; } }
+
+  .canvas {
+    background:var(--canvas-tint); border:1.5px solid var(--line);
+    border-radius:var(--r-lg); padding:clamp(20px,3.4vw,32px);
+    box-shadow:0 18px 50px -28px var(--shadow);
+    transition:transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .5s;
+  }
+  .canvas.settle { transform:translateY(-4px) scale(1.012); box-shadow:0 28px 60px -26px var(--shadow); }
+  .canvas-eyebrow { font-size:12px; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); }
+  .period { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:6px 0 2px; flex-wrap:wrap; }
+  .period h2 { font-size:clamp(24px,3.4vw,30px); }
+  .period .span {
+    font-family:var(--f-display); font-size:14px; color:var(--sage-deep);
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--r-pill); padding:5px 12px; white-space:nowrap;
+  }
+  .acct-chip {
+    display:inline-flex; align-items:center; gap:8px; margin-top:14px;
+    font-size:13.5px; color:var(--ink); background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--r-pill); padding:6px 13px;
+  }
+  .acct-chip .swatch { width:9px; height:9px; border-radius:var(--r-pill); background:var(--sage); }
+  .acct-chip em { color:var(--muted); font-style:normal; }
+
+  .ledger { margin-top:24px; display:flex; flex-direction:column; gap:2px; }
+  .line { display:flex; align-items:baseline; justify-content:space-between; gap:4px 14px; flex-wrap:wrap; padding:11px 0; }
+  .line + .line { border-top:1px solid var(--line); }
+  .line .lbl { font-size:14.5px; flex:1 1 auto; min-width:0; }
+  .line .val { font-family:var(--f-display); font-size:16px; font-weight:600; font-variant-numeric:tabular-nums; text-align:right; margin-left:auto; }
+  .line.pending .lbl, .line.pending .val { color:var(--muted); }
+  .line.pending .val { font-family:var(--f-body); font-weight:500; font-size:13px; font-style:italic; }
+  .line.target .val { color:var(--clay); }
+  .line.rule { padding:0; }
+  .line.rule hr { width:100%; border:none; border-top:1.5px solid var(--line); margin:6px 0; }
+  .line.savings .lbl { font-weight:600; }
+  .line.savings .val { font-size:18px; }
+
+  .canvas-foot { margin-top:18px; font-size:12.5px; color:var(--muted); display:flex; gap:8px; align-items:center; }
+  .canvas-foot::before { content:""; width:6px; height:6px; border-radius:var(--r-pill); background:var(--clay); flex:none; }
+
+  /* done state */
+  .done { text-align:center; padding:10px 4px 4px; }
+  .done h2 { font-size:26px; margin-bottom:8px; }
+  .done p { color:var(--muted); margin:0 auto 22px; max-width:34ch; }
+  .done[hidden]{ display:none; }
+
+  .a11y { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wordmark">wallet<span>.</span></div>
+    <div class="step-tag" id="stepTag">first things</div>
+  </header>
+
+  <main class="stage">
+    <!-- ============ LEFT: the question ============ -->
+    <section class="ask" aria-live="polite">
+      <div class="progress" aria-hidden="true">
+        <i class="on" data-p="0"></i><i data-p="1"></i><i data-p="2"></i>
+      </div>
+
+      <!-- STEP 1 — account -->
+      <div class="panel active" data-step="0">
+        <p class="eyebrow">where savings land</p>
+        <h1>Where do your savings live?</h1>
+        <p class="lede">Add one savings account to start. The money you don't spend each month settles here — it's the only thing Wallet needs to begin.</p>
+
+        <div class="field">
+          <label for="acctName">Account name</label>
+          <input class="control" id="acctName" type="text" placeholder="Main savings" value="Main savings" autocomplete="off" />
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="currency">Currency</label>
+            <select class="control" id="currency">
+              <option value="USD|$">US Dollar — USD</option>
+              <option value="EUR|€">Euro — EUR</option>
+              <option value="GBP|£">Pound Sterling — GBP</option>
+              <option value="PLN|zł">Polish Złoty — PLN</option>
+              <option value="JPY|¥">Japanese Yen — JPY</option>
+              <option value="CAD|$">Canadian Dollar — CAD</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="opening">In it today</label>
+            <div class="money-input">
+              <span class="sym" id="symOpen">$</span>
+              <input class="control" id="opening" inputmode="decimal" placeholder="0" />
+            </div>
+          </div>
+        </div>
+        <p class="hint">A rough number is fine — you can adjust it anytime. Wallet never guesses what it can't see.</p>
+
+        <div class="actions">
+          <button class="back" type="button" hidden>Back</button>
+          <button class="btn btn-primary" type="button" data-next>Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 — month -->
+      <div class="panel" data-step="1">
+        <p class="eyebrow">your month</p>
+        <h1>When does your month start?</h1>
+        <p class="lede">Most people plan by the calendar month. If you're paid on a certain day, start there instead — your month will run from that day to the next.</p>
+
+        <div class="choices" role="radiogroup" aria-label="Month start">
+          <div class="choice" role="radio" tabindex="0" aria-checked="true" data-mode="calendar">
+            <span class="dot"></span>
+            <span class="ctxt"><strong>Calendar month</strong><span>Runs the 1st to the last day</span></span>
+          </div>
+          <div class="choice" role="radio" tabindex="0" aria-checked="false" data-mode="custom">
+            <span class="dot"></span>
+            <span class="ctxt"><strong>A day I choose</strong><span>For payday- or rent-day planning</span></span>
+          </div>
+        </div>
+
+        <div class="daywrap" id="dayWrap" hidden>
+          <div class="dayhead"><b><span id="dayNum">25</span><small id="dayOrd">th</small></b><small>day of the month</small></div>
+          <input type="range" id="daySlider" min="1" max="31" value="25" aria-label="Start day" />
+          <p class="clampnote" id="clampNote"></p>
+        </div>
+
+        <p class="caveat">You can change this until you close your first month. After that it's locked, so your history can't shift underneath you.</p>
+
+        <div class="actions">
+          <button class="back" type="button">Back</button>
+          <button class="btn btn-primary" type="button" data-next>Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 — target -->
+      <div class="panel" data-step="2">
+        <p class="eyebrow">the part that matters</p>
+        <h1>How much do you want to keep?</h1>
+        <p class="lede">This is your target — the number you're planning toward. As you add income and bills, projected savings will tell you whether you're on track. Skip it and set one later if you'd rather.</p>
+
+        <div class="field">
+          <label for="target">Target savings this month</label>
+          <div class="money-input">
+            <span class="sym" id="symTarget">$</span>
+            <input class="control" id="target" inputmode="decimal" placeholder="1,000" />
+          </div>
+          <p class="hint">A goal you can feel good about hitting — not the most you could possibly save.</p>
+        </div>
+
+        <div class="actions">
+          <button class="back" type="button">Back</button>
+          <button class="btn btn-text" type="button" id="skipBtn">Skip for now</button>
+          <button class="btn btn-primary" type="button" id="finishBtn">Finish setup</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RIGHT: the living canvas ============ -->
+    <aside class="preview">
+      <div class="canvas" id="canvas">
+        <div id="canvasLive">
+          <p class="canvas-eyebrow">your canvas · preview</p>
+          <div class="period">
+            <h2 id="pvMonth">June 2026</h2>
+            <span class="span" id="pvSpan">Jun 1 – Jun 30</span>
+          </div>
+          <div class="acct-chip"><span class="swatch"></span><span id="pvAcct">Main savings</span> · <em id="pvCur">USD</em></div>
+
+          <div class="ledger">
+            <div class="line pending"><span class="lbl">Projected income</span><span class="val">after setup</span></div>
+            <div class="line pending"><span class="lbl">Projected spending</span><span class="val">after setup</span></div>
+            <div class="line rule"><hr/></div>
+            <div class="line savings pending"><span class="lbl">Projected savings</span><span class="val" id="pvProjected">needs income &amp; bills</span></div>
+            <div class="line target"><span class="lbl">Your target</span><span class="val" id="pvTarget">not set yet</span></div>
+          </div>
+          <p class="canvas-foot" id="pvFoot">We'll fill the blanks once you add what comes in and goes out.</p>
+        </div>
+
+        <div class="done" id="doneState" hidden>
+          <p class="canvas-eyebrow">ready</p>
+          <h2>Your month is set up.</h2>
+          <p id="doneLine">June 2026 is open. Add your income and bills next, and the blanks fill themselves in.</p>
+          <button class="btn btn-primary" type="button" style="flex:none;padding:0 32px;">Open Wallet</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+<script>
+(function(){
+  var state = { step:0, currency:'USD', symbol:'$', mode:'calendar', day:1, target:null, name:'Main savings' };
+  var MONTH = { name:'June 2026', y:2026, m:6, days:30, nextDays:31, mon:'Jun', nextMon:'Jul' };
+  var MONTH_DAYS_FEB = 28;
+
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+  var progress = Array.prototype.slice.call(document.querySelectorAll('.progress i'));
+  var tags = ['where savings land','your month','your first goal'];
+
+  function clamp(day, days){ return Math.min(day, days); }
+  function ord(n){ var s=['th','st','nd','rd'], v=n%100; return (s[(v-20)%10]||s[v]||s[0]); }
+  function fmtDay(mon, d){ return mon+' '+d; }
+
+  function recompute(){
+    // currency everywhere
+    document.getElementById('symOpen').textContent = state.symbol;
+    document.getElementById('symTarget').textContent = state.symbol;
+    document.getElementById('pvCur').textContent = state.currency;
+    document.getElementById('pvAcct').textContent = state.name || 'Main savings';
+
+    // period span (start-anchored, last-day clamped)
+    var start = clamp(state.day, MONTH.days);
+    var nextAnchor = clamp(state.day, MONTH.nextDays);
+    var endDay = nextAnchor - 1;
+    var spanText, endMon;
+    if (state.mode === 'calendar' || state.day === 1){
+      spanText = fmtDay(MONTH.mon,1) + ' – ' + fmtDay(MONTH.mon, MONTH.days);
+    } else if (endDay >= 1) {
+      // end falls in the next calendar month (anchor-1)
+      endMon = MONTH.nextMon;
+      spanText = fmtDay(MONTH.mon, start) + ' – ' + fmtDay(endMon, endDay);
+    } else {
+      spanText = fmtDay(MONTH.mon, start) + ' – ' + fmtDay(MONTH.mon, MONTH.days);
+    }
+    document.getElementById('pvSpan').textContent = spanText;
+
+    // target row
+    var tEl = document.getElementById('pvTarget');
+    if (state.target != null && state.target !== ''){
+      tEl.textContent = '+' + state.symbol + state.target;
+    } else { tEl.textContent = 'not set yet'; }
+  }
+
+  // ---- currency ----
+  document.getElementById('currency').addEventListener('change', function(e){
+    var parts = e.target.value.split('|');
+    state.currency = parts[0]; state.symbol = parts[1];
+    recompute();
+  });
+  document.getElementById('acctName').addEventListener('input', function(e){
+    state.name = e.target.value.trim(); recompute();
+  });
+  document.getElementById('target').addEventListener('input', function(e){
+    state.target = e.target.value.trim(); recompute();
+  });
+
+  // ---- month mode ----
+  var choices = Array.prototype.slice.call(document.querySelectorAll('.choice'));
+  var dayWrap = document.getElementById('dayWrap');
+  function setMode(mode){
+    state.mode = mode;
+    choices.forEach(function(c){ c.setAttribute('aria-checked', String(c.dataset.mode===mode)); });
+    dayWrap.hidden = (mode!=='custom');
+    if (mode==='calendar'){ state.day = 1; }
+    else { state.day = parseInt(document.getElementById('daySlider').value,10); }
+    updateDayUI(); recompute();
+  }
+  choices.forEach(function(c){
+    c.addEventListener('click', function(){ setMode(c.dataset.mode); });
+    c.addEventListener('keydown', function(ev){
+      if(ev.key===' '||ev.key==='Enter'){ ev.preventDefault(); setMode(c.dataset.mode); }
+    });
+  });
+
+  var slider = document.getElementById('daySlider');
+  function updateDayUI(){
+    var d = state.day;
+    document.getElementById('dayNum').textContent = d;
+    document.getElementById('dayOrd').textContent = ord(d);
+    var note = document.getElementById('clampNote');
+    if (d > MONTH_DAYS_FEB){
+      note.textContent = 'Shorter months clamp to their last day — February would start on the ' + MONTH_DAYS_FEB + 'th.';
+    } else { note.textContent = ''; }
+  }
+  slider.addEventListener('input', function(){
+    state.day = parseInt(slider.value,10); updateDayUI(); recompute();
+  });
+
+  // ---- navigation ----
+  function go(step){
+    state.step = step;
+    panels.forEach(function(p){ p.classList.toggle('active', +p.dataset.step===step); });
+    progress.forEach(function(i){ i.classList.toggle('on', +i.dataset.p<=step); });
+    document.getElementById('stepTag').textContent = tags[step];
+    var active = panels[step];
+    var first = active.querySelector('input,select,.choice,button');
+    if (first && step>0) { try{ first.focus({preventScroll:true}); }catch(e){} }
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  document.querySelectorAll('[data-next]').forEach(function(b){
+    b.addEventListener('click', function(){ if(state.step<2) go(state.step+1); });
+  });
+  document.querySelectorAll('.back').forEach(function(b){
+    b.addEventListener('click', function(){ if(state.step>0) go(state.step-1); });
+  });
+
+  function finish(){
+    var canvas = document.getElementById('canvas');
+    document.getElementById('canvasLive').style.display='none';
+    document.getElementById('doneState').hidden=false;
+    var dl = document.getElementById('doneLine');
+    dl.textContent = MONTH.name + ' is open. Add your income and bills next, and the blanks fill themselves in.';
+    canvas.classList.add('settle');
+    document.getElementById('stepTag').textContent='ready';
+    progress.forEach(function(i){ i.classList.add('on'); });
+  }
+  document.getElementById('finishBtn').addEventListener('click', finish);
+  document.getElementById('skipBtn').addEventListener('click', function(){ state.target=null; recompute(); finish(); });
+
+  // deep-link initial state for review/screenshots: ?step=1&mode=custom&day=25
+  (function(){
+    var q = new URLSearchParams(location.search);
+    if (q.get('mode')==='custom' || q.get('day')) {
+      var d = parseInt(q.get('day')||'25',10);
+      slider.value = isNaN(d)?25:d;
+      setMode('custom');
+    }
+    var s = parseInt(q.get('step'),10);
+    if (!isNaN(s) && s>=0 && s<=2) go(s);
+  })();
+
+  recompute(); updateDayUI();
+})();
+</script>
+</body>
+</html>
