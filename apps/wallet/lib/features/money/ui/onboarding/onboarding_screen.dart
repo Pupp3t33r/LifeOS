@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../security/application/security_providers.dart';
 import 'onboarding_canvas.dart';
 import 'onboarding_controller.dart';
 import 'onboarding_state.dart';
@@ -29,13 +30,16 @@ class OnboardingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(onboardingControllerProvider);
+    // Hidden entirely on web and on devices without biometrics → 2-step flow there.
+    final biometricsSupported =
+        ref.watch(biometricSupportedProvider).maybeWhen(data: (v) => v, orElse: () => false);
 
     final canvas = OnboardingCanvas(
       accountName: state.accountName,
       currency: state.currency,
       monthStartDay: state.effectiveMonthStartDay,
     );
-    final ask = _Ask(state: state);
+    final ask = _Ask(state: state, biometricsSupported: biometricsSupported);
 
     return Scaffold(
       appBar: AppBar(
@@ -106,9 +110,10 @@ class _Wordmark extends StatelessWidget {
 
 /// The left/bottom column: progress, the active step, and the action row.
 class _Ask extends ConsumerWidget {
-  const _Ask({required this.state});
+  const _Ask({required this.state, required this.biometricsSupported});
 
   final OnboardingState state;
+  final bool biometricsSupported;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -116,18 +121,19 @@ class _Ask extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _Progress(step: state.step, total: 2),
+        _Progress(step: state.step, total: biometricsSupported ? 3 : 2),
         const SizedBox(height: 26),
-        if (state.step == 0)
-          _AccountStep(state: state)
-        else
-          _MonthStep(state: state),
+        switch (state.step) {
+          0 => _AccountStep(state: state),
+          1 => _MonthStep(state: state),
+          _ => _BiometricStep(state: state),
+        },
         if (state.error != null) ...[
           const SizedBox(height: 16),
           _ErrorBanner(message: state.error!),
         ],
         const SizedBox(height: 28),
-        _Actions(state: state),
+        _Actions(state: state, biometricsSupported: biometricsSupported),
       ],
     );
   }
@@ -329,6 +335,60 @@ class _MonthStep extends ConsumerWidget {
   }
 }
 
+/// Optional final step — only reached on devices that support biometrics (so it
+/// never appears on web). Toggles the device-local app-lock (ADR-0014).
+class _BiometricStep extends ConsumerWidget {
+  const _BiometricStep({required this.state});
+
+  final OnboardingState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final controller = ref.read(onboardingControllerProvider.notifier);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _StepHeader(
+          eyebrow: 'protect your wallet',
+          title: 'Lock Wallet when you open it?',
+          lede: "Use your fingerprint or face to unlock Wallet each time — your "
+              "money stays private even if your device is left unlocked. You can "
+              "change this later in settings.",
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(CalmTokens.radiusMd),
+            border: Border.all(color: theme.colorScheme.outline, width: 1.5),
+          ),
+          child: SwitchListTile(
+            value: state.appLockEnabled,
+            onChanged: controller.setAppLockEnabled,
+            title: Text(
+              'Unlock with biometrics',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              'Recommended for a money app',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(CalmTokens.radiusMd),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _Hint("Uses the fingerprint or face already set up on this device — "
+            "nothing to enroll here."),
+      ],
+    );
+  }
+}
+
 class _DayPicker extends StatelessWidget {
   const _DayPicker({required this.day, required this.onChanged});
 
@@ -485,14 +545,17 @@ class _ChoiceCard extends StatelessWidget {
 }
 
 class _Actions extends ConsumerWidget {
-  const _Actions({required this.state});
+  const _Actions({required this.state, required this.biometricsSupported});
 
   final OnboardingState state;
+  final bool biometricsSupported;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.read(onboardingControllerProvider.notifier);
     final busy = state.submitting;
+    // Last step is the month step (1) unless the device adds the biometric step (2).
+    final isLastStep = state.step == (biometricsSupported ? 2 : 1);
 
     return Row(
       children: [
@@ -508,7 +571,7 @@ class _Actions extends ConsumerWidget {
             onPressed: busy
                 ? null
                 : () {
-                    if (state.isLastStep) {
+                    if (isLastStep) {
                       controller.submit();
                     } else {
                       controller.next();
@@ -520,7 +583,7 @@ class _Actions extends ConsumerWidget {
                     width: 22,
                     child: CircularProgressIndicator(strokeWidth: 2.5),
                   )
-                : Text(state.isLastStep ? 'Finish setup' : 'Continue'),
+                : Text(isLastStep ? 'Finish setup' : 'Continue'),
           ),
         ),
       ],

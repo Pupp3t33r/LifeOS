@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../security/application/security_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../data/preferences_repository.dart';
 import 'onboarding_state.dart';
@@ -18,9 +19,11 @@ class OnboardingController extends Notifier<OnboardingState> {
   void useCalendarMonth() => state = state.copyWith(useCustomMonth: false);
   void useCustomMonth() => state = state.copyWith(useCustomMonth: true);
 
-  void next() {
-    if (!state.isLastStep) state = state.copyWith(step: state.step + 1);
-  }
+  void setAppLockEnabled(bool value) => state = state.copyWith(appLockEnabled: value);
+
+  /// Advance a step. The screen only calls this when a next step exists (the last
+  /// step depends on whether the device supports the biometric app-lock).
+  void next() => state = state.copyWith(step: state.step + 1);
 
   void back() {
     if (state.step > 0) state = state.copyWith(step: state.step - 1);
@@ -41,6 +44,12 @@ class OnboardingController extends Notifier<OnboardingState> {
       );
       await repo.setDisplayCurrency(state.currency);
       await repo.setMonthStartDay(state.effectiveMonthStartDay);
+
+      // Persist the device-local app-lock choice (only where the device supports it).
+      if (await ref.read(biometricSupportedProvider.future)) {
+        await ref.read(appLockStoreProvider).setEnabled(state.appLockEnabled);
+        ref.invalidate(appLockEnabledProvider);
+      }
 
       // Re-fetch so the router gate sees onboarding as complete and routes home.
       ref.invalidate(preferencesProvider);

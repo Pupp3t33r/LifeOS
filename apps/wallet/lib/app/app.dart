@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../features/security/ui/app_lock_gate.dart';
 import 'navigation/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -18,6 +19,10 @@ class WalletApp extends ConsumerWidget {
       darkTheme: walletDarkTheme,
       themeMode: ThemeMode.system,
       routerConfig: router,
+      // Gates the authenticated app behind the biometric app-lock on native
+      // (no-op on web and when disabled/unsupported). See AppLockGate.
+      builder: (context, child) =>
+          AppLockGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }
