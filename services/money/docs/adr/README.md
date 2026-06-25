@@ -21,6 +21,7 @@ See [`template.md`](./template.md) to start a new ADR.
 | [0011](./0011-wolverine-http-conventions.md) | Wolverine.Http endpoint and handler conventions (supersedes part of 0001) | 2026-06-16 |
 | [0012](./0012-production-schema-migration.md) | Production schema migration policy (no runtime auto-create) | 2026-06-16 |
 | [0013](./0013-user-preferences-and-configurable-month.md) | UserPreferences document — configurable month start day and display currency (amends 0006, 0007) | 2026-06-24 |
+| [0014](./0014-auth-session-lifetimes-and-passkeys.md) | Authentication UX — session lifetimes, passkeys, biometric app-lock (relates to 0004) | 2026-06-25 |
 
 ## Superseded
 

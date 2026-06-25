@@ -95,6 +95,13 @@ Android, Web, Windows, Linux. (macOS/iOS technically free; not prioritized.)
 
 v1 requires the full Phase 1 Money backend (see [Money PLAN.md](../../services/money/PLAN.md) §3). Sequencing is **backend-first**: Money features land, then Wallet UI is built against the real API. No mock/stub parallel track in v1.
 
+### Auth & first-run (Money [ADR-0014](../../services/money/docs/adr/0014-auth-session-lifetimes-and-passkeys.md))
+
+- **First-run onboarding** *(built)* — "Set up your first month": first savings account + display currency + configurable month start day (Money ADR-0013). The router gates on `UserPreferences.DisplayCurrency` being null; responsive (two-column wide / stacked phone) with a live "savings canvas" preview.
+- **Per-platform session scope** *(planned)* — request `offline_access` on native/desktop only, omit on web (`AuthConfig.scopes` gated on `kIsWeb`). Native gets a long offline session (idle 60d / max 180d); web a short online session (idle 30m / max 24h). One realm config, split by scope.
+- **Biometric app-lock** *(planned, native only)* — via `local_auth`: required on cold start, re-lock after ~5 min in background, user-configurable (default on). The lock screen always offers **"Use password"** and **"Log out / sign in as a different account."** This is the layer that makes the long native session safe.
+- **Passkey login** *(planned)* — WebAuthn/FIDO2 as the preferred Keycloak login method, with **password always available as fallback** (bootstrap + recovery). Requires the realm passkey flow (ADR-0014) plus enrollment UX.
+
 ---
 
 ## 5. Phase 2 — Domain-linked purchases
@@ -160,6 +167,7 @@ The Phase 1 data model already supports this via `ExternalReference`; Phase 2 is
 | Inventory architecture | Asset aggregate inside Money, financial fields only | Money ADR-0010 |
 | Income pattern | Stable + resale (later); planner accommodates variable | User decision |
 | Subscriptions | Modeled as tagged `RecurringPayment`; not a distinct concept | User decision |
+| Auth session & login UX | Per-platform token lifetimes; passkey-preferred + password fallback; native biometric app-lock; short web session | Money ADR-0014 |
 
 ---
 
