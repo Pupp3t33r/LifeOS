@@ -35,6 +35,14 @@ var keycloakUsername = builder.AddParameter("keycloak-username", "admin");
 var keycloakPassword = builder.AddParameter("keycloak-password", "admin", secret: true);
 
 var keycloak = builder.AddKeycloak("keycloak", adminUsername: keycloakUsername, adminPassword: keycloakPassword)
+    // Dev Keycloak is fully persistent: the container is reused across AppHost restarts (no re-paying
+    // the ~16s startup), and its data dir is volume-backed so runtime state — passkey enrollments,
+    // self-registrations, sessions — survives container recreation (a prerequisite for passkeys, ADR-0014).
+    // Trade-off: the realm is imported into the volume ONCE; later lifeos-realm.json edits do NOT
+    // re-import on restart — remove the "keycloak-data" volume (or apply via the admin API) to pick them
+    // up. Prod uses a real Postgres-backed Keycloak DB rather than this dev H2 volume.
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithDataVolume("keycloak-data")
     .WithRealmImport("keycloak")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_HOSTNAME", keycloakFrontendUrl)
