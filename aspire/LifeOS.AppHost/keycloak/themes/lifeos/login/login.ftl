@@ -1,4 +1,5 @@
 <#import "template.ftl" as layout>
+<#import "passkeys.ftl" as passkeys>
 <@layout.registrationLayout displayMessage=!messagesPerField.existsError('username','password') displayInfo=realm.password && realm.registrationAllowed && !registrationDisabled??; section>
   <#if section = "header">
     ${msg("loginAccountTitle")}
@@ -13,7 +14,7 @@
               <#elseif !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}
               <#else>${msg("email")}</#if>
             </label>
-            <input tabindex="1" id="username" name="username" value="${(login.username!'')}" type="text" autofocus autocomplete="username"
+            <input tabindex="1" id="username" name="username" value="${(login.username!'')}" type="text" autofocus autocomplete="username webauthn"
                    aria-invalid="<#if messagesPerField.existsError('username','password')>true</#if>"/>
             <#if messagesPerField.existsError('username','password')>
               <span class="field-error" aria-live="polite">${kcSanitize(messagesPerField.getFirstError('username','password'))?no_esc}</span>
@@ -46,6 +47,10 @@
         <input type="hidden" id="id-hidden-input" name="credentialId" <#if auth.selectedCredential?has_content>value="${auth.selectedCredential}"</#if>/>
         <button tabindex="4" class="btn" name="login" id="kc-login" type="submit">${msg("doLogIn")}</button>
       </form>
+      <#-- Passkey conditional-UI: renders a "Sign in with a passkey" button + autofill
+           script only when Keycloak offers it (self-guarded; nothing otherwise). The
+           webauthn JS resources are inherited from the parent (keycloak) theme. -->
+      <@passkeys.conditionalUIData />
     </#if>
   <#elseif section = "socialProviders">
     <#if realm.password && social?? && social.providers?has_content>

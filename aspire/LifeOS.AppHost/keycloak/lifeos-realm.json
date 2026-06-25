@@ -18,6 +18,15 @@
   "offlineSessionMaxLifespanEnabled": true,
   "offlineSessionMaxLifespan": 15552000,
   "revokeRefreshToken": true,
+  "webAuthnPolicyPasswordlessRpEntityName": "LifeOS",
+  "webAuthnPolicyPasswordlessRpId": "",
+  "webAuthnPolicyPasswordlessSignatureAlgorithms": ["ES256", "RS256"],
+  "webAuthnPolicyPasswordlessRequireResidentKey": "Yes",
+  "webAuthnPolicyPasswordlessUserVerificationRequirement": "required",
+  "webAuthnPolicyPasswordlessAttestationConveyancePreference": "not specified",
+  "webAuthnPolicyPasswordlessAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyPasswordlessCreateTimeout": 0,
+  "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
   "clients": [
     {
       "clientId": "money-api",
