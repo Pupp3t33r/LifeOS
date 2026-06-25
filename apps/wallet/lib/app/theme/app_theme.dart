@@ -7,14 +7,20 @@ import 'calm_tokens.dart';
 /// reference `Theme.of(context)` (or `CalmTokens` for tokens Material doesn't
 /// model) instead.
 ThemeData _buildTheme(CalmTokens t, Brightness brightness) {
+  // Label color for filled brand surfaces (primary/secondary). In light mode the
+  // brand colors (sage/clay) are deep enough to carry white text; in dark mode
+  // they are light tints, so white fails contrast — use the dark page color (bone)
+  // as near-black ink instead.
+  final onBrand = brightness == Brightness.dark ? t.bone : CalmTokens.white;
+
   final scheme = ColorScheme.fromSeed(
     seedColor: t.sage,
     brightness: brightness,
   ).copyWith(
     primary: t.sage,
-    onPrimary: CalmTokens.white,
+    onPrimary: onBrand,
     secondary: t.clay,
-    onSecondary: CalmTokens.white,
+    onSecondary: onBrand,
     surface: t.surface,
     onSurface: t.ink,
     outline: t.line,
