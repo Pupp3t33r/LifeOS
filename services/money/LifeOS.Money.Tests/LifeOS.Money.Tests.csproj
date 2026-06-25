@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.19.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
+    <PackageReference Include="Testcontainers" Version="4.12.0" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.12.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
@@ -24,6 +25,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LifeOS.Money.Api\LifeOS.Money.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The auth-contract tests import the REAL realm into a throwaway Keycloak, so they exercise
+         (and detect drift in) the actual realm config — single source of truth, no copy. -->
+    <None Include="..\..\..\aspire\LifeOS.AppHost\keycloak\lifeos-realm.json" Link="realm\lifeos-realm.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
