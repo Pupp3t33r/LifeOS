@@ -11,6 +11,13 @@
   "resetPasswordAllowed": true,
   "rememberMe": true,
   "bruteForceProtected": false,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 86400,
+  "offlineSessionIdleTimeout": 5184000,
+  "offlineSessionMaxLifespanEnabled": true,
+  "offlineSessionMaxLifespan": 15552000,
+  "revokeRefreshToken": true,
   "clients": [
     {
       "clientId": "money-api",
