@@ -98,9 +98,9 @@ v1 requires the full Phase 1 Money backend (see [Money PLAN.md](../../services/m
 ### Auth & first-run (Money [ADR-0014](../../services/money/docs/adr/0014-auth-session-lifetimes-and-passkeys.md))
 
 - **First-run onboarding** *(built)* — "Set up your first month": first savings account + display currency + configurable month start day (Money ADR-0013). The router gates on `UserPreferences.DisplayCurrency` being null; responsive (two-column wide / stacked phone) with a live "savings canvas" preview.
-- **Per-platform session scope** *(planned)* — request `offline_access` on native/desktop only, omit on web (`AuthConfig.scopes` gated on `kIsWeb`). Native gets a long offline session (idle 60d / max 180d); web a short online session (idle 30m / max 24h). One realm config, split by scope.
-- **Biometric app-lock** *(planned, native only)* — via `local_auth`: required on cold start, re-lock after ~5 min in background, user-configurable (default on). The lock screen always offers **"Use password"** and **"Log out / sign in as a different account."** This is the layer that makes the long native session safe.
-- **Passkey login** *(planned)* — WebAuthn/FIDO2 as the preferred Keycloak login method, with **password always available as fallback** (bootstrap + recovery). Requires the realm passkey flow (ADR-0014) plus enrollment UX.
+- **Per-platform session scope** *(built)* — requests `offline_access` on native/desktop only, omits on web (`AuthConfig.scopes` gated on `kIsWeb`). Native gets a long offline session (idle 60d / max 180d); web a short online session (idle 30m / max 24h). One realm config, split by scope.
+- **Biometric app-lock** *(built, native only)* — via `local_auth`: required on cold start, re-lock after ~5 min in background, user-configurable (default on); optional toggle shown in onboarding only where the device supports it. The lock screen always offers **"Use password"** and **"Log out / sign in as a different account."** No-op on web. On-device biometric prompt pending manual verification.
+- **Passkey login** *(groundwork)* — WebAuthn/FIDO2 as the preferred Keycloak login method, **password always available as fallback** (bootstrap + recovery). Done: WebAuthn passwordless policy + `login.ftl` conditional-UI wiring. Pending: the browser-flow config that actually surfaces the passkey on the login form, enrollment UX, and on-device verification.
 
 ---
 
