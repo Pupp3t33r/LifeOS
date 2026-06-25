@@ -133,7 +133,8 @@
           "value": "devpass",
           "temporary": false
         }
-      ]
+      ],
+      "realmRoles": ["offline_access"]
     },
     {
       "id": "a1a1a1a1-0000-4000-8000-000000000001",
@@ -150,7 +151,8 @@
           "value": "alicepass",
           "temporary": false
         }
-      ]
+      ],
+      "realmRoles": ["offline_access"]
     },
     {
       "id": "b0b0b0b0-0000-4000-8000-000000000002",
@@ -167,7 +169,8 @@
           "value": "bobpass",
           "temporary": false
         }
-      ]
+      ],
+      "realmRoles": ["offline_access"]
     }
   ]
 }
