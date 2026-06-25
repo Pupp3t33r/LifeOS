@@ -35,13 +35,13 @@ var keycloakUsername = builder.AddParameter("keycloak-username", "admin");
 var keycloakPassword = builder.AddParameter("keycloak-password", "admin", secret: true);
 
 var keycloak = builder.AddKeycloak("keycloak", adminUsername: keycloakUsername, adminPassword: keycloakPassword)
-    // Dev Keycloak is fully persistent: the container is reused across AppHost restarts (no re-paying
-    // the ~16s startup), and its data dir is volume-backed so runtime state — passkey enrollments,
-    // self-registrations, sessions — survives container recreation (a prerequisite for passkeys, ADR-0014).
-    // Trade-off: the realm is imported into the volume ONCE; later lifeos-realm.json edits do NOT
-    // re-import on restart — remove the "keycloak-data" volume (or apply via the admin API) to pick them
-    // up. Prod uses a real Postgres-backed Keycloak DB rather than this dev H2 volume.
-    .WithLifetime(ContainerLifetime.Persistent)
+    // Dev Keycloak keeps a data volume so the migrated schema + realm + runtime state (passkey
+    // enrollments, sessions) survive container recreation — skips the ~9s migration+import on restart
+    // and is a prerequisite for passkeys (ADR-0014). The container is deliberately NOT lifetime-persistent:
+    // each `aspire start` recreates it, so theme (login.ftl) and code changes are picked up cleanly
+    // (lifetime reuse previously served stale themes). Trade-off: the realm imports into the volume ONCE,
+    // so later lifeos-realm.json edits need `docker volume rm keycloak-data` to re-import. Prod uses a
+    // Postgres-backed Keycloak DB rather than this dev H2 volume.
     .WithDataVolume("keycloak-data")
     .WithRealmImport("keycloak")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
