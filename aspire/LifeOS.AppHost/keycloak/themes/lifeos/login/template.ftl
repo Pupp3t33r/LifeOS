@@ -24,6 +24,17 @@
   <#if scripts??>
     <#list scripts as script><script src="${script}" type="text/javascript"></script></#list>
   </#if>
+  <#-- Import map required by Keycloak's WebAuthn/passkey ES modules (they import the bare
+       specifier "rfc4648"). The base login template provides this; our custom template must
+       too, or navigator.credentials.create/get never runs (passkey button/registration silently
+       fails with "Failed to resolve module specifier rfc4648"). -->
+  <script type="importmap">
+    {
+      "imports": {
+        "rfc4648": "${url.resourcesCommonPath}/vendor/rfc4648/rfc4648.js"
+      }
+    }
+  </script>
 </head>
 <body class="lifeos ${bodyClass}">
   <main class="card" role="main">

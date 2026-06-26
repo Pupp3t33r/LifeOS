@@ -27,6 +27,7 @@
   "webAuthnPolicyPasswordlessAuthenticatorAttachment": "not specified",
   "webAuthnPolicyPasswordlessCreateTimeout": 0,
   "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
+  "webAuthnPolicyPasswordlessPasskeysEnabled": true,
   "clients": [
     {
       "clientId": "money-api",
@@ -160,7 +161,7 @@
       "email": "alice@lifeos.local",
       "firstName": "Alice",
       "lastName": "Tester",
-      "requiredActions": [],
+      "requiredActions": ["webauthn-register-passwordless"],
       "credentials": [
         {
           "type": "password",
