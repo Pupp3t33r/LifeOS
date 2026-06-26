@@ -22,6 +22,9 @@ See [`template.md`](./template.md) to start a new ADR.
 | [0012](./0012-production-schema-migration.md) | Production schema migration policy (no runtime auto-create) | 2026-06-16 |
 | [0013](./0013-user-preferences-and-configurable-month.md) | UserPreferences document — configurable month start day and display currency (amends 0006, 0007) | 2026-06-24 |
 | [0014](./0014-auth-session-lifetimes-and-passkeys.md) | Authentication UX — session lifetimes, passkeys, biometric app-lock (relates to 0004) | 2026-06-25 |
+| [0015](./0015-fx-rate-sourcing-and-client-cache.md) | FX rate sourcing — Belarusbank card rates, plain BackgroundService, client rate cache (supersedes part of 0008, amends 0013) | 2026-06-26 |
+| [0016](./0016-accounting-period-flow-ledger.md) | AccountingPeriod aggregate — per-month flow ledger for actuals (renames MonthlyReview, supersedes part of 0005, amends 0009) | 2026-06-26 |
+| [0017](./0017-recurring-payment-rules-and-schedules.md) | RecurringPayment — recurrence-rule hierarchy, two schedule modes, period-tracked occurrences (supersedes InstallmentPlan from 0005, refines 0016) | 2026-06-26 |
 
 ## Superseded
 
@@ -31,6 +34,11 @@ See [`template.md`](./template.md) to start a new ADR.
 | 0001 §endpoint mechanism | Minimal APIs as the endpoint framework | [0011](./0011-wolverine-http-conventions.md) | Only the endpoint mechanism is superseded. ADR-0001's code-first OpenAPI decision stands. |
 | 0007 §period-keying | `(Year, Month)` means a calendar month | [0013](./0013-user-preferences-and-configurable-month.md) | `(Year, Month)` now means the user's configured period (start day from UserPreferences). Key shape unchanged; `MonthStartDay = 1` degenerates to calendar months. The rest of ADR-0007 stands. |
 | 0006 §period-keying | `(Year, Month)` means a calendar month | [0013](./0013-user-preferences-and-configurable-month.md) | Same generalization as 0007 for the `budget/{Owner}/{Year}/{Month}/...` key. The rest of ADR-0006 stands. |
+| 0008 §FX-rate-service, §rate-by-context | Frankfurter-only rates via a Quartz daily cron | [0015](./0015-fx-rate-sourcing-and-client-cache.md) | Belarusbank card SELL rates (primary) + Frankfurter (fallback) via a plain hourly `BackgroundService`; client rate cache; server-authoritative actuals. The `CurrencyAmount` value object and single-currency-per-account decisions of ADR-0008 stand. |
+| 0005 §transaction-model | `TransactionRecorded` on the Account stream; idempotency invariant on Account | [0016](./0016-accounting-period-flow-ledger.md) | Everyday flow actuals move to the per-period AccountingPeriod stream with the idempotency invariant relocated there. Account streams keep transactions for savings movements only. The aggregate taxonomy, tenancy, and inter-aggregate-consistency parts of ADR-0005 stand. |
+| 0007 §MonthlyReview-aggregate | `MonthlyReview` aggregate holding period lifecycle only | [0016](./0016-accounting-period-flow-ledger.md) | Renamed **AccountingPeriod** and expanded to also hold `FlowRecorded`/`FlowReverted` flow entries. ADR-0007's `MonthProjection` and month-close flow stand; the projection's actuals input now comes from AccountingPeriod flow events. |
+| 0005 §InstallmentPlan; RecurringPayment "tracks transaction IDs" | Separate `InstallmentPlan` aggregate; recurring tracks the transactions it produced | [0017](./0017-recurring-payment-rules-and-schedules.md) | Installments collapse into `RecurringPayment` (two schedule modes; no `installment/{…}` stream). Occurrences are tracked via back-references on AccountingPeriod `FlowRecorded` entries, not on the recurring aggregate. |
+| 0016 §confirm-writes-LineConfirmed | Confirming a recurring line also appends `LineConfirmed` to the recurring stream | [0017](./0017-recurring-payment-rules-and-schedules.md) | Confirmation writes **only** `FlowRecorded` (with a `{recurringId, occurrenceRef}` back-reference) to AccountingPeriod; the recurring aggregate stores no per-occurrence state. |
 
 ## Deferred decisions
 

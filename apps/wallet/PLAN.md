@@ -205,4 +205,34 @@ These can be settled during implementation, not before:
 
 ---
 
-*Last updated: 2026-06-15*
+## 12. Design backlog — open items (as of 2026-06-26)
+
+A multi-session functional-design pass is underway (pages & flows before UI/UX). Status:
+
+### Landed this session (Money ADRs)
+- **ADR-0015** — FX rate sourcing: Belarusbank card **SELL** rates (primary) + Frankfurter (fallback); plain hourly `BackgroundService`; client **15-min** rate cache; in-app **Rates view**. Amends ADR-0013 with `DefaultSpendingCurrency`.
+- **ADR-0016** — **`AccountingPeriod`** aggregate (renames `MonthlyReview`): one per-month stream holding lifecycle **+** the flow ledger (`FlowRecorded` / `FlowReverted`). Accounts narrow to **savings movements only**.
+- **ADR-0017** — **`RecurringPayment`**: recurrence-rule discriminated hierarchy + two schedule modes (**Live** rule / **Materialized** list); InstallmentPlan collapsed in; occurrences tracked via back-refs on AccountingPeriod (no per-occurrence state on the aggregate).
+
+### Confirmed, not yet written up
+- **Active-month / period model** — exactly one *open* (editable) AccountingPeriod; past/future periods view-only; advancing requires an explicit **month-close**; overdue-close warning on Home. *(Extends ADR-0007/0016; capture here + possibly its own ADR.)*
+- **Home functional spec** — two sections: active-month **plan canvas** + **savings-accounts glance**; recurring items render as a confirm **checklist** with progressive realization; confirm dialog adjusts actual amount/date. *(To write up.)*
+- **Offline-first** — pending ADR `apps/wallet/docs/adr/0001-offline-first-sync.md` (decision already in AGENTS.md; needs freezing).
+
+### Still to discuss (flow list)
+1. **Month close / reconciliation** — the keystone (reconcile unconfirmed lines, fix the balance, savings transfer, lock, open next). Flow not yet pinned.
+2. **Planning levers** — wishlist → month (planned purchase), ad-hoc expense, set target.
+3. **Wishlist / PurchaseOrder** — incl. the **PO ↔ installment overlap** (does a PO bought in installments create/reference a Materialized RecurringPayment?).
+4. **Budgets** — light per-category, consumption by tag.
+5. **Accounts management** — create/edit, savings movements, transfers.
+
+### Deferred sub-decisions (not blocking)
+- **Tag storage** (Marten docs vs side table vs projection-only — deferred in Money ADR README); blocks "subscription = tagged recurring" and budget-by-tag.
+- **Projection strategy** (inline vs async — forcing function: MonthProjection).
+- `nth weekday of month` recurrence subtype.
+
+> Note: §9's "MonthlyReview" reference is superseded by **AccountingPeriod** (ADR-0016); recurring + installments are now one aggregate (ADR-0017).
+
+---
+
+*Last updated: 2026-06-26*
