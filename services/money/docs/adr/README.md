@@ -25,6 +25,12 @@ See [`template.md`](./template.md) to start a new ADR.
 | [0015](./0015-fx-rate-sourcing-and-client-cache.md) | FX rate sourcing — Belarusbank card rates, plain BackgroundService, client rate cache (supersedes part of 0008, amends 0013) | 2026-06-26 |
 | [0016](./0016-accounting-period-flow-ledger.md) | AccountingPeriod aggregate — per-month flow ledger for actuals (renames MonthlyReview, supersedes part of 0005, amends 0009) | 2026-06-26 |
 | [0017](./0017-recurring-payment-rules-and-schedules.md) | RecurringPayment — recurrence-rule hierarchy, two schedule modes, period-tracked occurrences (supersedes InstallmentPlan from 0005, refines 0016) | 2026-06-26 |
+| [0018](./0018-planned-purchases-on-accounting-period.md) | Planned purchases on AccountingPeriod — period-centric planning (supersedes PurchaseOrder from 0005, amends 0016/0010) | 2026-06-27 |
+| [0019](./0019-universal-line-items.md) | Universal line-items for spending entries and estimates (amends 0016/0017) | 2026-06-27 |
+| [0020](./0020-recurring-live-carry-make-up-defer.md) | Recurring Live carry-make-up defer (amends 0017) | 2026-06-27 |
+| [0021](./0021-close-flow-multi-account-allocation-and-dispositions.md) | Close flow — multi-account allocation and item dispositions (amends 0007/0009) | 2026-06-27 |
+| [0022](./0022-wishlist-items-packages-and-derived-status.md) | Wishlist items, packages, and derived status (supersedes WishlistItem from 0005) | 2026-06-27 |
+| [0023](./0023-active-month-model.md) | Active-month model and period write permissions (refines 0007/0016) | 2026-06-27 |
 
 ## Superseded
 
@@ -39,6 +45,16 @@ See [`template.md`](./template.md) to start a new ADR.
 | 0007 §MonthlyReview-aggregate | `MonthlyReview` aggregate holding period lifecycle only | [0016](./0016-accounting-period-flow-ledger.md) | Renamed **AccountingPeriod** and expanded to also hold `FlowRecorded`/`FlowReverted` flow entries. ADR-0007's `MonthProjection` and month-close flow stand; the projection's actuals input now comes from AccountingPeriod flow events. |
 | 0005 §InstallmentPlan; RecurringPayment "tracks transaction IDs" | Separate `InstallmentPlan` aggregate; recurring tracks the transactions it produced | [0017](./0017-recurring-payment-rules-and-schedules.md) | Installments collapse into `RecurringPayment` (two schedule modes; no `installment/{…}` stream). Occurrences are tracked via back-references on AccountingPeriod `FlowRecorded` entries, not on the recurring aggregate. |
 | 0016 §confirm-writes-LineConfirmed | Confirming a recurring line also appends `LineConfirmed` to the recurring stream | [0017](./0017-recurring-payment-rules-and-schedules.md) | Confirmation writes **only** `FlowRecorded` (with a `{recurringId, occurrenceRef}` back-reference) to AccountingPeriod; the recurring aggregate stores no per-occurrence state. |
+| 0005 §PurchaseOrder-aggregate | `PurchaseOrder` aggregate (stream `purchase-order/{id}`, lifecycle Planned→Ordered→Received) | [0018](./0018-planned-purchases-on-accounting-period.md) | Planned purchases move to AccountingPeriod as events (`PlannedPurchaseAdded/Cancelled/Edited`); the PO is not built in v1. Fulfillment/asset tracking goes through the Asset aggregate directly (amends 0010). The aggregate taxonomy, tenancy, and inter-aggregate-consistency parts of ADR-0005 stand. |
+| 0005 §WishlistItem | `WishlistItem` as an event-sourced aggregate on `wishlist/{id}` | [0022](./0022-wishlist-items-packages-and-derived-status.md) | Re-modeled as non-event-sourced documents (one per item + one per package) with a derived `WishlistItemStatus` projection. |
+| 0010 §tracked-path | PO advances to Received → `AssetTracked` | [0018](./0018-planned-purchases-on-accounting-period.md) | A paid planned entry marked received creates an Asset directly (no PO intermediary). The pre-existing-import path and the Asset's financial-fields-only model stand; the Asset's full shape is deferred to Phase 3. |
+| 0016 §FlowRecorded-amount | `FlowRecorded` carries a single `CurrencyAmount` + entry-level `tags` | [0019](./0019-universal-line-items.md) | `FlowRecorded` carries `list<Line>` (1..N); entry-level `tags` removed in favor of per-line `Category`. |
+| 0017 §estimate-amount | Live estimate and Materialized `ScheduleLine.ExpectedAmount` are single `CurrencyAmount` | [0019](./0019-universal-line-items.md) | Both become `list<Line>`. Varying sums per month remain a Materialized property. |
+| 0017 §Live-defer | Live occurrence defer = skip (or series cancel) | [0020](./0020-recurring-live-carry-make-up-defer.md) | Adds carry-make-up (skip + a disconnected `PlannedPurchaseAdded` next period with an `Origin` soft-ref) for arrears-creating recurring. |
+| 0007 §close-flow | Close deposits/withdraws the whole surplus/deficit to one designated account | [0021](./0021-close-flow-multi-account-allocation-and-dispositions.md) | Surplus/deficit allocated across one or more savings accounts (split); unpaid-item dispositions added to the close transaction. `ClosingFxRates`, the `override ?? projected` final number, and lock semantics stand. |
+| 0009 §close-account | Close movement lands in one designated savings account | [0021](./0021-close-flow-multi-account-allocation-and-dispositions.md) | Multiple savings accounts (split allocation); deficit is the mirror (user-chosen withdrawal accounts). The savings-only account type and transaction-derived balance stand. |
+| 0021 §next-period-opening | (open question) must the next period be open, or does close open it? | [0023](./0023-active-month-model.md) | Periods accept planning on demand (future = planning-only); no open ceremony. Carry-at-close writes to the next period directly. |
+| 0007/0016 §active-month | (implicit) one writable period at a time | [0023](./0023-active-month-model.md) | Multiple periods may be open; "one open period" is a UI default + close nudge, not a write invariant. Future periods are planning-only; actuals route by date (ADR-0016). |
 
 ## Deferred decisions
 
@@ -51,6 +67,11 @@ The following decisions have been identified but **intentionally deferred** unti
 | Projection strategy (inline vs async, snapshots, rebuild) | The first projection lands (MonthProjection per ADR-0007 is the forcing function) |
 | Tag storage (Marten documents vs side table vs projection-only) | The first tag-consuming feature is implemented (budgets by tag per ADR-0006, transaction tag filtering) |
 | Transfer aggregate (first-class vs paired transactions) | Real-world transfer volume justifies a dedicated aggregate; for v1 paired transactions with `TransferId` suffice (ADR-0009) |
+| Categorization taxonomy — domains vs tags vs "special-meaning" flags (pure categorization vs flags with special behavior), and the UI click-cost tradeoff | The first feature needing the distinction. The line `Category` union (ADR-0019) carries both domain refs and tags today; the taxonomy refinement is non-breaking. |
+| Early payment of a future-period installment (cross-period occurrence tracking + idempotency) | Early-payment implementation — amends ADR-0016/0017 (occurrence "paid" status and the within-one-period idempotency check must work across periods). |
+| `ActualSavingsOverride` vs allocations (incl. per-month projected-vs-actual variance display; dipping into savings for a specific purchase mid-month) | Revisiting ADR-0007's close/override model (allocations are user-truth per ADR-0021; the override's role is unsettled). |
+| Skip-periods (catch-up UX when months behind) | Wallet close-flow UX implementation (ADR-0023). |
+| Asset aggregate shape (bundle→Asset granularity, `AssetTracked` event, Asset fields) | Phase 3 Asset implementation (amends ADR-0010; the paid-entry→Asset path is fixed in ADR-0018, the shape is not). |
 
 ## Numbering
 

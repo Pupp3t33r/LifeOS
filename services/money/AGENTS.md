@@ -11,16 +11,16 @@ Money owns all financial state. No other service stores cost, payment schedules,
 
 **Owned domains:**
 - Savings accounts (checking/credit/cash are out of scope — see ADR-0009)
-- Transactions (expenses, income, transfers)
-- Recurring payments (infinite schedules)
-- Installments (finite schedules with end dates)
-- Wishlist (desired items with cost estimates, optionally linked to other domains via `{ serviceType, externalId }`)
-- Purchase orders (planned buys; lifecycle: Planned → Ordered → Received)
-- Budgets (light monthly category targets — see ADR-0006)
-- Monthly reviews (target/projected/actual savings per month — see ADR-0007)
-- Assets (owned items, financial fields only — see ADR-0010; Phase 3 implementation)
-- FX rates (daily Frankfurter sync — see ADR-0008)
-- Event store (Marten streams for all financial events)
+- AccountingPeriod — per-month stream holding lifecycle + flow ledger (actuals) + planned purchases (ADR-0016/0018/0019); renamed from MonthlyReview
+- Flow actuals (`FlowRecorded` / `FlowReverted`, line-itemed — ADR-0019)
+- Recurring payments (Live rule + Materialized list; installments/debt are Materialized — ADR-0017)
+- Planned purchases (events on AccountingPeriod, line-itemed — ADR-0018/0019)
+- Wishlist (desired items + packages, non-event-sourced documents with derived status — ADR-0022)
+- Budgets (light per-period category targets — ADR-0006; per-line categorization ADR-0019)
+- UserPreferences (non-event-sourced document — ADR-0013)
+- Assets (owned items, financial fields only — ADR-0010; Phase 3, ingestion via paid-entry → Asset per ADR-0018)
+- FX rates (Belarusbank card SELL rates primary + Frankfurter fallback — ADR-0015)
+- Event store (Marten streams) + non-event-sourced documents (UserPreferences, FX rates, Wishlist items/packages)
 
 ## Tech Stack
 
@@ -30,8 +30,8 @@ Money owns all financial state. No other service stores cost, payment schedules,
 | Messaging | Wolverine (Kafka transport, outbox with Marten) |
 | Validation | FluentValidation |
 | Logging | Serilog (JSON output) |
-| Cron | Quartz.NET (used by the FX rate sync job; see ADR-0008) |
-| FX rates | Frankfurter API (ECB-based, no API key) |
+| Cron | Quartz.NET (available; the FX sync uses a plain `BackgroundService` per ADR-0015) |
+| FX rates | Belarusbank card SELL rates (primary) + Frankfurter (fallback) — ADR-0015 |
 
 ## Decisions
 
@@ -51,14 +51,26 @@ Architecture decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/). The f
 | [0010](./docs/adr/0010-asset-aggregate.md) | Asset aggregate (financial fields only) — Phase 3 implementation, data model locked now |
 | [0011](./docs/adr/0011-wolverine-http-conventions.md) | Wolverine.Http endpoint/handler conventions (supersedes the Minimal APIs mechanism of 0001) |
 | [0012](./docs/adr/0012-production-schema-migration.md) | Production schema migration policy — no runtime auto-create; migrate via pre-deploy step |
+| [0013](./docs/adr/0013-user-preferences-and-configurable-month.md) | UserPreferences document — configurable month start day and display currency (amends 0006, 0007) |
+| [0014](./docs/adr/0014-auth-session-lifetimes-and-passkeys.md) | Auth UX — session lifetimes, passkeys, biometric app-lock (relates to 0004) |
+| [0015](./docs/adr/0015-fx-rate-sourcing-and-client-cache.md) | FX rate sourcing — Belarusbank card rates + plain BackgroundService + client cache (supersedes part of 0008, amends 0013) |
+| [0016](./docs/adr/0016-accounting-period-flow-ledger.md) | AccountingPeriod aggregate — per-month flow ledger for actuals (renames MonthlyReview, supersedes part of 0005, amends 0009) |
+| [0017](./docs/adr/0017-recurring-payment-rules-and-schedules.md) | RecurringPayment — recurrence-rule hierarchy, two schedule modes, period-tracked occurrences (collapses InstallmentPlan) |
+| [0018](./docs/adr/0018-planned-purchases-on-accounting-period.md) | Planned purchases on AccountingPeriod — period-centric planning (supersedes PurchaseOrder from 0005, amends 0016/0010) |
+| [0019](./docs/adr/0019-universal-line-items.md) | Universal line-items for spending entries and estimates (amends 0016/0017) |
+| [0020](./docs/adr/0020-recurring-live-carry-make-up-defer.md) | Recurring Live carry-make-up defer (amends 0017) |
+| [0021](./docs/adr/0021-close-flow-multi-account-allocation-and-dispositions.md) | Close flow — multi-account allocation and item dispositions (amends 0007/0009) |
+| [0022](./docs/adr/0022-wishlist-items-packages-and-derived-status.md) | Wishlist items, packages, and derived status (supersedes WishlistItem from 0005) |
+| [0023](./docs/adr/0023-active-month-model.md) | Active-month model and period write permissions (refines 0007/0016) |
 
 ## Service-Specific Standards
 
 ### Event Sourcing
 
 - **Marten for aggregates and event streams only.** All state changes are events.
-- **Aggregates live in `Domain/`**. Example: `Domain/Account.cs`, `Domain/RecurringPayment.cs`, `Domain/MonthlyReview.cs`.
-- **Projections live in `Projections/`**. Example: `Projections/TransactionRecord.cs`, `Projections/MonthProjection.cs`.
+- **Aggregates live in `Domain/`**. Example: `Domain/Account.cs`, `Domain/RecurringPayment.cs`, `Domain/AccountingPeriod.cs` (renamed from MonthlyReview — ADR-0016).
+- **Projections live in `Projections/`**. Example: `Projections/MonthProjection.cs`, `Projections/WishlistItemStatus.cs` (ADR-0022).
+- **Non-event-sourced documents** (UserPreferences, FX rates, Wishlist items/packages) live alongside as Marten documents, not aggregates — see ADR-0013/0015/0022.
 - **Do not expose raw event streams.** Always query projections for read models.
 
 ### CurrencyAmount value object (ADR-0008)
@@ -73,7 +85,7 @@ Cross-domain references use the canonical pair `ExternalReference(string Service
 
 - **All cross-domain events from Money must go through Wolverine's outbox.**
 - Outbox uses shared PostgreSQL transaction with Marten — events are atomically committed with the aggregate change.
-- Example: `Publish(new TransactionRecorded(...))` inside a Marten session handler.
+- Example: `Publish(new FlowRecorded(...))` inside a Marten session handler.
 
 ### Feature Organization
 
@@ -89,8 +101,10 @@ Features/
     CreateScheduleRequest.cs
     CreateScheduleResponse.cs
     CreateScheduleValidator.cs
-  MonthlyReview/
-    CloseMonth.cs
+  AccountingPeriod/
+    ClosePeriod.cs
+    AddPlannedPurchase.cs
+    RecordFlow.cs
     SetTargetSavings.cs
     ...
 ```
@@ -100,27 +114,26 @@ Features/
 - **Do not use EF Core in Money.** Marten is the only data access tool.
 - Use Marten queries (`session.Query<T>()`) for read models.
 
-### Categorization (dual-track)
+### Categorization (dual-track, per-line — ADR-0006/0019)
 
-A purchase or transaction is categorized by exactly one of two tracks (see ADR-0006 and `apps/wallet/PLAN.md`):
+Categorization is applied **per `Line`** on `FlowRecorded` and `PlannedPurchaseAdded` entries (one entry may carry lines in several categories). Each line's `Category` is exactly one of two tracks:
 
-- **Domain categorization (implicit):** `serviceType + externalId` on the PurchaseOrder. Categories are derived from the linked service (`books`, `board-games`, etc.).
-- **Tag categorization (explicit):** free-text tags applied to transactions. Tags are categorization data, not financial state — storage mechanism is a deferred decision (see `docs/adr/README.md`).
+- **Domain categorization (implicit):** an `ExternalReference(serviceType, externalId)` on the line. Categories are derived from the linked service (`books`, `board-games`, etc.).
+- **Tag categorization (explicit):** a free-text `Tag` on the line. Tags are categorization data, not financial state — storage mechanism is a deferred decision (see `docs/adr/README.md`).
 
-Budgets target either track via `CategoryKey`: `domain:<serviceType>` or `tag:<tagtext>`.
+Budgets target either track via `CategoryKey`: `domain:<serviceType>` or `tag:<tagtext>`. The domains-vs-tags-vs-special-meaning refinement is deferred (see ADR README).
 
 ## Events Owned
 
 | Event | Consumed By | Status |
 |---|---|---|
-| `TransactionRecorded` | Planner (future), Scheduler | Draft |
-| `PurchaseOrderCreated` | — | Draft |
-| `PurchaseOrderReceived` | — | Draft (Phase 3 will produce AssetTracked from this) |
-| `WishlistItemAdded` | Planner (budget projection) | Draft |
-| `MonthClosed` | — | Draft (per ADR-0007) |
-| `AssetSold` | Books / Board Games (to mark item no longer owned) | Deferred (Phase 3) |
+| `FlowRecorded` / `FlowReverted` (ADR-0016/0019) | Planner (future), Scheduler | Draft |
+| `PlannedPurchaseAdded` / `Cancelled` / `Edited` (ADR-0018) | — | Draft |
+| `MonthClosed` (ADR-0007/0021) | — | Draft |
+| `AssetTracked` (Phase 3; from a paid entry marked received — ADR-0018) | Books / Board Games | Deferred (Phase 3) |
+| `AssetSold` | Books / Board Games (mark item no longer owned) | Deferred (Phase 3) |
 
-**Note:** Event schemas are designed during feature implementation. This table is a placeholder until each event lands.
+**Note:** The old `TransactionRecorded` (on Account) is superseded by `FlowRecorded` on AccountingPeriod (ADR-0016) for everyday actuals; Account streams keep savings-movement events only. `PurchaseOrderCreated/Received` are dropped (PurchaseOrder aggregate removed — ADR-0018). Wishlist changes are non-event-sourced (ADR-0022). Event schemas are designed during feature implementation; this table is a placeholder until each lands.
 
 ## Anti-Patterns
 
@@ -131,8 +144,11 @@ Budgets target either track via `CategoryKey`: `domain:<serviceType>` or `tag:<t
 - ❌ **Do not create generic repositories.** Use Marten `IDocumentSession` directly.
 - ❌ **Do not store item descriptive metadata (title, ISBN, BGG ID, cover).** Other services own that; Money holds only `ExternalReference` pointers.
 - ❌ **Do not add account types beyond savings.** All accounts are savings accounts (ADR-0009).
-- ❌ **Do not store bare `decimal` monetary amounts.** Use `CurrencyAmount(decimal, string)` (ADR-0008).
+- ❌ **Do not store bare `decimal` monetary amounts.** Use `CurrencyAmount(decimal, string)` (ADR-0008); spending entries carry `list<Line>` (ADR-0019).
+- ❌ **Do not model planned purchases as a separate aggregate (PurchaseOrder).** They are events on AccountingPeriod (ADR-0018).
+- ❌ **Do not store wishlist item status on the item document.** It is a derived projection (ADR-0022).
+- ❌ **Do not record actuals in or close a future period.** Future periods accept planning operations only; actuals route by date, close belongs to the active period (ADR-0023).
 
 ---
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-06-27*

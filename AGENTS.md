@@ -24,7 +24,7 @@
 | # | Service | Lang | DB | Depth | Owns | Context |
 |---|---|---|---|---|---|---|
 | 1 | **Gateway / BFF** | .NET | — | Thin | Routing, auth proxy, mobile composition | [Gateway AGENTS.md](services/gateway/AGENTS.md) |
-| 2 | **Money** | .NET | PostgreSQL + Marten | **Very Deep** | Accounts, transactions, recurring, installments, purchase orders, wishlist, event store | [Money AGENTS.md](services/money/AGENTS.md) |
+| 2 | **Money** | .NET | PostgreSQL + Marten | **Very Deep** | Savings accounts, AccountingPeriod (lifecycle + flow ledger + planned purchases), recurring (Live + Materialized), wishlist (docs + derived status), budgets, FX rates, assets (Phase 3) | [Money AGENTS.md](services/money/AGENTS.md) |
 | 3 | **Books** | .NET | PostgreSQL | Medium | Hardcover sync, reading progress, preorders | TBD |
 | 4 | **Board Games** | .NET | PostgreSQL | Deep | Collection, BGG sync, expansions, accessories, sleeve inventory, preorders | TBD |
 | 5 | **Steam** | Rust | PostgreSQL | Shallow | Library sync, playtime hours | TBD |
@@ -262,6 +262,6 @@ Use this to calibrate implementation effort:
 
 ---
 
-*Last updated: 2026-06-16*  
+*Last updated: 2026-06-27*
 *Maintained by: System Architect*  
 *Next expected update: After Money service event model is finalized.*

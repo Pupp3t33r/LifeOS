@@ -205,34 +205,41 @@ These can be settled during implementation, not before:
 
 ---
 
-## 12. Design backlog — open items (as of 2026-06-26)
+## 12. Design backlog — open items (as of 2026-06-27)
 
 A multi-session functional-design pass is underway (pages & flows before UI/UX). Status:
 
-### Landed this session (Money ADRs)
+### Landed 2026-06-26 (Money ADRs)
 - **ADR-0015** — FX rate sourcing: Belarusbank card **SELL** rates (primary) + Frankfurter (fallback); plain hourly `BackgroundService`; client **15-min** rate cache; in-app **Rates view**. Amends ADR-0013 with `DefaultSpendingCurrency`.
 - **ADR-0016** — **`AccountingPeriod`** aggregate (renames `MonthlyReview`): one per-month stream holding lifecycle **+** the flow ledger (`FlowRecorded` / `FlowReverted`). Accounts narrow to **savings movements only**.
 - **ADR-0017** — **`RecurringPayment`**: recurrence-rule discriminated hierarchy + two schedule modes (**Live** rule / **Materialized** list); InstallmentPlan collapsed in; occurrences tracked via back-refs on AccountingPeriod (no per-occurrence state on the aggregate).
 
+### Landed 2026-06-27 (Money ADRs 0018–0023) — the period-centric shift
+- **ADR-0018** — Planned purchases on AccountingPeriod (period-centric planning); **PurchaseOrder dropped for v1**; Asset ingestion amended (paid entry → Asset, no PO).
+- **ADR-0019** — **Universal line-items**: `FlowRecorded` / `PlannedPurchaseAdded` / recurring estimates all carry `list<Line>` (per-line `Category`; entry-level tags removed).
+- **ADR-0020** — Recurring **Live carry-make-up** defer (skip + a disconnected one-off next period, for arrears like back-rent).
+- **ADR-0021** — Close flow: surplus/deficit **split across multiple savings accounts** (user-truth, **not validated** against projected); unpaid-item dispositions (cancel/defer/skip/re-date/carry-make-up) appended in the close transaction; atomicity tentative pending implementation.
+- **ADR-0022** — Wishlist items + packages (non-event-sourced documents) + derived **`WishlistItemStatus`** projection (`NotPlanned`/`Planned`/`Ordered`/`Received`); fine-grained items grouped by package.
+- **ADR-0023** — Active-month model: **multiple periods may be open**; **future periods accept planning operations only** (no actuals/close); actuals route by date; active period = UI focus; no "open next" ceremony.
+
+This session **resolved flow-list items 1 (close/reconciliation), 2 (planning levers), and 3 (Wishlist/PO)**, plus the **active-month/period model** and the **PO↔installment overlap** (installments = Materialized RecurringPayment; planned purchases = period events; PO dropped).
+
 ### Confirmed, not yet written up
-- **Active-month / period model** — exactly one *open* (editable) AccountingPeriod; past/future periods view-only; advancing requires an explicit **month-close**; overdue-close warning on Home. *(Extends ADR-0007/0016; capture here + possibly its own ADR.)*
-- **Home functional spec** — two sections: active-month **plan canvas** + **savings-accounts glance**; recurring items render as a confirm **checklist** with progressive realization; confirm dialog adjusts actual amount/date. *(To write up.)*
+- **Home functional spec** — two sections: active-month **plan canvas** + **savings-accounts glance**; recurring items as a confirm **checklist** with progressive realization. Now largely implied by the period-centric model (ADR-0018/0019); write up when Home is built.
 - **Offline-first** — pending ADR `apps/wallet/docs/adr/0001-offline-first-sync.md` (decision already in AGENTS.md; needs freezing).
 
 ### Still to discuss (flow list)
-1. **Month close / reconciliation** — the keystone (reconcile unconfirmed lines, fix the balance, savings transfer, lock, open next). Flow not yet pinned.
-2. **Planning levers** — wishlist → month (planned purchase), ad-hoc expense, set target.
-3. **Wishlist / PurchaseOrder** — incl. the **PO ↔ installment overlap** (does a PO bought in installments create/reference a Materialized RecurringPayment?).
-4. **Budgets** — light per-category, consumption by tag.
+4. **Budgets** — light per-category, consumption by tag. Per-line categorization (ADR-0019) enables it; the budgets UI/flow itself isn't designed.
 5. **Accounts management** — create/edit, savings movements, transfers.
 
-### Deferred sub-decisions (not blocking)
-- **Tag storage** (Marten docs vs side table vs projection-only — deferred in Money ADR README); blocks "subscription = tagged recurring" and budget-by-tag.
-- **Projection strategy** (inline vs async — forcing function: MonthProjection).
-- `nth weekday of month` recurrence subtype.
+### Deferred sub-decisions (not blocking; captured in Money ADR README)
+- **Categorization taxonomy** — domains vs tags vs "special-meaning" flags; the UI click-cost tradeoff.
+- **`ActualSavingsOverride` vs allocations** — does the sum of allocations fold the override? + per-month projected-vs-actual variance display + dipping-into-savings for a purchase.
+- **Early payment of future-period installments** — cross-period occurrence tracking + idempotency (amends ADR-0016/0017).
+- **Skip-periods** (catch-up UX); **Asset shape** (Phase 3); **Tag storage**; **Projection strategy** (forcing function: MonthProjection); `nth weekday of month` recurrence subtype.
 
-> Note: §9's "MonthlyReview" reference is superseded by **AccountingPeriod** (ADR-0016); recurring + installments are now one aggregate (ADR-0017).
+> Note: "MonthlyReview" is superseded by **AccountingPeriod** (ADR-0016); planned purchases are period events (ADR-0018); spending entries are line-itemed (ADR-0019); WishlistItem is a document + projection (ADR-0022); the PurchaseOrder aggregate is dropped for v1 (ADR-0018).
 
 ---
 
-*Last updated: 2026-06-26*
+*Last updated: 2026-06-27*
