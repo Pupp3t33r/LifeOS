@@ -10,17 +10,18 @@
 Money owns all financial state. No other service stores cost, payment schedules, or wishlist data.
 
 **Owned domains:**
-- Savings accounts (checking/credit/cash are out of scope — see ADR-0009)
+- Savings accounts (checking/credit/cash are out of scope — see ADR-0009; balance changes via `SavingsMovementRecorded` — ADR-0026)
 - AccountingPeriod — per-month stream holding lifecycle + flow ledger (actuals) + planned purchases (ADR-0016/0018/0019); renamed from MonthlyReview
-- Flow actuals (`FlowRecorded` / `FlowReverted`, line-itemed — ADR-0019)
-- Recurring payments (Live rule + Materialized list; installments/debt are Materialized — ADR-0017)
+- Flow actuals (`FlowRecorded` / `FlowReverted`, line-itemed — ADR-0019; plus `UnaccountedFlowRecorded` honesty-valve gap — ADR-0026; **actual = Σ flows**)
+- Recurring payments (Live rule + Materialized list; installments/debt are Materialized — ADR-0017; early payment via `OccurrencePaidInAdvance` — ADR-0027)
 - Planned purchases (events on AccountingPeriod, line-itemed — ADR-0018/0019)
 - Wishlist (desired items + packages, non-event-sourced documents with derived status — ADR-0022)
-- Budgets (light per-period category targets — ADR-0006; per-line categorization ADR-0019)
+- Categories (managed: system Books/Board Games/Video Games + user categories; one `CategoryId` per line — ADR-0024)
+- Budgets (light per-period category targets, Marten document; targets a `CategoryId` — ADR-0025)
 - UserPreferences (non-event-sourced document — ADR-0013)
 - Assets (owned items, financial fields only — ADR-0010; Phase 3, ingestion via paid-entry → Asset per ADR-0018)
 - FX rates (Belarusbank card SELL rates primary + Frankfurter fallback — ADR-0015)
-- Event store (Marten streams) + non-event-sourced documents (UserPreferences, FX rates, Wishlist items/packages)
+- Event store (Marten streams) + non-event-sourced documents (UserPreferences, FX rates, Wishlist items/packages, Categories, Budgets)
 
 ## Tech Stack
 
@@ -62,6 +63,10 @@ Architecture decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/). The f
 | [0021](./docs/adr/0021-close-flow-multi-account-allocation-and-dispositions.md) | Close flow — multi-account allocation and item dispositions (amends 0007/0009) |
 | [0022](./docs/adr/0022-wishlist-items-packages-and-derived-status.md) | Wishlist items, packages, and derived status (supersedes WishlistItem from 0005) |
 | [0023](./docs/adr/0023-active-month-model.md) | Active-month model and period write permissions (refines 0007/0016) |
+| [0024](./docs/adr/0024-category-model.md) | Category model — managed system (Books/Board Games/Video Games) + user categories; one CategoryId per line (supersedes dual-track tags, amends 0019/0006) |
+| [0025](./docs/adr/0025-budget-period-centric-and-category-targeted.md) | Budget — period-centric, category-targeted Marten document (supersedes 0006 aggregate, amends 0006) |
+| [0026](./docs/adr/0026-actuals-honesty-and-savings-movements.md) | Actuals honesty & savings movements — drop ActualSavingsOverride → UnaccountedFlowRecorded (actual = Σ flows); names SavingsMovementRecorded (amends 0007/0021) |
+| [0027](./docs/adr/0027-early-payment-of-future-period-occurrence.md) | Early payment of a future-period occurrence — 2-event model: paying FlowRecorded + future-period OccurrencePaidInAdvance marker (amends 0016/0017/0023) |
 
 ## Service-Specific Standards
 
@@ -114,26 +119,33 @@ Features/
 - **Do not use EF Core in Money.** Marten is the only data access tool.
 - Use Marten queries (`session.Query<T>()`) for read models.
 
-### Categorization (dual-track, per-line — ADR-0006/0019)
+### Categorization (managed, per-line — ADR-0024/0025)
 
-Categorization is applied **per `Line`** on `FlowRecorded` and `PlannedPurchaseAdded` entries (one entry may carry lines in several categories). Each line's `Category` is exactly one of two tracks:
+Categorization is applied **per `Line`** on `FlowRecorded` and `PlannedPurchaseAdded` entries (one entry may carry lines in several categories). Each line carries **one `CategoryId`** (nullable = uncategorized) referencing a **Category** — a first-class entity:
 
-- **Domain categorization (implicit):** an `ExternalReference(serviceType, externalId)` on the line. Categories are derived from the linked service (`books`, `board-games`, etc.).
-- **Tag categorization (explicit):** a free-text `Tag` on the line. Tags are categorization data, not financial state — storage mechanism is a deferred decision (see `docs/adr/README.md`).
+- **System categories** (code constants, fixed Guids, immutable): **Books**, **Board Games**, **Video Games** — each linked to one or more domain `ServiceTypes` (a list, so "Video Games" is not limited to Steam). Users cannot create/delete/rename them; they only manage their own.
+- **User categories** (per-user Marten documents, full CRUD): everything else. Delete = soft-archive (retired from the picker; historical lines/budgets still resolve by `CategoryId`).
 
-Budgets target either track via `CategoryKey`: `domain:<serviceType>` or `tag:<tagtext>`. The domains-vs-tags-vs-special-meaning refinement is deferred (see ADR README).
+`GET /api/money/categories` returns the **overlay** `system (code) ∪ user (docs, archived excluded from picker)`. System categories are never copied into a user's table — there is no per-user edit of a hardcoded thing.
+
+A line may also carry a separate **`ExternalRef: ExternalReference?`** — a direct link to a *specific* domain object (any line, not just wishlist), decoupled from categorization. When an `ExternalRef`'s `ServiceType` matches a system category, the line's `CategoryId` **auto-defaults** to that system category (the user may override; the `ExternalRef` is preserved for deep-linking regardless). `Line.WishlistItemId` (ADR-0022) is the independent back-ref for the wishlist-status projection.
+
+Budgets target a **`CategoryId`** (ADR-0025); the `BudgetActuals` projection groups `FlowRecorded` lines by per-line `CategoryId`. There are **no tags** and **no `CategoryKey` string** — the dual-track/tag model is superseded (ADR-0024).
 
 ## Events Owned
 
 | Event | Consumed By | Status |
 |---|---|---|
 | `FlowRecorded` / `FlowReverted` (ADR-0016/0019) | Planner (future), Scheduler | Draft |
+| `UnaccountedFlowRecorded` (ADR-0026) — the honesty-valve gap entry; sums into actuals | Planner (future) | Draft |
 | `PlannedPurchaseAdded` / `Cancelled` / `Edited` (ADR-0018) | — | Draft |
+| `OccurrencePaidInAdvance` / `Retracted` (ADR-0027) — status-reference marker for an early-paid future-period occurrence (display amount only; **not** summed into actuals) | — | Draft |
+| `SavingsMovementRecorded` (ADR-0026) — on Account streams (deposits/withdrawals; `Source: manual\|close`; reserved `TransferId`) | — | Draft |
 | `MonthClosed` (ADR-0007/0021) | — | Draft |
 | `AssetTracked` (Phase 3; from a paid entry marked received — ADR-0018) | Books / Board Games | Deferred (Phase 3) |
 | `AssetSold` | Books / Board Games (mark item no longer owned) | Deferred (Phase 3) |
 
-**Note:** The old `TransactionRecorded` (on Account) is superseded by `FlowRecorded` on AccountingPeriod (ADR-0016) for everyday actuals; Account streams keep savings-movement events only. `PurchaseOrderCreated/Received` are dropped (PurchaseOrder aggregate removed — ADR-0018). Wishlist changes are non-event-sourced (ADR-0022). Event schemas are designed during feature implementation; this table is a placeholder until each lands.
+**Note:** The old `TransactionRecorded` (on Account) is superseded twice over — by `FlowRecorded` on AccountingPeriod for everyday actuals (ADR-0016), and by `SavingsMovementRecorded` for the savings-movement events Account streams retain (ADR-0026). `PurchaseOrderCreated/Received` are dropped (PurchaseOrder aggregate removed — ADR-0018). Wishlist, Category, and Budget changes are non-event-sourced (ADR-0022/0024/0025). The old `ActualSavingsOverride`/`ActualSavingsOverridden` are removed (ADR-0026 — actual = Σ flows incl. `UnaccountedFlowRecorded`). Event schemas are designed during feature implementation; this table is a placeholder until each lands.
 
 ## Anti-Patterns
 
@@ -145,10 +157,12 @@ Budgets target either track via `CategoryKey`: `domain:<serviceType>` or `tag:<t
 - ❌ **Do not store item descriptive metadata (title, ISBN, BGG ID, cover).** Other services own that; Money holds only `ExternalReference` pointers.
 - ❌ **Do not add account types beyond savings.** All accounts are savings accounts (ADR-0009).
 - ❌ **Do not store bare `decimal` monetary amounts.** Use `CurrencyAmount(decimal, string)` (ADR-0008); spending entries carry `list<Line>` (ADR-0019).
+- ❌ **Do not use free-text tags or a `CategoryKey` string.** Categorization is a managed `CategoryId` (system Books/Board Games/Video Games + user categories — ADR-0024); budgets target a `CategoryId` (ADR-0025).
 - ❌ **Do not model planned purchases as a separate aggregate (PurchaseOrder).** They are events on AccountingPeriod (ADR-0018).
 - ❌ **Do not store wishlist item status on the item document.** It is a derived projection (ADR-0022).
-- ❌ **Do not record actuals in or close a future period.** Future periods accept planning operations only; actuals route by date, close belongs to the active period (ADR-0023).
+- ❌ **Do not use `ActualSavingsOverride`.** It is removed; **actual = Σ flows** and the honesty valve is an `UnaccountedFlowRecorded` gap entry (ADR-0026).
+- ❌ **Do not record actuals in or close a future period.** Future periods accept planning operations only; actuals route by date, close belongs to the active period (ADR-0023). The sole exception is an `OccurrencePaidInAdvance` status marker written atomically with an early-payment actual (ADR-0027) — it is a status reference, not an actual in the future period.
 
 ---
 
-*Last updated: 2026-06-27*
+*Last updated: 2026-06-28*

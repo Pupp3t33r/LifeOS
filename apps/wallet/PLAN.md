@@ -43,14 +43,14 @@ The app shows the consequence: dropping a \$800 lens into March drops projected 
 |---|---|---|
 | **Target savings** | User-set goal per month | "I want to save \$1,000 this month." |
 | **Projected savings** | Computed: `income − spending − planned_purchases` | "Based on what I've planned, I'm on track for \$1,250." |
-| **Actual savings (override)** | User-entered real number | "In reality I saved \$1,180 — accounts for the coffees I didn't log." |
+| **Actual savings** | `Σ flows` incl. an optional `UnaccountedFlowRecorded` gap entry (Money ADR-0026) | "In reality I saved \$1,180 — accounts for the coffees I didn't log." |
 
-The actual-override is the **honesty valve**: it lets the planner tolerate gaps in transaction logging without forcing the user to itemize every coffee.
+The honesty valve is an **`UnaccountedFlowRecorded` gap entry** (Money ADR-0026): the user's real number is stored as a signed flow entry (the gap between logged and actual), so **actual = Σ flows** always and the ledger stays complete. (The old `ActualSavingsOverride` god-number is removed.) This lets the planner tolerate gaps in transaction logging without forcing the user to itemize every coffee.
 
-- Power-user mode: log everything → projected converges with actual → override stays empty.
-- Big-picture mode: log only big things → projected drifts → user enters actual at month-end.
+- Power-user mode: log everything → projected converges with actual → no gap entry needed.
+- Big-picture mode: log only big things → projected drifts → user enters actual at month-end (a gap entry is recorded for the difference).
 
-Both styles work without the app shaming either. Transactions are **frequency-up-to-user**: a user can log every coffee or log nothing and rely on the override.
+Both styles work without the app shaming either. Transactions are **frequency-up-to-user**: a user can log every coffee or log nothing and rely on a gap entry at close.
 
 ---
 
@@ -168,14 +168,14 @@ The Phase 1 data model already supports this via `ExternalReference`; Phase 2 is
 | BFF routes | Gateway `/app/v1/*` (renamed from `/mobile/v1/*`) | Gateway AGENTS.md |
 | Offline model | Read models + pending-operations outbox in drift. No client-side event sourcing. | User decision |
 | Family stance v1 | Solo only; data model family-aware | User decision |
-| Categories | Dual-track: domain (`serviceType+externalId`) + free-text tags. No fixed category list. | User decision |
-| Budgets v1 | Light, monthly, no envelopes, no rollover | Money ADR-0006 |
-| Savings model | Three-layer: target / projected / actual-override | Money ADR-0007 |
+| Categories | Managed list: system (Books/Board Games/Video Games) + user categories; one `CategoryId` per line; no tags | Money ADR-0024 |
+| Budgets v1 | Light, per-period, no envelopes, no rollover; Marten document; targets a `CategoryId` | Money ADR-0025 (supersedes 0006) |
+| Savings model | Three-layer: target / projected / actual (`Σ flows` incl. an `UnaccountedFlowRecorded` gap entry) | Money ADR-0007 + ADR-0026 |
 | Multi-currency | In v1 with FX service (Frankfurter) | Money ADR-0008 |
 | Accounts | Savings only; one currency per account | Money ADR-0009 |
 | Inventory architecture | Asset aggregate inside Money, financial fields only | Money ADR-0010 |
 | Income pattern | Stable + resale (later); planner accommodates variable | User decision |
-| Subscriptions | Modeled as tagged `RecurringPayment`; not a distinct concept | User decision |
+| Subscriptions | Modeled as a `RecurringPayment` (optionally given a user category); not a distinct concept | Money ADR-0017 |
 | Auth session & login UX | Per-platform token lifetimes; passkey-preferred + password fallback; native biometric app-lock; short web session | Money ADR-0014 |
 
 ---
@@ -186,9 +186,8 @@ These can be settled during implementation, not before:
 
 - FX display formatting edge cases (how many decimals, when to suppress the original).
 - Whether month-close auto-creates the savings transfer transaction or requires explicit user confirmation in the close flow.
-- Tag UI (autocomplete, recent tags, multi-tag on one transaction).
-- Wishlist → PO conversion: drag-and-drop vs. button-driven; whether to allow partial (split a wishlist item across months).
-- Whether `ActualSavingsOverride` accepts one Money (display currency) or per-currency breakdowns.
+- Wishlist → planned-purchase conversion: drag-and-drop vs. button-driven; whether to allow partial (split a wishlist item across months).
+- The `UnaccountedFlowRecorded` gap entry is a single display-currency amount (Money ADR-0026); whether a per-currency breakdown is ever needed is deferred.
 - Savings-account creation flow specifics (default currency, opening balance source).
 - Web-specific UX (responsive layout, mobile-vs-desktop affordances).
 
@@ -224,22 +223,27 @@ A multi-session functional-design pass is underway (pages & flows before UI/UX).
 
 This session **resolved flow-list items 1 (close/reconciliation), 2 (planning levers), and 3 (Wishlist/PO)**, plus the **active-month/period model** and the **PO↔installment overlap** (installments = Materialized RecurringPayment; planned purchases = period events; PO dropped).
 
+### Landed 2026-06-28 (Money ADRs 0024–0027) — categories, budgets, actuals honesty, early payment
+- **ADR-0024 — Category model (managed):** the dual-track tag model is **superseded**. Categories are now a managed list — **system** (Books, Board Games, Video Games; code constants, immutable) + **user** (full CRUD, soft-archive). A line carries one **`CategoryId`** plus a separate direct **`ExternalRef`** (specific domain object; auto-categorizes when it matches a system category). No tags.
+- **ADR-0025 — Budget (period-centric, category-targeted):** Budget becomes a **Marten document** (supersedes 0006's aggregate) targeting a `CategoryId`; a `BudgetActuals` projection groups `FlowRecorded` lines by per-line `CategoryId` (signed sum, event-time FX). Per-period + client "copy last month" bulk; no templates.
+- **ADR-0026 — Actuals honesty & savings movements:** the `ActualSavingsOverride` god-number is **removed** — the honesty valve is now an **`UnaccountedFlowRecorded`** gap entry, so **actual = Σ flows** always and the ledger stays complete. Close distributes Σ flows across accounts (resolves 0021's override-vs-allocations by elimination). **Dipping into savings = close-time aggregate** (no mid-month per-purchase withdrawals in v1). Names the **`SavingsMovementRecorded`** event (replaces the generic `TransactionRecorded` on Account). Variance = actual − projected (computed).
+- **ADR-0027 — Early payment (2-event model):** paying a future-period occurrence early writes the `FlowRecorded` in the **paying period** + an **`OccurrencePaidInAdvance`** status marker on the **occurrence's period** (atomic). Marker is display-only (the actuals fold ignores it); period-local reads; **stream-enforced idempotency** (Marten concurrency on the occurrence's period). Amends 0016/0017/0023.
+
+This session **resolved flow-list item 4 (Budgets)** and the two big deferred topics — **actuals/override/dipping** and **early payment** — plus re-modeled categorization from dual-track tags to a managed category list.
+
 ### Confirmed, not yet written up
 - **Home functional spec** — two sections: active-month **plan canvas** + **savings-accounts glance**; recurring items as a confirm **checklist** with progressive realization. Now largely implied by the period-centric model (ADR-0018/0019); write up when Home is built.
 - **Offline-first** — pending ADR `apps/wallet/docs/adr/0001-offline-first-sync.md` (decision already in AGENTS.md; needs freezing).
 
 ### Still to discuss (flow list)
-4. **Budgets** — light per-category, consumption by tag. Per-line categorization (ADR-0019) enables it; the budgets UI/flow itself isn't designed.
-5. **Accounts management** — create/edit, savings movements, transfers.
+5. **Accounts management** — create/edit (rename/archive) and **transfers** (paired `SavingsMovementRecorded` entries sharing a `TransferId`, deferred per ADR-0009). Savings movements themselves are defined (`SavingsMovementRecorded`, ADR-0026); account CRUD is trivial and also deferred. Low priority — the real v1 work (categories, budgets, actuals, early payment) has landed.
 
 ### Deferred sub-decisions (not blocking; captured in Money ADR README)
-- **Categorization taxonomy** — domains vs tags vs "special-meaning" flags; the UI click-cost tradeoff.
-- **`ActualSavingsOverride` vs allocations** — does the sum of allocations fold the override? + per-month projected-vs-actual variance display + dipping-into-savings for a purchase.
-- **Early payment of future-period installments** — cross-period occurrence tracking + idempotency (amends ADR-0016/0017).
-- **Skip-periods** (catch-up UX); **Asset shape** (Phase 3); **Tag storage**; **Projection strategy** (forcing function: MonthProjection); `nth weekday of month` recurrence subtype.
+- **Skip-periods** (catch-up UX); **Asset shape** (Phase 3); **Projection strategy** (forcing function: MonthProjection); `nth weekday of month` recurrence subtype; **Transfers** (paired, ADR-0009); **`ExternalReference` snapshot caching** (Phase 2).
+- **Mid-month per-purchase "fund from savings"** — dipping into savings is **close-time aggregate only** in v1 (ADR-0026); an opt-in real-time advance (netted at close) is a deferred enhancement.
 
-> Note: "MonthlyReview" is superseded by **AccountingPeriod** (ADR-0016); planned purchases are period events (ADR-0018); spending entries are line-itemed (ADR-0019); WishlistItem is a document + projection (ADR-0022); the PurchaseOrder aggregate is dropped for v1 (ADR-0018).
+> Note: "MonthlyReview" is superseded by **AccountingPeriod** (ADR-0016); planned purchases are period events (ADR-0018); spending entries are line-itemed (ADR-0019); WishlistItem is a document + projection (ADR-0022); the PurchaseOrder aggregate is dropped for v1 (ADR-0018); categorization is a managed **`CategoryId`** (ADR-0024, tags removed); the `ActualSavingsOverride` is removed (**actual = Σ flows**, ADR-0026); Budget is a document targeting a `CategoryId` (ADR-0025); early payment uses a 2-event model (ADR-0027).
 
 ---
 
-*Last updated: 2026-06-27*
+*Last updated: 2026-06-28*

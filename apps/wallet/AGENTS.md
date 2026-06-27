@@ -74,12 +74,14 @@ Each feature owns its drift tables, API client pieces, and Riverpod providers. C
 
 ### Categorization
 
-Per Money ADR-0006 and `apps/wallet/PLAN.md`, categorization is **dual-track**:
+Per Money [ADR-0024](../../services/money/docs/adr/0024-category-model.md) and `apps/wallet/PLAN.md`, categorization is a **managed category list** (the dual-track tag model is superseded — there are no tags):
 
-- **Domain-linked** purchases carry `serviceType + externalId` on the PurchaseOrder — implicit categorization. Wallet deep-links to the relevant domain app or shows an inline preview via Gateway BFF.
-- **Free-text tags** on transactions — explicit categorization. Tags are user-defined; no fixed category list.
+- **System categories** ship built-in and domain-linked: **Books**, **Board Games**, **Video Games**. Immutable — the user cannot create/delete/rename them.
+- **User categories** are fully user-managed (create/rename/delete). Delete = soft-archive (retired from the picker; history keeps resolving).
 
-Budgets target either track (`domain:books`, `tag:coffee`).
+A line carries **one `CategoryId`** (nullable = uncategorized). `GET /api/money/categories` returns the overlay `system ∪ user`. A line may also carry a separate `ExternalRef` — a direct link to a *specific* domain object (Phase 2+, when Books/Board Games come online); when its service matches a system category, the `CategoryId` auto-defaults and the user may override. Domain deep-linking / inline preview goes through the Gateway BFF.
+
+Budgets target a `CategoryId` (Money [ADR-0025](../../services/money/docs/adr/0025-budget-period-centric-and-category-targeted.md)). There are no tags and no `domain:`/`tag:` strings.
 
 ### Multi-currency rendering
 
@@ -97,7 +99,7 @@ Per `apps/wallet/PLAN.md`: render multi-currency values as **original + converte
 ## Conventions Specific to Wallet
 
 - **Money value object in Dart** mirrors `Money(decimal Amount, string Currency)` from the Money service. Always pass the pair, never a bare `double` or `num`.
-- **Editable honesty valves** are first-class UI patterns: `ActualSavingsOverride` on MonthlyReview (ADR-0007), `BalanceOverride` on savings accounts (ADR-0009), `CurrentEstimatedValue` on Assets (ADR-0010). The user-truth beats computed-truth wherever a "real number" matters.
+- **Editable honesty valves** are first-class UI patterns: the period's "actual savings" via an `UnaccountedFlowRecorded` gap entry (Money [ADR-0026](../../services/money/docs/adr/0026-actuals-honesty-and-savings-movements.md) — the UI may say "set actual savings to $X"; under the hood a signed gap entry is recorded so **actual = Σ flows**), and `CurrentEstimatedValue` on Assets (Money [ADR-0010](../../services/money/docs/adr/0010-asset-aggregate.md)). The user-truth beats computed-truth wherever a "real number" matters. (The old `ActualSavingsOverride` god-number is removed — ADR-0026; and there is no per-account `BalanceOverride` — it was removed in ADR-0009; account balances are movement-derived.)
 - **Solo-only in v1** — no UI for "whose money is this," no shared accounts, no permissions. The data model is family-aware (every request carries `OwnerId` from JWT `sub`), but the UI is single-user.
 - **Theme from the shared registry, don't hardcode.** Wallet wears the **Calm** theme. The Dart binding is vendored at `lib/app/theme/calm_tokens.dart` (a Flutter package can't import files outside its own `lib/`, unlike the CSS binding Keycloak bind-mounts); `app/theme/app_theme.dart` maps it into light/dark `ThemeData`. Reference the theme (or `CalmTokens`) for colors/fonts/radii rather than literals. Token values are owned by `design/themes/calm/tokens.json` — change them there and mirror into the binding (see [design/README.md](../../design/README.md)). The Keycloak sign-in wears Calm via the CSS binding, so login and app stay visually consistent.
 
@@ -123,4 +125,4 @@ Per `apps/wallet/PLAN.md`: render multi-currency values as **original + converte
 
 ---
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-06-28*
