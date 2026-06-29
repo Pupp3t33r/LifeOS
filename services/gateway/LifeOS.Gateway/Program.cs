@@ -16,6 +16,22 @@ var keycloakUrl = builder.Configuration["services:keycloak:http:0"]
     ?? builder.Configuration["services:keycloak:https:0"]
     ?? "http://localhost:8080";
 
+// Dev-only CORS so a hot-reloading `flutter run` on its own origin (e.g.
+// http://localhost:5555) can call the proxied Money API cross-origin. Production
+// is same-origin (the SPA is served by the Gateway), so no policy is registered
+// there and the proxy stays CORS-free. Applied only to the route(s) that opt in
+// via "CorsPolicy" in config (see appsettings.Development.json → the money route).
+// Keycloak's own CORS is handled by the client's webOrigins, not here.
+const string walletDevCors = "wallet-dev";
+if (builder.Environment.IsDevelopment())
+{
+    var devOrigins = builder.Configuration.GetSection("Cors:DevOrigins").Get<string[]>()
+        ?? ["http://localhost:5555"];
+    builder.Services.AddCors(options => options.AddPolicy(
+        walletDevCors,
+        policy => policy.WithOrigins(devOrigins).AllowAnyHeader().AllowAnyMethod()));
+}
+
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
     .LoadFromMemory(
@@ -54,6 +70,13 @@ if (walletWebConfigured)
     var fileProvider = new PhysicalFileProvider(walletWebRoot!);
     app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = fileProvider });
     app.UseStaticFiles(new StaticFileOptions { FileProvider = fileProvider });
+}
+
+if (app.Environment.IsDevelopment())
+{
+    // Honors per-route "CorsPolicy" metadata (the money route) and answers
+    // preflight OPTIONS without proxying them upstream.
+    app.UseCors();
 }
 
 app.MapDefaultEndpoints();

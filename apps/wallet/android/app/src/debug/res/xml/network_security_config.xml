@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DEBUG-ONLY: permit cleartext HTTP to the local LifeOS gateway during dev.
+     Lives under src/debug, so release builds are unaffected (cleartext stays off).
+     - localhost / 127.0.0.1 cover `adb reverse tcp:5022 tcp:5022` (recommended:
+       the device's localhost maps to the host gateway, so the app's native
+       defaults and the token issuer both stay http://localhost:5022).
+     - 10.0.2.2 is the emulator's host alias; usable, but it makes the app reach
+       Keycloak at a host that differs from KC_HOSTNAME (localhost:5022), which
+       trips OIDC issuer validation — so prefer adb reverse. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>
