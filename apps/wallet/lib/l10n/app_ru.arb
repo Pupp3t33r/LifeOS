@@ -1,0 +1,47 @@
+{
+  "@@locale": "ru",
+
+  "languageNameEnglish": "English",
+  "languageNameRussian": "Русский",
+  "languageSwitcherTooltip": "Язык",
+
+  "onbAccountEyebrow": "где живут накопления",
+  "onbAccountTitle": "Где хранятся ваши накопления?",
+  "onbAccountLede": "Добавьте один сберегательный счёт для начала. Деньги, которые вы не потратите за месяц, оседают здесь — это всё, что нужно Wallet, чтобы начать.",
+  "onbAccountNameLabel": "Название счёта",
+  "onbAccountNameHint": "Основные накопления",
+  "onbCurrencyLabel": "Валюта",
+  "onbOpeningBalanceLabel": "Сейчас на счёте",
+  "onbOpeningBalanceHint": "0",
+  "onbAccountHint": "Приблизительной суммы достаточно — её можно изменить в любой момент. Wallet никогда не угадывает то, чего не видит.",
+
+  "onbMonthEyebrow": "ваш месяц",
+  "onbMonthTitle": "Когда начинается ваш месяц?",
+  "onbMonthLede": "Большинство планирует по календарному месяцу. Если вам платят в определённый день, начните с него — ваш месяц идёт от этого дня до следующего.",
+  "onbCalendarMonthTitle": "Календарный месяц",
+  "onbCalendarMonthSubtitle": "С 1-го по последний день",
+  "onbCustomDayTitle": "День на мой выбор",
+  "onbCustomDaySubtitle": "Для планирования от зарплаты или аренды",
+  "onbMonthLockNote": "Это можно менять, пока вы не закроете первый месяц. После закрытия настройка фиксируется, чтобы история не сдвинулась под вами.",
+  "onbDayOfMonth": "день месяца",
+  "onbDayClampNote": "Короткие месяцы сдвигаются на последний день — февраль начнётся 28-го.",
+
+  "onbBiometricEyebrow": "защитите свой Wallet",
+  "onbBiometricTitle": "Блокировать Wallet при открытии?",
+  "onbBiometricLede": "Разблокируйте Wallet отпечатком или лицом при каждом открытии — ваши деньги остаются приватными, даже если устройство разблокировано. Это можно изменить позже в настройках.",
+  "onbBiometricSwitchTitle": "Разблокировка по биометрии",
+  "onbBiometricSwitchSubtitle": "Рекомендуется для финансового приложения",
+  "onbBiometricHint": "Используется отпечаток или лицо, уже настроенные на этом устройстве — здесь ничего настраивать не нужно.",
+
+  "onbBack": "Назад",
+  "onbContinue": "Продолжить",
+  "onbFinish": "Завершить настройку",
+  "onbError": "Не удалось завершить настройку. Проверьте подключение и попробуйте снова.",
+
+  "currencyUsd": "Доллар США — USD",
+  "currencyEur": "Евро — EUR",
+  "currencyGbp": "Фунт стерлингов — GBP",
+  "currencyPln": "Польский злотый — PLN",
+  "currencyJpy": "Японская иена — JPY",
+  "currencyCad": "Канадский доллар — CAD"
+}

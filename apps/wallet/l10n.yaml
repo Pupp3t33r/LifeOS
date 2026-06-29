@@ -1,0 +1,9 @@
+# Flutter gen-l10n configuration. ARB source lives in lib/l10n; the generated
+# AppLocalizations Dart is emitted alongside it (non-synthetic) and gitignored —
+# see apps/wallet/docs/adr/0001-app-localization.md.
+arb-dir: lib/l10n
+output-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false

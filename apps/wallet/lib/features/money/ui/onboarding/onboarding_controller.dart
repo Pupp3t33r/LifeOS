@@ -30,8 +30,10 @@ class OnboardingController extends Notifier<OnboardingState> {
   }
 
   /// Persists the collected config. Returns true on success; on failure leaves
-  /// the form intact with [OnboardingState.error] set so the user can retry.
-  Future<bool> submit() async {
+  /// the form intact with [OnboardingState.error] set to [failureMessage] (passed
+  /// in already-localized by the caller, which has the BuildContext) so the user
+  /// can retry.
+  Future<bool> submit(String failureMessage) async {
     if (state.submitting) return false;
     state = state.copyWith(submitting: true, error: null);
 
@@ -56,10 +58,7 @@ class OnboardingController extends Notifier<OnboardingState> {
       await ref.read(preferencesProvider.future);
       return true;
     } catch (error) {
-      state = state.copyWith(
-        submitting: false,
-        error: 'Could not finish setup. Check your connection and try again.',
-      );
+      state = state.copyWith(submitting: false, error: failureMessage);
       return false;
     }
   }

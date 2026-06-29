@@ -23,6 +23,7 @@
 | Routing | go_router |
 | Auth | `oidc` (Keycloak OIDC, Authorization Code + PKCE, all platforms incl. Web/Windows/Linux) + `OidcDefaultStore`/`flutter_secure_storage` (token storage). Login/registration/reset are Keycloak-hosted pages, not in-app forms — see [app/auth/README.md](./lib/app/auth/README.md). |
 | Theming | Shared [`design/`](../../design/README.md) theme registry → `tokens.dart` binding → Flutter `ThemeData`. Wallet wears the **Calm** theme. Style Dictionary deferred. |
+| Localization | `flutter_localizations` + `intl` with `gen-l10n` ARB files (`lib/l10n/`). **English + Russian** (matches the Keycloak login locales). The chosen language is a **client-only, device-local** preference (`LocaleStore`, secure storage) — never a Money `UserPreferences` (ADR-0013). See [docs/adr/0001-app-localization.md](./docs/adr/0001-app-localization.md). Localized incrementally per surface (onboarding first); English is the fallback. |
 
 ## Architecture
 
@@ -125,4 +126,4 @@ Per `apps/wallet/PLAN.md`: render multi-currency values as **original + converte
 
 ---
 
-*Last updated: 2026-06-28*
+*Last updated: 2026-06-29*

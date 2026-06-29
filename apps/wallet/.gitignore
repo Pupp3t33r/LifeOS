@@ -39,6 +39,10 @@ devtools_options.yaml
 **/flutter/generated_plugin_registrant.h
 **/flutter/generated_plugins.cmake
 
+# Generated gen-l10n localizations (regenerated from lib/l10n/*.arb; ARB sources
+# are tracked, the generated Dart is not). See l10n.yaml.
+/lib/l10n/app_localizations*.dart
+
 # Symbolication related
 app.*.symbols
 

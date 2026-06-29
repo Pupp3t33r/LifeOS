@@ -1,26 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../app/locale/locale_controller.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../security/application/security_providers.dart';
 import 'onboarding_canvas.dart';
 import 'onboarding_controller.dart';
 import 'onboarding_state.dart';
 
-/// Currencies offered at onboarding. The chosen one opens the first account and
-/// defaults the display currency (ADR-0013).
-const List<({String code, String label})> _currencies = [
-  (code: 'USD', label: 'US Dollar — USD'),
-  (code: 'EUR', label: 'Euro — EUR'),
-  (code: 'GBP', label: 'Pound Sterling — GBP'),
-  (code: 'PLN', label: 'Polish Złoty — PLN'),
-  (code: 'JPY', label: 'Japanese Yen — JPY'),
-  (code: 'CAD', label: 'Canadian Dollar — CAD'),
-];
+/// Currency codes offered at onboarding. The chosen one opens the first account
+/// and defaults the display currency (ADR-0013). Display labels are localized —
+/// see [_currencyLabel].
+const List<String> _currencyCodes = ['USD', 'EUR', 'GBP', 'PLN', 'JPY', 'CAD'];
+
+/// The localized `name — code` label for a currency code.
+String _currencyLabel(AppLocalizations l10n, String code) => switch (code) {
+      'USD' => l10n.currencyUsd,
+      'EUR' => l10n.currencyEur,
+      'GBP' => l10n.currencyGbp,
+      'PLN' => l10n.currencyPln,
+      'JPY' => l10n.currencyJpy,
+      'CAD' => l10n.currencyCad,
+      _ => code,
+    };
 
 /// First-run onboarding — "Set up your first month" (Money ADR-0013). Collects
 /// the first savings account and the month start day, the minimum server-owned
 /// config the savings canvas needs. Responsive: a two-column layout (question +
 /// living canvas) on wide screens, stacked (canvas on top) on phones.
+///
+/// The AppBar carries a language switcher (Wallet's first localized surface, see
+/// `apps/wallet/docs/adr/0001-app-localization.md`) so the whole flow can be read
+/// in the user's language from the very first screen.
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
 
@@ -45,6 +56,7 @@ class OnboardingScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const _Wordmark(),
         titleSpacing: 24,
+        actions: const [_LanguageSwitcher(), SizedBox(width: 8)],
       ),
       body: SafeArea(
         child: Center(
@@ -82,6 +94,37 @@ class OnboardingScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Always-visible language switcher (AppBar), mirroring the Keycloak login-page
+/// switcher for visual/behavioral consistency. Applies the choice live — the
+/// whole flow re-renders immediately — and persists it device-locally.
+class _LanguageSwitcher extends ConsumerWidget {
+  const _LanguageSwitcher();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final active = Localizations.localeOf(context).languageCode;
+    return PopupMenuButton<String>(
+      tooltip: l10n.languageSwitcherTooltip,
+      icon: const Icon(Icons.language_outlined),
+      onSelected: (code) =>
+          ref.read(localeControllerProvider.notifier).setLocale(Locale(code)),
+      itemBuilder: (context) => [
+        CheckedPopupMenuItem(
+          value: 'en',
+          checked: active == 'en',
+          child: Text(l10n.languageNameEnglish),
+        ),
+        CheckedPopupMenuItem(
+          value: 'ru',
+          checked: active == 'ru',
+          child: Text(l10n.languageNameRussian),
+        ),
+      ],
     );
   }
 }
@@ -217,22 +260,22 @@ class _AccountStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final controller = ref.read(onboardingControllerProvider.notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _StepHeader(
-          eyebrow: 'where savings land',
-          title: 'Where do your savings live?',
-          lede: "Add one savings account to start. The money you don't spend each "
-              "month settles here — it's the only thing Wallet needs to begin.",
+        _StepHeader(
+          eyebrow: l10n.onbAccountEyebrow,
+          title: l10n.onbAccountTitle,
+          lede: l10n.onbAccountLede,
         ),
         _Field(
-          label: 'Account name',
+          label: l10n.onbAccountNameLabel,
           child: TextFormField(
             initialValue: state.accountName,
             onChanged: controller.setAccountName,
-            decoration: const InputDecoration(hintText: 'Main savings'),
+            decoration: InputDecoration(hintText: l10n.onbAccountNameHint),
           ),
         ),
         Row(
@@ -241,12 +284,12 @@ class _AccountStep extends ConsumerWidget {
             Expanded(
               flex: 13,
               child: _Field(
-                label: 'Currency',
+                label: l10n.onbCurrencyLabel,
                 child: DropdownButtonFormField<String>(
                   initialValue: state.currency,
                   items: [
-                    for (final c in _currencies)
-                      DropdownMenuItem(value: c.code, child: Text(c.label)),
+                    for (final code in _currencyCodes)
+                      DropdownMenuItem(value: code, child: Text(_currencyLabel(l10n, code))),
                   ],
                   onChanged: (value) {
                     if (value != null) controller.setCurrency(value);
@@ -258,20 +301,19 @@ class _AccountStep extends ConsumerWidget {
             Expanded(
               flex: 10,
               child: _Field(
-                label: 'In it today',
+                label: l10n.onbOpeningBalanceLabel,
                 child: TextFormField(
                   initialValue: state.openingBalance,
                   onChanged: controller.setOpeningBalance,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(hintText: '0'),
+                  decoration: InputDecoration(hintText: l10n.onbOpeningBalanceHint),
                 ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 4),
-        _Hint("A rough number is fine — you can adjust it anytime. Wallet never "
-            "guesses what it can't see."),
+        _Hint(l10n.onbAccountHint),
       ],
     );
   }
@@ -285,27 +327,26 @@ class _MonthStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final controller = ref.read(onboardingControllerProvider.notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _StepHeader(
-          eyebrow: 'your month',
-          title: 'When does your month start?',
-          lede: "Most people plan by the calendar month. If you're paid on a "
-              "certain day, start there instead — your month runs from that day "
-              "to the next.",
+        _StepHeader(
+          eyebrow: l10n.onbMonthEyebrow,
+          title: l10n.onbMonthTitle,
+          lede: l10n.onbMonthLede,
         ),
         _ChoiceCard(
-          title: 'Calendar month',
-          subtitle: 'Runs the 1st to the last day',
+          title: l10n.onbCalendarMonthTitle,
+          subtitle: l10n.onbCalendarMonthSubtitle,
           selected: !state.useCustomMonth,
           onTap: controller.useCalendarMonth,
         ),
         const SizedBox(height: 12),
         _ChoiceCard(
-          title: 'A day I choose',
-          subtitle: 'For payday- or rent-day planning',
+          title: l10n.onbCustomDayTitle,
+          subtitle: l10n.onbCustomDaySubtitle,
           selected: state.useCustomMonth,
           onTap: controller.useCustomMonth,
         ),
@@ -321,8 +362,7 @@ class _MonthStep extends ConsumerWidget {
             const SizedBox(width: 9),
             Expanded(
               child: Text(
-                "You can change this until you close your first month. After that "
-                "it's locked, so your history can't shift underneath you.",
+                l10n.onbMonthLockNote,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.62),
                 ),
@@ -345,16 +385,15 @@ class _BiometricStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final controller = ref.read(onboardingControllerProvider.notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _StepHeader(
-          eyebrow: 'protect your wallet',
-          title: 'Lock Wallet when you open it?',
-          lede: "Use your fingerprint or face to unlock Wallet each time — your "
-              "money stays private even if your device is left unlocked. You can "
-              "change this later in settings.",
+        _StepHeader(
+          eyebrow: l10n.onbBiometricEyebrow,
+          title: l10n.onbBiometricTitle,
+          lede: l10n.onbBiometricLede,
         ),
         Container(
           decoration: BoxDecoration(
@@ -366,11 +405,11 @@ class _BiometricStep extends ConsumerWidget {
             value: state.appLockEnabled,
             onChanged: controller.setAppLockEnabled,
             title: Text(
-              'Unlock with biometrics',
+              l10n.onbBiometricSwitchTitle,
               style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              'Recommended for a money app',
+              l10n.onbBiometricSwitchSubtitle,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -382,8 +421,7 @@ class _BiometricStep extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 14),
-        _Hint("Uses the fingerprint or face already set up on this device — "
-            "nothing to enroll here."),
+        _Hint(l10n.onbBiometricHint),
       ],
     );
   }
@@ -398,6 +436,11 @@ class _DayPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    // English uses an ordinal suffix on the number ("25th"); other locales just
+    // show the number — the localized "day of the month" label carries the rest.
+    final isEnglish = Localizations.localeOf(context).languageCode == 'en';
+    final dayText = isEnglish ? '$day${_ordinal(day)}' : '$day';
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -415,14 +458,14 @@ class _DayPicker extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '$day${_ordinal(day)}',
+                dayText,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontFamily: CalmTokens.fontDisplay,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
-                'day of the month',
+                l10n.onbDayOfMonth,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
@@ -439,8 +482,7 @@ class _DayPicker extends StatelessWidget {
           ),
           if (day > 28)
             Text(
-              'Shorter months clamp to their last day — February would start on '
-              'the 28th.',
+              l10n.onbDayClampNote,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.secondary,
               ),
@@ -552,6 +594,7 @@ class _Actions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final controller = ref.read(onboardingControllerProvider.notifier);
     final busy = state.submitting;
     // Last step is the month step (1) unless the device adds the biometric step (2).
@@ -562,7 +605,7 @@ class _Actions extends ConsumerWidget {
         if (state.step > 0)
           TextButton(
             onPressed: busy ? null : controller.back,
-            child: const Text('Back'),
+            child: Text(l10n.onbBack),
           ),
         const Spacer(),
         Expanded(
@@ -572,7 +615,7 @@ class _Actions extends ConsumerWidget {
                 ? null
                 : () {
                     if (isLastStep) {
-                      controller.submit();
+                      controller.submit(l10n.onbError);
                     } else {
                       controller.next();
                     }
@@ -583,7 +626,7 @@ class _Actions extends ConsumerWidget {
                     width: 22,
                     child: CircularProgressIndicator(strokeWidth: 2.5),
                   )
-                : Text(isLastStep ? 'Finish setup' : 'Continue'),
+                : Text(isLastStep ? l10n.onbFinish : l10n.onbContinue),
           ),
         ),
       ],

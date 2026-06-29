@@ -1,0 +1,52 @@
+{
+  "@@locale": "en",
+
+  "languageNameEnglish": "English",
+  "@languageNameEnglish": { "description": "Endonym for English, shown in the language switcher in its own language regardless of the active locale." },
+  "languageNameRussian": "Русский",
+  "@languageNameRussian": { "description": "Endonym for Russian, shown in the language switcher in its own language regardless of the active locale." },
+  "languageSwitcherTooltip": "Language",
+  "@languageSwitcherTooltip": { "description": "Tooltip/label for the language switcher control." },
+
+  "onbAccountEyebrow": "where savings land",
+  "@onbAccountEyebrow": { "description": "Small eyebrow label above the account step title." },
+  "onbAccountTitle": "Where do your savings live?",
+  "onbAccountLede": "Add one savings account to start. The money you don't spend each month settles here — it's the only thing Wallet needs to begin.",
+  "onbAccountNameLabel": "Account name",
+  "onbAccountNameHint": "Main savings",
+  "onbCurrencyLabel": "Currency",
+  "onbOpeningBalanceLabel": "In it today",
+  "onbOpeningBalanceHint": "0",
+  "onbAccountHint": "A rough number is fine — you can adjust it anytime. Wallet never guesses what it can't see.",
+
+  "onbMonthEyebrow": "your month",
+  "onbMonthTitle": "When does your month start?",
+  "onbMonthLede": "Most people plan by the calendar month. If you're paid on a certain day, start there instead — your month runs from that day to the next.",
+  "onbCalendarMonthTitle": "Calendar month",
+  "onbCalendarMonthSubtitle": "Runs the 1st to the last day",
+  "onbCustomDayTitle": "A day I choose",
+  "onbCustomDaySubtitle": "For payday- or rent-day planning",
+  "onbMonthLockNote": "You can change this until you close your first month. After that it's locked, so your history can't shift underneath you.",
+  "onbDayOfMonth": "day of the month",
+  "@onbDayOfMonth": { "description": "Label after the big day number in the day picker, e.g. '25th day of the month'." },
+  "onbDayClampNote": "Shorter months clamp to their last day — February would start on the 28th.",
+
+  "onbBiometricEyebrow": "protect your wallet",
+  "onbBiometricTitle": "Lock Wallet when you open it?",
+  "onbBiometricLede": "Use your fingerprint or face to unlock Wallet each time — your money stays private even if your device is left unlocked. You can change this later in settings.",
+  "onbBiometricSwitchTitle": "Unlock with biometrics",
+  "onbBiometricSwitchSubtitle": "Recommended for a money app",
+  "onbBiometricHint": "Uses the fingerprint or face already set up on this device — nothing to enroll here.",
+
+  "onbBack": "Back",
+  "onbContinue": "Continue",
+  "onbFinish": "Finish setup",
+  "onbError": "Could not finish setup. Check your connection and try again.",
+
+  "currencyUsd": "US Dollar — USD",
+  "currencyEur": "Euro — EUR",
+  "currencyGbp": "Pound Sterling — GBP",
+  "currencyPln": "Polish Złoty — PLN",
+  "currencyJpy": "Japanese Yen — JPY",
+  "currencyCad": "Canadian Dollar — CAD"
+}
