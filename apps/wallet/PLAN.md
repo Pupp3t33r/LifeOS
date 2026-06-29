@@ -246,49 +246,58 @@ This session **resolved flow-list item 4 (Budgets)** and the two big deferred to
 
 ---
 
-## 13. Navigation & information architecture (tentative)
+## 13. Navigation & information architecture
 
-> **Status:** Working draft from the functional-design pass. **Subject to change as we build.** Not ADR-frozen. When it stabilizes, the navigation model + responsive layout should become a Wallet ADR (it's the prerequisite to the Home/canvas screen).
+> **Status:** **Decided** in the functional-design pass (2026-06-29). Frozen in **[Wallet ADR-0002](./docs/adr/0002-navigation-and-information-architecture.md)** (nav + Home cockpit) and **[Wallet ADR-0003](./docs/adr/0003-category-colour-system.md)** (category colours). This section is the at-a-glance summary; the ADRs are authoritative.
+>
+> **Designs:** visual mockups + screenshots of the Home cockpit, row spec, and category palette live in **[`docs/design/home/`](./docs/design/home/)** (illustrative references, not app code — the ADRs win where they disagree).
 
 The app has **two conceptual axes**:
-- **Cash-flow** — money moving through a month (Home / Plan / Activity), with Accounts as the cash you hold.
+- **Cash-flow** — money moving through a month (Home + Activity), with Accounts as the cash you hold.
 - **Possessions** — the lifecycle of *things*: `Wishlist → Planned purchase → Owned (Asset) → Resale value`. Net worth is the roll-up across both axes (`accounts + asset values − outstanding installments`, §6).
 
 Not everything is a page. Surface types: **Page** (nav destination) · **Section** (region of a page) · **Sheet/Wizard** (modal, launched contextually) · **Inline** (tap-to-edit) · **Panel** (lightweight overlay/curtain).
 
-### Primary pages (v1)
+### The shell — four destinations, adaptive chrome
+
+> **Home · Activity · Accounts · Wishlist**
+
+Adaptive: bottom `NavigationBar` (phone-portrait `<720`) → `NavigationRail` (`720–1240`) → extended labelled sidebar (desktop/web-landscape `≥1240`). **Settings** is a full-screen route *above* the shell (app-bar gear), not a nav slot.
 
 | Page | Holds |
 |---|---|
-| **Home** | Savings canvas (target/projected/actual, on-track); month navigation; recurring confirm checklist; recent-activity preview; entry to Close. |
-| **Plan** | The projection levers — Recurring + Wishlist/Planned purchases + Budgets. *Open: one merged page (sections/tabs) vs. split into separate destinations.* |
-| **Activity** | The flows log (line-itemed actuals); add/edit/revert; filter by category. |
-| **Accounts** | Savings/cash accounts + balances; create/rename/archive; balance override; transfers (deferred, ADR-0009). |
+| **Home** | The **current-period cockpit** (not a stats readout): period switcher (multiple open periods, ADR-0023); reactive **on-track strip** (projected vs. target, ADR-0007) with a `details ▾` expand into **per-category budget bars** (ADR-0025); the **worklist**; add-flow FAB; entry to **Close** (ADR-0021/0026). |
+| **Activity** | The flows log (line-itemed actuals) across periods; add/edit/revert; filter/group by category. |
+| **Accounts** | Savings/cash accounts + balances; create/rename/archive; balance override; transfers (deferred, ADR-0009). Pinned **Rates** card in the desktop side rail. |
+| **Wishlist** | The browseable backlog (items + packages, ADR-0022); "plan into this month" feeds Home. **Grows a second lens — Inventory / Net worth — in Phase 3** as the Asset aggregate (ADR-0010) ships. |
+
+### Home worklist — grouping & rows
+
+- **Default grouping: by realized status** — **Upcoming** (not-yet-a-flow: recurring occurrences *and* planned purchases, intermixed; the row icon carries the verb) vs. **Logged** (`Σ flows`). Mirrors projected-vs-actual (ADR-0007/0026). A **by-type toggle** offers **Recurring / Planned / Ad-hoc**.
+- *Rejected groupings:* "must-pay vs. maybe" (no such field — never invent one) and by-category (entries are containers; category is per-line, ADR-0019 — category is a lens in the budgets expand / Activity).
+- **Rows are containers:** `icon · name · [proportion bar + count] · amount`. Multi-line → chevron + split bar + "N items", expands to per-line rows. Multi-line/one-category → solid bar + "N items · Category", still expandable. Single-line → solid bar + category name, **no chevron**. Bar/dot colours per ADR-0003.
+
+### Plan dissolved
+
+There is no "Plan" page. Its contents redistribute: **recurring rules** edited in-context from their Home row; **budget targets** in Home's budgets expand / Settings; **wishlist** is its own destination. (Resolves the former "Plan: merged vs. split" thread by deletion.)
 
 ### Secondary (not a nav slot)
 
 | Page | Holds |
 |---|---|
-| **Settings** | Locale, theme, app-lock, passkey enrollment, display currency, month-start; **Categories** management (ADR-0024). |
+| **Settings** | Locale (ADR-0001), theme, app-lock & passkey (ADR-0014), display currency & month-start (ADR-0013), **Categories** management incl. **colour** (ADR-0024 + Wallet ADR-0003), rates pinning (ADR-0015). |
 
 ### Non-page surfaces
 
 | Surface | Type | Where |
 |---|---|---|
-| **Rates** (ADR-0015) | Panel/curtain | Pulled up where currency conversions appear (canvas total, account list). Not a page. |
-| **Close month** (ADR-0021/0026) | Wizard | Launched from Home when the month is ready to close. |
-| **Add flow** | Quick-add sheet | Global (FAB), lands in Activity. |
+| **Rates** (ADR-0015) | Panel/curtain + pinned card | Curtain pulled up where conversions appear; a pinned-rates card in the desktop Accounts/side rail. Behind the curtain on phone. Not a page. |
+| **Close month** (ADR-0021/0026) | Wizard | Launched from Home when the period is ready to close. |
+| **Add flow** | Quick-add sheet | Global (FAB), lands in Activity / Home's Logged. |
 
-### Reserved — Phase 3 (possessions axis)
+### Category colours (ADR-0003)
 
-| Page | Holds |
-|---|---|
-| **Inventory / Net worth** | Genuinely distinct functionality (possessions, not cash-flow) — earns its own page when the Asset aggregate (ADR-0010) ships. Wishlist gains a **second lens** here (front of the want→own→worth pipeline). Design wishlist in v1 so it can plug into this later without rework. Not built in v1 (would be a hollow shell — no assets yet). |
-
-### Open threads
-
-1. **Plan: merged vs. split** — one "Plan" page (4 nav slots total, cleaner, busier page) vs. Recurring / Wishlist / Budgets as separate destinations (more breathing room, doesn't fit a phone bottom bar).
-2. **Adaptive nav model** — bottom bar (phone portrait) → nav rail → sidebar (desktop/web landscape); breakpoints; single-column vs. multi-pane content. This *is* the responsive decision; the shell is its visible expression.
+A curated **12-colour Calm palette** (Sage · Teal · Denim · Indigo · Plum · Rose · Rust · Clay · Ochre · Olive · Stone · Slate), light + dark renderings, assigned per category in Settings → Categories. System category *names* stay locked (ADR-0024) but colour is recolourable. Colour is a **client/display** concern (device-local override; deterministic default from `CategoryId`), never on Money's `Category`.
 
 ---
 

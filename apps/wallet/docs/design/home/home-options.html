@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Home — three directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B;
+    --line:#E6E1D6; --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif;
+    --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);
+    -webkit-font-smoothing:antialiased;padding:56px 40px 80px}
+  .board{max-width:1480px;margin:0 auto}
+
+  /* ---- board chrome ---- */
+  .masthead{color:#EDE7DC;margin-bottom:48px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;
+    text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 34px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:760px;color:#B9B1A3;font-size:15px;line-height:1.6}
+
+  .row{display:flex;gap:40px;align-items:flex-start;margin-bottom:64px}
+  .meta{flex:0 0 232px;position:sticky;top:24px;color:#EDE7DC}
+  .meta .tag{display:inline-block;font:600 11px/1 var(--body);letter-spacing:1.8px;
+    text-transform:uppercase;color:#15120e;background:#8FB39E;
+    padding:6px 11px;border-radius:999px;margin-bottom:16px}
+  .meta h2{font:600 23px/1.1 var(--disp);margin-bottom:12px;letter-spacing:-.01em}
+  .meta .thesis{font-size:13.5px;line-height:1.65;color:#C7BFB1;margin-bottom:14px}
+  .meta .why{font-size:12.5px;line-height:1.6;color:#9C9384;
+    border-left:2px solid #4E6B5A;padding-left:13px}
+  .meta .why b{color:#B9B1A3;font-weight:600}
+  .mocks{flex:1;display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+
+  /* ---- device frames ---- */
+  .desktop{flex:1;min-width:520px}
+  .phone{flex:0 0 306px}
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;
+    color:#8a8276;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;
+    box-shadow:var(--shadow);border:1px solid #0c0a08}
+  .phone .screen{border-radius:30px}
+
+  /* app bar */
+  .appbar{display:flex;align-items:center;justify-content:space-between;
+    padding:16px 22px 14px}
+  .wm{font:700 19px/1 var(--disp);letter-spacing:-.02em;color:var(--ink)}
+  .wm i{color:var(--clay);font-style:normal}
+  .gear{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);
+    display:grid;place-items:center;color:var(--muted);background:var(--surface)}
+  .gear svg{width:16px;height:16px}
+
+  /* desktop two-pane body with rail */
+  .body{display:flex}
+  .rail{flex:0 0 124px;border-right:1px solid var(--line);padding:18px 12px;
+    display:flex;flex-direction:column;gap:4px}
+  .rail .nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;
+    font-size:12.5px;color:var(--muted)}
+  .rail .nav svg{width:17px;height:17px}
+  .rail .nav.on{background:rgba(94,126,107,.12);color:var(--sageDeep);font-weight:600}
+  .content{flex:1;padding:24px 28px 28px;min-width:0}
+
+  /* phone body + bottom nav */
+  .pbody{padding:18px 18px 14px}
+  .bnav{display:flex;justify-content:space-around;border-top:1px solid var(--line);
+    background:var(--surface);padding:9px 4px 11px}
+  .bnav .nav{display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-size:9.5px;color:var(--muted)}
+  .bnav .nav svg{width:19px;height:19px}
+  .bnav .nav.on{color:var(--sageDeep);font-weight:600}
+
+  .eyebrow{font:600 11px/1 var(--body);letter-spacing:1.7px;text-transform:uppercase;
+    color:var(--muted)}
+
+  /* card primitive */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:24px;
+    box-shadow:0 10px 24px -20px rgba(32,30,26,.5)}
+
+  /* period header shared */
+  .period{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+  .period .mo{font:600 27px/1 var(--disp);letter-spacing:-.01em}
+  .period .nav-mo{display:flex;align-items:center;gap:8px;color:var(--muted)}
+  .period .nav-mo span{width:26px;height:26px;border-radius:999px;border:1px solid var(--line);
+    display:grid;place-items:center;font-size:13px;background:var(--surface)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;
+    border:1px solid var(--line);background:var(--surface);
+    font:500 12px/1 var(--disp);color:var(--sageDeep)}
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;
+    border:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--ink)}
+  .chip .dot{width:8px;height:8px;border-radius:999px;background:var(--sage)}
+  .chip em{font-style:normal;color:var(--muted)}
+
+  /* ============ A · LEDGER ============ */
+  .led-card{padding:26px 28px}
+  .led-accts{display:flex;gap:8px;margin:16px 0 6px;flex-wrap:wrap}
+  .led-line{display:flex;align-items:baseline;justify-content:space-between;
+    padding:13px 0;border-bottom:1px solid var(--line)}
+  .led-line:last-child{border-bottom:0}
+  .led-line .lbl{font-size:14px;color:var(--ink)}
+  .led-line .lbl.sub{color:var(--muted)}
+  .led-line .val{font:600 15px/1 var(--disp)}
+  .pos{color:var(--sageDeep)} .neg{color:var(--clay)}
+  .led-rule{height:1px;background:var(--ink);opacity:.14;margin:4px 0}
+  .led-strong .lbl{font-weight:600}
+  .led-strong .val{font-size:18px}
+  .led-target .val{color:var(--muted)}
+  .led-target .edit{font-size:12px;color:var(--sageDeep);margin-left:7px;font-family:var(--body)}
+  .led-track{margin-top:6px;padding-top:18px;border-top:2px solid rgba(44,42,38,.16);
+    display:flex;align-items:flex-end;justify-content:space-between}
+  .led-track .k{font:600 14px/1 var(--body);color:var(--ink)}
+  .led-track .v{font:700 30px/1 var(--disp);color:var(--sageDeep);letter-spacing:-.02em}
+  .led-track .v small{font-size:14px;font-weight:600;color:var(--muted);display:block;
+    text-align:right;letter-spacing:0;font-family:var(--body);margin-top:3px}
+
+  .glance{margin-top:18px;display:flex;gap:14px}
+  .glance .g{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:15px 16px}
+  .glance .g .h{font:600 11px/1 var(--body);letter-spacing:1.3px;text-transform:uppercase;
+    color:var(--muted);margin-bottom:11px;display:flex;justify-content:space-between}
+  .glance .g .h a{color:var(--sageDeep);letter-spacing:0;text-transform:none;font-size:11px}
+  .act{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12.5px}
+  .act .ai{width:24px;height:24px;border-radius:8px;background:rgba(94,126,107,.1);
+    display:grid;place-items:center;color:var(--sageDeep);flex:0 0 24px}
+  .act .ai svg{width:13px;height:13px}
+  .act .an{flex:1;color:var(--ink)}
+  .act .av{font:600 12.5px/1 var(--disp)}
+  .acct{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:12.5px}
+  .acct .ad{width:8px;height:8px;border-radius:999px;background:var(--sage)}
+  .acct .an{flex:1}.acct .av{font:600 12.5px/1 var(--disp)}
+  .acct .orig{color:var(--muted);font-size:11px;font-weight:500}
+
+  /* ============ B · VERDICT ============ */
+  .vd-hero{padding:26px 28px 24px}
+  .vd-verdict{margin-top:18px}
+  .vd-verdict .big{font:700 56px/.95 var(--disp);color:var(--sageDeep);letter-spacing:-.03em}
+  .vd-verdict .sub{font-size:14px;color:var(--muted);margin-top:8px}
+  .vd-verdict .sub b{color:var(--ink);font-weight:600}
+  .vd-bar{margin-top:22px}
+  .vd-bar .scale{position:relative;height:14px;border-radius:999px;background:rgba(44,42,38,.08);
+    overflow:visible}
+  .vd-bar .fill{position:absolute;left:0;top:0;bottom:0;width:80%;border-radius:999px;
+    background:linear-gradient(90deg,var(--sage),var(--sageDeep))}
+  .vd-bar .over{position:absolute;left:80%;top:0;bottom:0;width:20%;border-radius:0 999px 999px 0;
+    background:repeating-linear-gradient(45deg,var(--sage),var(--sage) 4px,#6f9080 4px,#6f9080 8px)}
+  .vd-bar .target{position:absolute;left:80%;top:-7px;bottom:-7px;width:2px;background:var(--ink)}
+  .vd-bar .target b{position:absolute;top:-22px;left:50%;transform:translateX(-50%);
+    white-space:nowrap;font:600 11px/1 var(--body);color:var(--ink)}
+  .vd-bar .ends{display:flex;justify-content:space-between;margin-top:11px;
+    font-size:11.5px;color:var(--muted)}
+  .vd-bar .ends b{color:var(--sageDeep);font-weight:600;font-family:var(--disp)}
+
+  .vd-strip{display:flex;margin-top:24px;border:1px solid var(--line);border-radius:18px;
+    overflow:hidden;background:var(--surface)}
+  .vd-strip .s{flex:1;padding:14px 14px;border-right:1px solid var(--line)}
+  .vd-strip .s:last-child{border-right:0;background:rgba(94,126,107,.07)}
+  .vd-strip .s .k{font:600 10.5px/1 var(--body);letter-spacing:1.1px;text-transform:uppercase;
+    color:var(--muted);margin-bottom:9px}
+  .vd-strip .s .v{font:600 17px/1 var(--disp)}
+  .vd-strip .s .op{font-size:11px;color:var(--muted);margin-top:4px}
+
+  .vd-levers{display:flex;gap:10px;margin-top:18px}
+  .lever{flex:1;display:flex;align-items:center;gap:10px;padding:13px 15px;border-radius:16px;
+    border:1px solid var(--line);background:var(--surface)}
+  .lever .li{width:30px;height:30px;border-radius:10px;background:rgba(192,122,82,.12);
+    display:grid;place-items:center;color:var(--clay)}
+  .lever .li svg{width:16px;height:16px}
+  .lever .lt{font-size:12.5px}.lever .lt b{display:block;font-weight:600;color:var(--ink)}
+  .lever .lt span{color:var(--muted);font-size:11px}
+
+  /* ============ C · WATERFALL ============ */
+  .wf-card{padding:26px 28px}
+  .wf-plot{position:relative;height:288px;margin:30px 6px 8px;
+    display:flex;align-items:flex-end;gap:0}
+  .wf-col{flex:1;position:relative;height:100%;display:flex;flex-direction:column;
+    align-items:center;justify-content:flex-end}
+  .wf-bar{width:62%;border-radius:7px 7px 0 0;position:relative}
+  .wf-bar.income{background:linear-gradient(180deg,#6f9080,var(--sage))}
+  .wf-bar.deduct{background:repeating-linear-gradient(45deg,#cf8a63,#cf8a63 5px,var(--clay) 5px,var(--clay) 10px);
+    border-radius:7px}
+  .wf-bar.save{background:linear-gradient(180deg,var(--sage),var(--sageDeep));border-radius:7px 7px 0 0}
+  .wf-bar .amt{position:absolute;top:-21px;left:50%;transform:translateX(-50%);
+    white-space:nowrap;font:600 13px/1 var(--disp)}
+  .wf-spacer{width:62%}
+  .wf-cap{position:absolute;bottom:-26px;left:0;right:0;text-align:center;
+    font-size:10.5px;color:var(--muted);line-height:1.25}
+  .wf-cap b{display:block;color:var(--ink);font-weight:600;font-size:11px}
+  /* dotted connectors */
+  .wf-link{position:absolute;height:0;border-top:1.5px dotted var(--muted);opacity:.5;z-index:1}
+  /* target waterline */
+  .wf-target{position:absolute;left:0;right:0;border-top:2px dashed var(--ink);opacity:.55;z-index:3}
+  .wf-target .knob{position:absolute;right:-2px;top:-13px;display:flex;align-items:center;gap:6px;
+    background:var(--ink);color:var(--bone);padding:4px 9px;border-radius:999px;
+    font:600 10.5px/1 var(--body);white-space:nowrap}
+  .wf-target .knob svg{width:11px;height:11px}
+  .wf-over{position:absolute;z-index:4;background:var(--sageDeep);color:#fff;
+    padding:3px 8px;border-radius:999px;font:600 10px/1 var(--body);white-space:nowrap}
+
+  .wf-foot{display:flex;align-items:center;justify-content:space-between;margin-top:40px;
+    padding-top:18px;border-top:1px solid var(--line)}
+  .wf-foot .verdict{font:600 14px/1 var(--body);color:var(--ink)}
+  .wf-foot .verdict b{font-family:var(--disp);color:var(--sageDeep);font-size:18px}
+  .addbtn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:999px;
+    background:var(--sageDeep);color:#fff;font:600 12.5px/1 var(--body);border:0}
+  .addbtn svg{width:14px;height:14px}
+
+  /* phone reflow tweaks */
+  .phone .led-card,.phone .vd-hero,.phone .wf-card{padding:20px 18px}
+  .phone .period .mo{font-size:23px}
+  .phone .vd-verdict .big{font-size:46px}
+  .phone .wf-plot{height:230px;margin:26px 2px 8px}
+  .phone .led-track .v{font-size:26px}
+  .phone .glance{flex-direction:column;gap:10px}
+  .phone .vd-levers{flex-direction:column}
+
+  @media(max-width:1180px){.row{flex-direction:column}.meta{position:static;flex-basis:auto}
+    .desktop{min-width:0;width:100%}.phone{align-self:center}}
+</style>
+</head>
+<body>
+<div class="board">
+
+  <div class="masthead">
+    <div class="kicker">wallet · the planner, not the tracker</div>
+    <h1>Home — three directions for the <b>savings canvas</b></h1>
+    <p>Same month, same numbers (June 2026 · +$4,200 in, $2,650 out, $300 planned → projected $1,250 against a $1,000 target). What changes is the <em>form of the hero</em>. Each shown on desktop (nav rail) and phone (bottom bar). All built from the existing Calm tokens — bone, sage, clay, Bricolage Grotesque.</p>
+  </div>
+
+  <!-- ============================================================ A -->
+  <div class="row">
+    <div class="meta">
+      <span class="tag">A · Ledger</span>
+      <h2>The honest ledger</h2>
+      <p class="thesis">The onboarding canvas, grown up. A single document that adds money in, takes money out, and resolves to one line: <em>on track by +$250</em>.</p>
+      <p class="why"><b>Why it fits:</b> "the math is honest" is the product's first principle. Nothing is hidden behind a gauge. Lowest risk, highest legibility, continuous with what users already met at onboarding.</p>
+    </div>
+    <div class="mocks">
+
+      <!-- A desktop -->
+      <div class="desktop">
+        <div class="label">Desktop · web / windows</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="body">
+            <div class="rail">
+              <div class="nav on">◆ Home</div>
+              <div class="nav">▤ Plan</div>
+              <div class="nav">≣ Activity</div>
+              <div class="nav">▢ Accounts</div>
+            </div>
+            <div class="content">
+              <div class="card led-card">
+                <div class="period">
+                  <div>
+                    <div class="eyebrow" style="margin-bottom:7px">This month</div>
+                    <div class="mo">June 2026</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span class="pill">Jun 1 – Jun 30</span>
+                    <div class="nav-mo"><span>‹</span><span>›</span></div>
+                  </div>
+                </div>
+                <div class="led-accts">
+                  <span class="chip"><span class="dot"></span>Main savings <em>· USD</em></span>
+                  <span class="chip"><span class="dot"></span>Euro pot <em>· EUR</em></span>
+                </div>
+                <div style="margin-top:10px">
+                  <div class="led-line"><span class="lbl">Projected income</span><span class="val pos">+$4,200</span></div>
+                  <div class="led-line"><span class="lbl">Projected spending</span><span class="val neg">−$2,650</span></div>
+                  <div class="led-line"><span class="lbl">Planned purchases <span style="color:var(--muted)">· 2 items</span></span><span class="val neg">−$300</span></div>
+                  <div class="led-rule"></div>
+                  <div class="led-line led-strong"><span class="lbl">Projected savings</span><span class="val pos">+$1,250</span></div>
+                  <div class="led-line led-target"><span class="lbl sub">Your target <span class="edit">edit ✎</span></span><span class="val">$1,000</span></div>
+                </div>
+                <div class="led-track">
+                  <div class="k">On track by</div>
+                  <div class="v">+$250<small>$250 over target</small></div>
+                </div>
+              </div>
+
+              <div class="glance">
+                <div class="g">
+                  <div class="h"><span>Recent activity</span><a>View all</a></div>
+                  <div class="act"><span class="ai">↑</span><span class="an">Salary</span><span class="av pos">+$4,200</span></div>
+                  <div class="act"><span class="ai">↓</span><span class="an">Groceries · Lidl</span><span class="av neg">−$86</span></div>
+                  <div class="act"><span class="ai">↓</span><span class="an">Rent</span><span class="av neg">−$1,400</span></div>
+                </div>
+                <div class="g">
+                  <div class="h"><span>Accounts</span><a>Manage</a></div>
+                  <div class="acct"><span class="ad"></span><span class="an">Main savings</span><span class="av">$8,420</span></div>
+                  <div class="acct"><span class="ad"></span><span class="an">Euro pot</span><span class="av">$2,310 <span class="orig">€2,150</span></span></div>
+                  <div class="acct"><span class="ad" style="background:var(--clay)"></span><span class="an">Travel fund</span><span class="av">$1,050</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A phone -->
+      <div class="phone">
+        <div class="label">Phone</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pbody">
+            <div class="card led-card">
+              <div class="period">
+                <div><div class="eyebrow" style="margin-bottom:6px">This month</div><div class="mo">June 2026</div></div>
+                <span class="pill">Jun 1–30</span>
+              </div>
+              <div class="led-accts"><span class="chip"><span class="dot"></span>Main <em>· USD</em></span></div>
+              <div style="margin-top:8px">
+                <div class="led-line"><span class="lbl">Income</span><span class="val pos">+$4,200</span></div>
+                <div class="led-line"><span class="lbl">Spending</span><span class="val neg">−$2,650</span></div>
+                <div class="led-line"><span class="lbl">Planned · 2</span><span class="val neg">−$300</span></div>
+                <div class="led-rule"></div>
+                <div class="led-line led-strong"><span class="lbl">Projected savings</span><span class="val pos">+$1,250</span></div>
+                <div class="led-line led-target"><span class="lbl sub">Target ✎</span><span class="val">$1,000</span></div>
+              </div>
+              <div class="led-track"><div class="k">On track by</div><div class="v">+$250</div></div>
+            </div>
+          </div>
+          <div class="bnav">
+            <div class="nav on">◆<span>Home</span></div>
+            <div class="nav">▤<span>Plan</span></div>
+            <div class="nav">≣<span>Activity</span></div>
+            <div class="nav">▢<span>Accounts</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ B -->
+  <div class="row">
+    <div class="meta">
+      <span class="tag">B · Verdict</span>
+      <h2>Verdict first</h2>
+      <p class="thesis">Lead with the only number that carries feeling — <em>are you ahead or short of your target?</em> — over a single target-vs-projected bar. The arithmetic shrinks to a strip beneath.</p>
+      <p class="why"><b>Why it fits:</b> answers "am I okay this month?" before you read a single row. The signature is the <b>overshoot bar</b> (projected past the target marker), not a generic big-number-with-gradient. Risk: the verdict can feel like a dashboard if the copy isn't honest.</p>
+    </div>
+    <div class="mocks">
+
+      <!-- B desktop -->
+      <div class="desktop">
+        <div class="label">Desktop · web / windows</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="body">
+            <div class="rail">
+              <div class="nav on">◆ Home</div>
+              <div class="nav">▤ Plan</div>
+              <div class="nav">≣ Activity</div>
+              <div class="nav">▢ Accounts</div>
+            </div>
+            <div class="content">
+              <div class="card vd-hero">
+                <div class="period">
+                  <div><div class="eyebrow" style="margin-bottom:7px">June 2026 · Jun 1 – Jun 30</div>
+                    <div class="vd-verdict"><div class="big">+$250 ahead</div>
+                      <div class="sub">of your <b>$1,000</b> savings target. Projected to land at <b>$1,250</b>.</div>
+                    </div>
+                  </div>
+                  <div class="nav-mo"><span>‹</span><span>›</span></div>
+                </div>
+
+                <div class="vd-bar">
+                  <div class="scale">
+                    <div class="fill"></div>
+                    <div class="over"></div>
+                    <div class="target"><b>target $1,000</b></div>
+                  </div>
+                  <div class="ends"><span>$0</span><span>projected <b>$1,250</b></span></div>
+                </div>
+
+                <div class="vd-strip">
+                  <div class="s"><div class="k">Income</div><div class="v pos">+$4,200</div></div>
+                  <div class="s"><div class="k">Spending</div><div class="v neg">−$2,650</div><div class="op">28 flows</div></div>
+                  <div class="s"><div class="k">Planned</div><div class="v neg">−$300</div><div class="op">2 items</div></div>
+                  <div class="s"><div class="k">= Projected</div><div class="v pos">+$1,250</div></div>
+                </div>
+
+                <div class="vd-levers">
+                  <div class="lever"><span class="li">◎</span><span class="lt"><b>Adjust target</b><span>$1,000 / month</span></span></div>
+                  <div class="lever"><span class="li">+</span><span class="lt"><b>Plan a purchase</b><span>from wishlist</span></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B phone -->
+      <div class="phone">
+        <div class="label">Phone</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pbody">
+            <div class="card vd-hero">
+              <div class="eyebrow" style="margin-bottom:6px">June 2026 · Jun 1–30</div>
+              <div class="vd-verdict"><div class="big">+$250<br>ahead</div>
+                <div class="sub">of your <b>$1,000</b> target · projected <b>$1,250</b></div>
+              </div>
+              <div class="vd-bar">
+                <div class="scale"><div class="fill"></div><div class="over"></div>
+                  <div class="target"><b>$1,000</b></div></div>
+                <div class="ends"><span>$0</span><span>proj <b>$1,250</b></span></div>
+              </div>
+              <div class="vd-strip">
+                <div class="s"><div class="k">In</div><div class="v pos">+$4,200</div></div>
+                <div class="s"><div class="k">Out</div><div class="v neg">−$2,650</div></div>
+                <div class="s"><div class="k">Plan</div><div class="v neg">−$300</div></div>
+              </div>
+              <div class="vd-levers">
+                <div class="lever"><span class="li">◎</span><span class="lt"><b>Adjust target</b><span>$1,000/mo</span></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="bnav">
+            <div class="nav on">◆<span>Home</span></div>
+            <div class="nav">▤<span>Plan</span></div>
+            <div class="nav">≣<span>Activity</span></div>
+            <div class="nav">▢<span>Accounts</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ C -->
+  <div class="row">
+    <div class="meta">
+      <span class="tag">C · Waterfall</span>
+      <h2>The cascade</h2>
+      <p class="thesis">The canvas made spatial. Income falls through spending and planned purchases and pools as savings. The target is a <em>waterline</em> you drag; planned purchases visibly lower the pool.</p>
+      <p class="why"><b>Why it's the risk:</b> it's the one view that makes the PLAN's own metaphor literal — "drop an $800 lens into the month and watch savings fall." Most memorable, most work, and the bars must stay honest at small amounts.</p>
+    </div>
+    <div class="mocks">
+
+      <!-- C desktop -->
+      <div class="desktop">
+        <div class="label">Desktop · web / windows</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="body">
+            <div class="rail">
+              <div class="nav on">◆ Home</div>
+              <div class="nav">▤ Plan</div>
+              <div class="nav">≣ Activity</div>
+              <div class="nav">▢ Accounts</div>
+            </div>
+            <div class="content">
+              <div class="card wf-card">
+                <div class="period">
+                  <div><div class="eyebrow" style="margin-bottom:7px">This month</div><div class="mo">June 2026</div></div>
+                  <span class="pill">Jun 1 – Jun 30</span>
+                </div>
+
+                <div class="wf-plot">
+                  <!-- target waterline at $1000 → 198px from top of 288 plot -->
+                  <div class="wf-target" style="top:90px">
+                    <span class="knob">target $1,000 ✎</span>
+                  </div>
+                  <div class="wf-over" style="top:66px;right:23%">+$250 over</div>
+
+                  <!-- income 4200 -->
+                  <div class="wf-col">
+                    <div class="wf-bar income" style="height:260px"><span class="amt pos">+$4,200</span></div>
+                    <div class="wf-cap"><b>Income</b>what comes in</div>
+                  </div>
+                  <!-- spending 2650, floats from 4200 down to 1550 -->
+                  <div class="wf-col">
+                    <div class="wf-spacer" style="height:164px"></div>
+                    <div class="wf-bar deduct" style="height:164px"><span class="amt neg">−$2,650</span></div>
+                    <div class="wf-cap"><b>Spending</b>bills + flows</div>
+                  </div>
+                  <!-- planned 300, floats from 1550 to 1250 -->
+                  <div class="wf-col">
+                    <div class="wf-spacer" style="height:182px"></div>
+                    <div class="wf-bar deduct" style="height:19px"><span class="amt neg">−$300</span></div>
+                    <div class="wf-cap"><b>Planned</b>2 purchases</div>
+                  </div>
+                  <!-- projected savings 1250 -->
+                  <div class="wf-col">
+                    <div class="wf-bar save" style="height:77px"><span class="amt pos">$1,250</span></div>
+                    <div class="wf-cap"><b>Savings</b>projected</div>
+                  </div>
+                </div>
+
+                <div class="wf-foot">
+                  <div class="verdict">On track — <b>+$250</b> over your target</div>
+                  <button class="addbtn">+ Plan a purchase</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C phone -->
+      <div class="phone">
+        <div class="label">Phone</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pbody">
+            <div class="card wf-card">
+              <div class="period">
+                <div><div class="eyebrow" style="margin-bottom:6px">This month</div><div class="mo">June 2026</div></div>
+                <span class="pill">Jun 1–30</span>
+              </div>
+              <div class="wf-plot">
+                <div class="wf-target" style="top:72px"><span class="knob">$1,000 ✎</span></div>
+                <div class="wf-over" style="top:53px;right:24%">+$250</div>
+                <div class="wf-col"><div class="wf-bar income" style="height:208px"><span class="amt pos">+$4,200</span></div><div class="wf-cap"><b>In</b></div></div>
+                <div class="wf-col"><div class="wf-spacer" style="height:131px"></div><div class="wf-bar deduct" style="height:131px"><span class="amt neg">−$2,650</span></div><div class="wf-cap"><b>Out</b></div></div>
+                <div class="wf-col"><div class="wf-spacer" style="height:146px"></div><div class="wf-bar deduct" style="height:15px"><span class="amt neg">−$300</span></div><div class="wf-cap"><b>Plan</b></div></div>
+                <div class="wf-col"><div class="wf-bar save" style="height:62px"><span class="amt pos">$1,250</span></div><div class="wf-cap"><b>Save</b></div></div>
+              </div>
+              <div class="wf-foot" style="margin-top:34px">
+                <div class="verdict"><b>+$250</b> over</div>
+                <button class="addbtn">+ Plan</button>
+              </div>
+            </div>
+          </div>
+          <div class="bnav">
+            <div class="nav on">◆<span>Home</span></div>
+            <div class="nav">▤<span>Plan</span></div>
+            <div class="nav">≣<span>Activity</span></div>
+            <div class="nav">▢<span>Accounts</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
