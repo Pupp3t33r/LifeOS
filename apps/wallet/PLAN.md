@@ -246,4 +246,50 @@ This session **resolved flow-list item 4 (Budgets)** and the two big deferred to
 
 ---
 
-*Last updated: 2026-06-28*
+## 13. Navigation & information architecture (tentative)
+
+> **Status:** Working draft from the functional-design pass. **Subject to change as we build.** Not ADR-frozen. When it stabilizes, the navigation model + responsive layout should become a Wallet ADR (it's the prerequisite to the Home/canvas screen).
+
+The app has **two conceptual axes**:
+- **Cash-flow** — money moving through a month (Home / Plan / Activity), with Accounts as the cash you hold.
+- **Possessions** — the lifecycle of *things*: `Wishlist → Planned purchase → Owned (Asset) → Resale value`. Net worth is the roll-up across both axes (`accounts + asset values − outstanding installments`, §6).
+
+Not everything is a page. Surface types: **Page** (nav destination) · **Section** (region of a page) · **Sheet/Wizard** (modal, launched contextually) · **Inline** (tap-to-edit) · **Panel** (lightweight overlay/curtain).
+
+### Primary pages (v1)
+
+| Page | Holds |
+|---|---|
+| **Home** | Savings canvas (target/projected/actual, on-track); month navigation; recurring confirm checklist; recent-activity preview; entry to Close. |
+| **Plan** | The projection levers — Recurring + Wishlist/Planned purchases + Budgets. *Open: one merged page (sections/tabs) vs. split into separate destinations.* |
+| **Activity** | The flows log (line-itemed actuals); add/edit/revert; filter by category. |
+| **Accounts** | Savings/cash accounts + balances; create/rename/archive; balance override; transfers (deferred, ADR-0009). |
+
+### Secondary (not a nav slot)
+
+| Page | Holds |
+|---|---|
+| **Settings** | Locale, theme, app-lock, passkey enrollment, display currency, month-start; **Categories** management (ADR-0024). |
+
+### Non-page surfaces
+
+| Surface | Type | Where |
+|---|---|---|
+| **Rates** (ADR-0015) | Panel/curtain | Pulled up where currency conversions appear (canvas total, account list). Not a page. |
+| **Close month** (ADR-0021/0026) | Wizard | Launched from Home when the month is ready to close. |
+| **Add flow** | Quick-add sheet | Global (FAB), lands in Activity. |
+
+### Reserved — Phase 3 (possessions axis)
+
+| Page | Holds |
+|---|---|
+| **Inventory / Net worth** | Genuinely distinct functionality (possessions, not cash-flow) — earns its own page when the Asset aggregate (ADR-0010) ships. Wishlist gains a **second lens** here (front of the want→own→worth pipeline). Design wishlist in v1 so it can plug into this later without rework. Not built in v1 (would be a hollow shell — no assets yet). |
+
+### Open threads
+
+1. **Plan: merged vs. split** — one "Plan" page (4 nav slots total, cleaner, busier page) vs. Recurring / Wishlist / Budgets as separate destinations (more breathing room, doesn't fit a phone bottom bar).
+2. **Adaptive nav model** — bottom bar (phone portrait) → nav rail → sidebar (desktop/web landscape); breakpoints; single-column vs. multi-pane content. This *is* the responsive decision; the shell is its visible expression.
+
+---
+
+*Last updated: 2026-06-29*

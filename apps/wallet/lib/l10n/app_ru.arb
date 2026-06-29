@@ -5,6 +5,13 @@
   "languageNameRussian": "Русский",
   "languageSwitcherTooltip": "Язык",
 
+  "navHome": "Главная",
+  "navPlan": "План",
+  "navActivity": "Операции",
+  "navAccounts": "Счета",
+  "navSettings": "Настройки",
+  "comingSoon": "Скоро",
+
   "onbAccountEyebrow": "где живут накопления",
   "onbAccountTitle": "Где хранятся ваши накопления?",
   "onbAccountLede": "Добавьте один сберегательный счёт для начала. Деньги, которые вы не потратите за месяц, оседают здесь — это всё, что нужно Wallet, чтобы начать.",

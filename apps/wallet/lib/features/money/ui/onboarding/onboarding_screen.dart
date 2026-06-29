@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/locale/locale_controller.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/wordmark.dart';
 import '../../../security/application/security_providers.dart';
 import 'onboarding_canvas.dart';
 import 'onboarding_controller.dart';
@@ -54,7 +55,7 @@ class OnboardingScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const _Wordmark(),
+        title: const Wordmark(),
         titleSpacing: 24,
         actions: const [_LanguageSwitcher(), SizedBox(width: 8)],
       ),
@@ -125,28 +126,6 @@ class _LanguageSwitcher extends ConsumerWidget {
           child: Text(l10n.languageNameRussian),
         ),
       ],
-    );
-  }
-}
-
-class _Wordmark extends StatelessWidget {
-  const _Wordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return RichText(
-      text: TextSpan(
-        style: theme.textTheme.titleLarge?.copyWith(
-          fontFamily: CalmTokens.fontDisplay,
-          fontWeight: FontWeight.w700,
-          color: theme.colorScheme.onSurface,
-        ),
-        children: [
-          const TextSpan(text: 'wallet'),
-          TextSpan(text: '.', style: TextStyle(color: theme.colorScheme.primary)),
-        ],
-      ),
     );
   }
 }

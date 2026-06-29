@@ -23,9 +23,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The hosted-auth landing, not the money home, is shown.
+    // The hosted-auth landing, not the money home shell, is shown.
     expect(find.text('Sign in'), findsOneWidget);
     expect(find.text('Create account'), findsOneWidget);
-    expect(find.text('Savings canvas — coming soon'), findsNothing);
+    expect(find.text('Coming soon'), findsNothing);
   });
 }

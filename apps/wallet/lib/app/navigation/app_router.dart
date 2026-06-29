@@ -3,9 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../auth/auth_controller.dart';
 import '../auth/sign_in_screen.dart';
+import '../settings/settings_screen.dart';
 import '../../features/money/application/preferences_providers.dart';
 import '../../features/money/ui/onboarding/onboarding_screen.dart';
 import '../../features/money/ui/month_overview/month_overview_screen.dart';
+import '../../features/money/ui/plan/plan_screen.dart';
+import '../../features/money/ui/activity/activity_screen.dart';
+import '../../features/money/ui/accounts/accounts_screen.dart';
+import 'app_shell.dart';
 
 /// App-wide route table. Feature screens are registered here (through the
 /// shell), never by feature-to-feature wiring. Phase 1 exposes the money
@@ -51,9 +56,52 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
+      // Secondary surface — sits above the shell (full-screen, with a back
+      // affordance), reached from the shell's gear button. Not a nav slot.
       GoRoute(
-        path: '/',
-        builder: (context, state) => const MonthOverviewScreen(),
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      // The authenticated shell: persistent navigation chrome wrapping the four
+      // primary destinations. Branch order must match AppShell's destination
+      // list. Each branch keeps its own state across navigation.
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const MonthOverviewScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/plan',
+                builder: (context, state) => const PlanScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/activity',
+                builder: (context, state) => const ActivityScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/accounts',
+                builder: (context, state) => const AccountsScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );
