@@ -62,6 +62,11 @@ class CalmTokens {
   /// Mode-independent — white stays white in both modes.
   static const Color white = Color(0xFFFFFFFF);
 
+  /// The token set for a given [brightness] — use when you need a token Material
+  /// doesn't model (e.g. [sageDeep]) and must stay mode-correct.
+  static CalmTokens of(Brightness brightness) =>
+      brightness == Brightness.dark ? dark : light;
+
   static const CalmTokens light = CalmTokens(
     bone: Color(0xFFF4F1EA),
     surface: Color(0xFFFBFAF6),
