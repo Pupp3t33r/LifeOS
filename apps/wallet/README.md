@@ -43,6 +43,12 @@ flutter run -d windows   # Windows desktop
 flutter run -d <id>      # Android emulator or device (id from `flutter devices`)
 ```
 
+> **Running against the local Aspire stack?** A stack-connected `flutter run` needs a small
+> per-target dev workaround (the web dev origin can't use the Gateway's same-origin proxy, and
+> Android needs `adb reverse` + cleartext). Use `./run-dev.ps1` and see
+> **[docs/local-dev.md](./docs/local-dev.md)**. For backend-free UI work, run the preview
+> entrypoint instead: `flutter run -t lib/main_home_preview.dart -d chrome`.
+
 While `flutter run` is attached:
 
 | Key | Action |
