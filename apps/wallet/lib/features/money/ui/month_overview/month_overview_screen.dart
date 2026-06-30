@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../app/theme/category_colors.dart';
+import '../../application/categories_providers.dart';
+import '../../application/period_flows_providers.dart';
 import '../../application/preferences_providers.dart';
+import '../../domain/category.dart';
 import '../../domain/month_period.dart';
+import '../../domain/money.dart';
+import '../../domain/period_flows.dart';
 import '../add_entry/add_entry_sheet.dart';
 
 /// Home — the current-period cockpit (Wallet ADR-0002; nav branch 0).
 ///
 /// Body-only: [AppShell] supplies the Scaffold, app bar, and nav chrome.
 ///
-/// For now this is an **honest empty cockpit**: a real current-period header
-/// (derived from the user's month-start-day and today) plus an empty-state
-/// invitation to add the first flow. The rich cockpit — on-track strip, budgets,
-/// the Upcoming/Logged worklist, side panel — returns once Home is wired to the
-/// real `MonthProjection` (Money ADR-0007); until then there is no read model to
-/// render, so we show nothing fake. The add-expense sheet (the FAB) writes real
-/// flows via the outbox.
+/// Renders the period's flow ledger (Money ADR-0016) from the local read-through
+/// cache — the logged worklist plus the per-currency net — and lets the FAB add
+/// more via the outbox. Just-added (or offline) entries appear immediately as
+/// optimistic, "syncing" rows. The richer cockpit (on-track strip, budgets,
+/// upcoming) returns once the composed `MonthProjection` (ADR-0007) is built; until
+/// then there is no projected/target/actual to show, so we show only what's real.
 class MonthOverviewScreen extends ConsumerWidget {
   const MonthOverviewScreen({super.key});
 
@@ -25,6 +30,13 @@ class MonthOverviewScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final startDay = ref.watch(preferencesProvider).value?.monthStartDay ?? 1;
     final period = _Period.current(DateTime.now(), startDay);
+    final key = (year: period.year, month: period.month);
+
+    final entries = ref.watch(periodFlowsProvider(key)).value ?? const <FlowEntry>[];
+    final totals = ref.watch(periodTotalsProvider(key));
+    final syncedAt = ref.watch(periodSyncedAtProvider(key)).value;
+    final categories = ref.watch(categoriesProvider).value ?? const <Category>[];
+    final nameById = {for (final c in categories) c.id: c.name};
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -42,9 +54,12 @@ class MonthOverviewScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _PeriodHeader(period: period),
+                      _PeriodHeader(period: period, totals: totals, syncedAt: syncedAt),
                       const SizedBox(height: 24),
-                      _EmptyPeriod(monthLabel: period.monthLabel),
+                      if (entries.isEmpty)
+                        _EmptyPeriod(monthLabel: period.monthLabel)
+                      else
+                        _Worklist(entries: entries, nameById: nameById),
                     ],
                   ),
                 ),
@@ -63,16 +78,18 @@ class MonthOverviewScreen extends ConsumerWidget {
 }
 
 class _PeriodHeader extends StatelessWidget {
-  const _PeriodHeader({required this.period});
+  const _PeriodHeader({required this.period, required this.totals, required this.syncedAt});
 
   final _Period period;
+  final List<Money> totals;
+  final DateTime? syncedAt;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Column(
@@ -87,9 +104,23 @@ class _PeriodHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(period.span, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+              if (totals.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _NetTotals(totals: totals),
+              ],
+              if (syncedAt != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Updated ${_relativeTime(syncedAt!, DateTime.now())}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
+        const SizedBox(width: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
           decoration: BoxDecoration(
@@ -115,6 +146,202 @@ class _PeriodHeader extends StatelessWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// The period's net result, one figure per currency (no FX conversion yet —
+/// ADR-0007's display-currency rollup arrives with the projection).
+class _NetTotals extends StatelessWidget {
+  const _NetTotals({required this.totals});
+
+  final List<Money> totals;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = CalmTokens.of(theme.brightness);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    return Wrap(
+      spacing: 14,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (final money in totals)
+          RichText(
+            text: TextSpan(
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontFamily: CalmTokens.fontDisplay,
+                fontWeight: FontWeight.w600,
+                color: money.amount < 0 ? tokens.clay : tokens.sageDeep,
+              ),
+              children: [
+                TextSpan(text: _signed(money.amount, money.currency)),
+                TextSpan(
+                  text: '  net',
+                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Worklist extends StatelessWidget {
+  const _Worklist({required this.entries, required this.nameById});
+
+  final List<FlowEntry> entries;
+  final Map<String, String> nameById;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            'Logged · ${entries.length}',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: muted,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border.all(color: theme.colorScheme.outline),
+            borderRadius: BorderRadius.circular(CalmTokens.radiusLg),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              for (var i = 0; i < entries.length; i++) ...[
+                if (i > 0) Divider(height: 1, color: theme.colorScheme.outline),
+                _EntryTile(entry: entries[i], nameById: nameById),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EntryTile extends StatelessWidget {
+  const _EntryTile({required this.entry, required this.nameById});
+
+  final FlowEntry entry;
+  final Map<String, String> nameById;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = CalmTokens.of(theme.brightness);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+
+    final firstCategoryId = entry.lines
+        .map((x) => x.categoryId)
+        .firstWhere((x) => x != null, orElse: () => null);
+    final dotColor = firstCategoryId != null
+        ? CategoryPalette.forId(firstCategoryId).of(context)
+        : tokens.line;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.only(right: 13, top: 2),
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _title(entry, nameById),
+                  style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _subtitle(entry, nameById),
+                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                _signed(entry.total.amount, entry.total.currency),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontFamily: CalmTokens.fontDisplay,
+                  fontWeight: FontWeight.w600,
+                  color: entry.isIncome ? tokens.sageDeep : theme.colorScheme.onSurface,
+                ),
+              ),
+              if (entry.pending) ...[
+                const SizedBox(height: 3),
+                _SyncingPill(),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Best human title: the entry note, else a single line's note, else the
+  /// category name, else the bare direction.
+  String _title(FlowEntry entry, Map<String, String> nameById) {
+    final note = entry.description?.trim();
+    if (note != null && note.isNotEmpty) return note;
+    if (entry.lines.length == 1) {
+      final lineNote = entry.lines.first.description?.trim();
+      if (lineNote != null && lineNote.isNotEmpty) return lineNote;
+      final id = entry.lines.first.categoryId;
+      if (id != null && nameById[id] != null) return nameById[id]!;
+    }
+    return entry.isIncome ? 'Income' : 'Expense';
+  }
+
+  String _subtitle(FlowEntry entry, Map<String, String> nameById) {
+    final date = '${_shortMonths[entry.occurredAt.month - 1]} ${entry.occurredAt.day}';
+    if (entry.lines.length > 1) return '$date · ${entry.lines.length} items';
+    final id = entry.lines.first.categoryId;
+    final name = id != null ? nameById[id] : null;
+    return name != null ? '$date · $name' : date;
+  }
+}
+
+class _SyncingPill extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.cloud_upload_outlined, size: 12, color: muted),
+        const SizedBox(width: 4),
+        Text('Syncing', style: theme.textTheme.labelSmall?.copyWith(color: muted)),
       ],
     );
   }
@@ -155,7 +382,7 @@ class _EmptyPeriod extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Add an expense or income and it will show up here once $monthLabel is wired to your data.',
+            'Add an expense or income for $monthLabel and it shows up here.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(color: muted, height: 1.5),
           ),
@@ -212,11 +439,14 @@ class _Fab extends StatelessWidget {
   }
 }
 
-/// The current accounting period as the empty cockpit header needs it — label,
-/// calendar span and day-in-period, derived from [containingPeriod] (ADR-0013).
+/// The current accounting period as the cockpit header needs it — label, calendar
+/// span, day-in-period and the `(year, month)` key, derived from [containingPeriod]
+/// (ADR-0013).
 class _Period {
-  _Period({required this.monthLabel, required this.span});
+  _Period({required this.year, required this.month, required this.monthLabel, required this.span});
 
+  final int year;
+  final int month;
   final String monthLabel;
   final String span;
 
@@ -231,22 +461,57 @@ class _Period {
     final dayOfPeriod = today.difference(start).inDays + 1;
     final totalDays = endExclusive.difference(start).inDays;
 
-    final span = '${_short[start.month - 1]} ${start.day} – ${_short[lastDay.month - 1]} ${lastDay.day}'
+    final span = '${_shortMonths[start.month - 1]} ${start.day} – ${_shortMonths[lastDay.month - 1]} ${lastDay.day}'
         ' · day $dayOfPeriod of $totalDays';
 
-    return _Period(monthLabel: '${_full[p.month - 1]} ${p.year}', span: span);
+    return _Period(
+      year: p.year,
+      month: p.month,
+      monthLabel: '${_fullMonths[p.month - 1]} ${p.year}',
+      span: span,
+    );
   }
 
   static DateTime _anchor(int year, int month, int startDay) {
     final daysInMonth = DateTime(year, month + 1, 0).day;
     return DateTime(year, month, startDay < daysInMonth ? startDay : daysInMonth);
   }
+}
 
-  static const List<String> _short = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-  static const List<String> _full = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
+const List<String> _shortMonths = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+const List<String> _fullMonths = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/// Compact currency formatting for display only (the decimal-safe model lands with
+/// the OpenAPI client in Phase 5). [_signed] prefixes the sign by the amount's sign.
+const Map<String, String> _symbols = {
+  'USD': '\$', 'CAD': '\$', 'EUR': '€', 'GBP': '£', 'JPY': '¥',
+};
+
+String _money(num amount, String currency) {
+  final decimals = currency == 'JPY' ? 0 : 2;
+  final magnitude = amount.abs().toStringAsFixed(decimals);
+  final symbol = _symbols[currency];
+  return symbol != null ? '$symbol$magnitude' : '$magnitude $currency';
+}
+
+String _signed(num amount, String currency) {
+  final sign = amount < 0 ? '−' : '+';
+  return '$sign${_money(amount, currency)}';
+}
+
+/// Coarse relative time for the cache freshness line. Computed at build (it doesn't
+/// tick on its own), but the cockpit revalidates on every open and outbox change, so
+/// in practice it re-renders fresh; precision finer than this isn't worth a timer.
+String _relativeTime(DateTime then, DateTime now) {
+  final diff = now.difference(then);
+  if (diff.inSeconds < 45) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  return 'on ${_shortMonths[then.month - 1]} ${then.day}';
 }
