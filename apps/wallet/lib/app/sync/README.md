@@ -24,3 +24,10 @@ drift README's "Sync flicker" note). Closing it would mean the drainer signallin
 money feature on sync — deferred.
 
 Deferred: connectivity-driven auto-drain (`connectivity_plus`).
+
+Future direction (not built): turn `pending_operations` from a drain-and-forget
+queue into a **durable operations log** — retain synced rows too and show only
+pending by default, giving an audit/history of every change. This pairs with the
+"always queue, even when online" path. It's an input to the pending offline-first
+ADR; see `apps/wallet/PLAN.md` §12 "Offline-first". The current drainer still retires
+synced rows, so adopting the log means a schema/retention change here.
