@@ -49,6 +49,7 @@ dependencies:
   oidc: ^0.14.0+2
   oidc_default_store: ^0.6.0+2
   local_auth: ^3.0.1
+  drift_flutter: ^0.3.0
 
 dev_dependencies:
   flutter_test:

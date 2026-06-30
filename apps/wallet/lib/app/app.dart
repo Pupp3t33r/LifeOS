@@ -4,6 +4,7 @@ import '../features/security/ui/app_lock_gate.dart';
 import '../l10n/app_localizations.dart';
 import 'locale/locale_controller.dart';
 import 'navigation/app_router.dart';
+import 'sync/outbox_sync.dart';
 import 'theme/app_theme.dart';
 
 /// Root of the Wallet app — the shell. Wires routing and theme; feature
@@ -17,6 +18,9 @@ class WalletApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
     // null = follow the system locale; a value is the user's saved choice.
     final locale = ref.watch(localeControllerProvider);
+    // Keep the outbox draining for the app's lifetime: replays queued mutations
+    // on launch/sign-in (gated on auth internally). See app/sync.
+    ref.watch(outboxSyncProvider);
     return MaterialApp.router(
       title: 'Wallet',
       theme: walletLightTheme,
