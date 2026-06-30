@@ -22,6 +22,7 @@ public sealed class ProblemExceptionHandler : IExceptionHandler
         {
             AppException appException => (appException.StatusCode, appException.Title),
             DuplicateMovementException => (StatusCodes.Status409Conflict, "Conflict"),
+            DuplicateFlowException => (StatusCodes.Status409Conflict, "Conflict"),
             _ => (0, string.Empty)
         };
 
