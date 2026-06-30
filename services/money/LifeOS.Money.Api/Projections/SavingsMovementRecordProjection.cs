@@ -3,16 +3,17 @@ using Marten.Events.Projections;
 
 namespace LifeOS.Money.Api.Projections;
 
-public sealed partial class TransactionRecordProjection : EventProjection
+public sealed partial class SavingsMovementRecordProjection : EventProjection
 {
-    public TransactionRecord Create(TransactionRecorded @event)
+    public SavingsMovementRecord Create(SavingsMovementRecorded @event)
     {
-        return new TransactionRecord
+        return new SavingsMovementRecord
         {
-            Id = @event.TransactionId,
+            Id = @event.MovementId,
             AccountId = @event.AccountId,
-            TransactionId = @event.TransactionId,
+            MovementId = @event.MovementId,
             Amount = @event.Amount,
+            Source = @event.Source,
             Description = @event.Description,
             OccurredAt = @event.OccurredAt,
             RecordedAt = @event.RecordedAt

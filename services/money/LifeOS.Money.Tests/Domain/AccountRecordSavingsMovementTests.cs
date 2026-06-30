@@ -3,7 +3,7 @@ using LifeOS.Money.Api.Domain.Events;
 
 namespace LifeOS.Money.Tests.Domain;
 
-public class AccountRecordTransactionTests
+public class AccountRecordSavingsMovementTests
 {
     private static Account NewAccount(string currency = "EUR") =>
         AccountFromOpened(Account.Open(Guid.NewGuid(), "owner-1", "Test", currency, new CurrencyAmount(100m, currency)));
@@ -20,12 +20,13 @@ public class AccountRecordTransactionTests
     {
         var account = NewAccount();
         Assert.Throws<ArgumentException>(() =>
-            account.RecordTransaction(
+            account.RecordSavingsMovement(
                 Guid.NewGuid(),
                 new CurrencyAmount(0m, "EUR"),
-                "x",
                 DateTimeOffset.UtcNow,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow,
+                MovementSource.Manual,
+                "x"));
     }
 
     [Fact]
@@ -33,54 +34,59 @@ public class AccountRecordTransactionTests
     {
         var account = NewAccount("EUR");
         Assert.Throws<InvalidOperationException>(() =>
-            account.RecordTransaction(
+            account.RecordSavingsMovement(
                 Guid.NewGuid(),
                 new CurrencyAmount(10m, "USD"),
-                "x",
                 DateTimeOffset.UtcNow,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow,
+                MovementSource.Manual,
+                "x"));
     }
 
     [Fact]
-    public void RejectsDuplicateTransactionId()
+    public void RejectsDuplicateMovementId()
     {
         var account = NewAccount();
-        var txId = Guid.NewGuid();
-        var recorded = account.RecordTransaction(
-            txId,
+        var movementId = Guid.NewGuid();
+        var recorded = account.RecordSavingsMovement(
+            movementId,
             new CurrencyAmount(-10m, "EUR"),
-            "first",
             DateTimeOffset.UtcNow,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow,
+            MovementSource.Manual,
+            "first");
         account.Apply(recorded);
 
-        Assert.Throws<DuplicateTransactionException>(() =>
-            account.RecordTransaction(
-                txId,
+        Assert.Throws<DuplicateMovementException>(() =>
+            account.RecordSavingsMovement(
+                movementId,
                 new CurrencyAmount(-10m, "EUR"),
-                "duplicate",
                 DateTimeOffset.UtcNow,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow,
+                MovementSource.Manual,
+                "duplicate"));
     }
 
     [Fact]
-    public void ReturnsTransactionRecorded_WithExpectedPayload()
+    public void ReturnsSavingsMovementRecorded_WithExpectedPayload()
     {
         var account = NewAccount();
-        var txId = Guid.NewGuid();
+        var movementId = Guid.NewGuid();
         var occurredAt = DateTimeOffset.UtcNow;
         var recordedAt = DateTimeOffset.UtcNow.AddSeconds(1);
 
-        var recorded = account.RecordTransaction(
-            txId,
+        var recorded = account.RecordSavingsMovement(
+            movementId,
             new CurrencyAmount(-25m, "EUR"),
-            "Groceries",
             occurredAt,
-            recordedAt);
+            recordedAt,
+            MovementSource.Manual,
+            "Manual withdrawal");
 
         Assert.Equal(account.Id, recorded.AccountId);
-        Assert.Equal(txId, recorded.TransactionId);
-        Assert.Equal("Groceries", recorded.Description);
+        Assert.Equal(movementId, recorded.MovementId);
+        Assert.Equal(MovementSource.Manual, recorded.Source);
+        Assert.Equal("Manual withdrawal", recorded.Description);
         Assert.Equal(occurredAt, recorded.OccurredAt);
         Assert.Equal(recordedAt, recorded.RecordedAt);
     }

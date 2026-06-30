@@ -21,7 +21,7 @@ public sealed class ProblemExceptionHandler : IExceptionHandler
         var (statusCode, title) = exception switch
         {
             AppException appException => (appException.StatusCode, appException.Title),
-            DuplicateTransactionException => (StatusCodes.Status409Conflict, "Conflict"),
+            DuplicateMovementException => (StatusCodes.Status409Conflict, "Conflict"),
             _ => (0, string.Empty)
         };
 

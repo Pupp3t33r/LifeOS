@@ -1,19 +1,19 @@
 using System.Text.RegularExpressions;
 using FluentValidation;
 
-namespace LifeOS.Money.Api.Features.Transactions;
+namespace LifeOS.Money.Api.Features.SavingsMovements;
 
-public sealed partial class RecordTransactionValidator : AbstractValidator<RecordTransactionRequest>
+public sealed partial class RecordSavingsMovementValidator : AbstractValidator<RecordSavingsMovementRequest>
 {
-    public RecordTransactionValidator()
+    public RecordSavingsMovementValidator()
     {
-        RuleFor(x => x.TransactionId)
+        RuleFor(x => x.MovementId)
             .NotEqual(Guid.Empty)
-            .WithMessage("TransactionId must be a non-empty UUID (client-assigned, ADR-0003).");
+            .WithMessage("MovementId must be a non-empty UUID (client-assigned, ADR-0003).");
 
         RuleFor(x => x.Amount)
             .Must(amount => amount != 0)
-            .WithMessage("Amount must be non-zero. Use positive for income, negative for expense.");
+            .WithMessage("Amount must be non-zero. Use positive to deposit, negative to withdraw.");
 
         RuleFor(x => x.Currency)
             .NotEmpty()
@@ -21,7 +21,6 @@ public sealed partial class RecordTransactionValidator : AbstractValidator<Recor
             .WithMessage("Currency must be a 3-letter ISO 4217 code (e.g. USD, EUR).");
 
         RuleFor(x => x.Description)
-            .NotEmpty()
             .MaximumLength(500);
 
         RuleFor(x => x.OccurredAt)

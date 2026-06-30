@@ -49,7 +49,7 @@ public class Program
 
             options.Events.UseIdentityMapForAggregates = true;
             options.Projections.Snapshot<Account>(SnapshotLifecycle.Inline);
-            options.Projections.Add<TransactionRecordProjection>(ProjectionLifecycle.Inline);
+            options.Projections.Add<SavingsMovementRecordProjection>(ProjectionLifecycle.Inline);
 
             // UserPreferences (ADR-0013) is a plain document keyed by the owner's
             // Keycloak subject, not an event-sourced aggregate.

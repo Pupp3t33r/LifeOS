@@ -10,7 +10,7 @@ public sealed partial class Account
     public string Currency { get; set; } = string.Empty;
     public CurrencyAmount Balance { get; set; } = new(0, string.Empty);
     public DateTimeOffset OpenedAt { get; set; }
-    public HashSet<Guid> RecordedTransactionIds { get; set; } = new();
+    public HashSet<Guid> RecordedMovementIds { get; set; } = new();
 
     public static AccountOpened Open(
         Guid id,
@@ -24,12 +24,15 @@ public sealed partial class Account
         return new AccountOpened(id, ownerId, name, currency, balance, openedAt ?? DateTimeOffset.UtcNow);
     }
 
-    public TransactionRecorded RecordTransaction(
-        Guid transactionId,
+    public SavingsMovementRecorded RecordSavingsMovement(
+        Guid movementId,
         CurrencyAmount amount,
-        string description,
         DateTimeOffset occurredAt,
-        DateTimeOffset recordedAt)
+        DateTimeOffset recordedAt,
+        MovementSource source,
+        string? description = null,
+        Guid? transferId = null,
+        decimal? fxRate = null)
     {
         if (amount.Amount == 0)
         {
@@ -39,21 +42,24 @@ public sealed partial class Account
         if (amount.Currency != Currency)
         {
             throw new InvalidOperationException(
-                $"Transaction currency '{amount.Currency}' does not match account currency '{Currency}'.");
+                $"Movement currency '{amount.Currency}' does not match account currency '{Currency}'.");
         }
 
-        if (RecordedTransactionIds.Contains(transactionId))
+        if (RecordedMovementIds.Contains(movementId))
         {
-            throw new DuplicateTransactionException(transactionId);
+            throw new DuplicateMovementException(movementId);
         }
 
-        return new TransactionRecorded(
+        return new SavingsMovementRecorded(
             Id,
-            transactionId,
+            movementId,
             amount,
-            description,
+            source,
             occurredAt,
-            recordedAt);
+            recordedAt,
+            description,
+            transferId,
+            fxRate);
     }
 
     public void Apply(AccountOpened @event)
@@ -66,9 +72,9 @@ public sealed partial class Account
         OpenedAt = @event.OpenedAt;
     }
 
-    public void Apply(TransactionRecorded @event)
+    public void Apply(SavingsMovementRecorded @event)
     {
         Balance = new CurrencyAmount(Balance.Amount + @event.Amount.Amount, Currency);
-        RecordedTransactionIds.Add(@event.TransactionId);
+        RecordedMovementIds.Add(@event.MovementId);
     }
 }
