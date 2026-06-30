@@ -1,102 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
-import 'home_mock.dart';
-import 'widgets/home_side_panel.dart';
-import 'widgets/on_track_strip.dart';
-import 'widgets/period_switcher.dart';
-import 'widgets/worklist.dart';
+import '../../application/preferences_providers.dart';
+import '../../domain/month_period.dart';
+import '../add_entry/add_entry_sheet.dart';
 
-/// Home — the **current-period cockpit** (Wallet ADR-0002; nav branch 0).
+/// Home — the current-period cockpit (Wallet ADR-0002; nav branch 0).
 ///
-/// Body-only: [AppShell] supplies the Scaffold, app bar, and nav chrome. This
-/// is the operating surface for the active month — switch periods, see the
-/// on-track verdict, work the Upcoming/Logged worklist, and close. View
-/// toggles (Status/Type, the budgets and per-row expands) are live; the actions
-/// that change money state (mark paid/bought, add, close) are stubbed until the
-/// Money backend (`MonthProjection`, ADR-0007) is wired.
+/// Body-only: [AppShell] supplies the Scaffold, app bar, and nav chrome.
 ///
-/// NOTE: the screen renders [homeMock] — hand-authored sample data. See
-/// `home_mock.dart`; delete it when the real projection lands.
-class MonthOverviewScreen extends StatefulWidget {
+/// For now this is an **honest empty cockpit**: a real current-period header
+/// (derived from the user's month-start-day and today) plus an empty-state
+/// invitation to add the first flow. The rich cockpit — on-track strip, budgets,
+/// the Upcoming/Logged worklist, side panel — returns once Home is wired to the
+/// real `MonthProjection` (Money ADR-0007); until then there is no read model to
+/// render, so we show nothing fake. The add-expense sheet (the FAB) writes real
+/// flows via the outbox.
+class MonthOverviewScreen extends ConsumerWidget {
   const MonthOverviewScreen({super.key});
 
-  @override
-  State<MonthOverviewScreen> createState() => _MonthOverviewScreenState();
-}
-
-/// How the worklist is grouped — by realized status, or by entry type.
-enum _Grouping { status, type }
-
-class _MonthOverviewScreenState extends State<MonthOverviewScreen> {
-  _Grouping _grouping = _Grouping.status;
-  bool _budgetsExpanded = false;
-
-  /// Below this width the side rail is dropped and the layout goes single-column.
-  static const double _twoColumnBreakpoint = 900;
+  static const double _wideBreakpoint = 900;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final startDay = ref.watch(preferencesProvider).value?.monthStartDay ?? 1;
+    final period = _Period.current(DateTime.now(), startDay);
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= _twoColumnBreakpoint;
-        final pad = EdgeInsets.fromLTRB(wide ? 28 : 18, 22, wide ? 28 : 18, 96);
-
-        final Widget body;
-        if (wide) {
-          body = Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: pad,
-                  child: _WorkColumn(
-                    grouping: _grouping,
-                    budgetsExpanded: _budgetsExpanded,
-                    onGroupingChanged: (g) => setState(() => _grouping = g),
-                    onToggleBudgets: () => setState(() => _budgetsExpanded = !_budgetsExpanded),
-                    compact: false,
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 300,
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(0, 22, 28, 96),
-                  child: HomeSidePanel(mock: homeMock),
-                ),
-              ),
-            ],
-          );
-        } else {
-          body = SingleChildScrollView(
-            padding: pad,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _WorkColumn(
-                  grouping: _grouping,
-                  budgetsExpanded: _budgetsExpanded,
-                  onGroupingChanged: (g) => setState(() => _grouping = g),
-                  onToggleBudgets: () => setState(() => _budgetsExpanded = !_budgetsExpanded),
-                  compact: true,
-                ),
-                const SizedBox(height: 24),
-                CloseCard(
-                  monthLabel: homeMock.summary.monthLabel,
-                  daysLeft: homeMock.summary.daysLeft,
-                ),
-              ],
-            ),
-          );
-        }
+        final wide = constraints.maxWidth >= _wideBreakpoint;
+        final pad = EdgeInsets.fromLTRB(wide ? 28 : 18, 24, wide ? 28 : 18, 96);
 
         return Stack(
           children: [
             Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1280),
-                child: body,
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: SingleChildScrollView(
+                  padding: pad,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _PeriodHeader(period: period),
+                      const SizedBox(height: 24),
+                      _EmptyPeriod(monthLabel: period.monthLabel),
+                    ],
+                  ),
+                ),
               ),
             ),
             Positioned(
@@ -111,159 +62,104 @@ class _MonthOverviewScreenState extends State<MonthOverviewScreen> {
   }
 }
 
-/// The work column — period switcher, on-track strip, the grouping toggle, and
-/// the worklist sections. Shared by both layouts.
-class _WorkColumn extends StatelessWidget {
-  const _WorkColumn({
-    required this.grouping,
-    required this.budgetsExpanded,
-    required this.onGroupingChanged,
-    required this.onToggleBudgets,
-    required this.compact,
-  });
+class _PeriodHeader extends StatelessWidget {
+  const _PeriodHeader({required this.period});
 
-  final _Grouping grouping;
-  final bool budgetsExpanded;
-  final ValueChanged<_Grouping> onGroupingChanged;
-  final VoidCallback onToggleBudgets;
-  final bool compact;
+  final _Period period;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        PeriodSwitcher(summary: homeMock.summary, compact: compact),
-        const SizedBox(height: 18),
-        OnTrackStrip(
-          summary: homeMock.summary,
-          budgets: homeMock.budgets,
-          expanded: budgetsExpanded,
-          onToggle: onToggleBudgets,
-          compact: compact,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                period.monthLabel,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontFamily: CalmTokens.fontDisplay,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(period.span, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+            ],
+          ),
         ),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'This period',
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            _GroupingToggle(value: grouping, onChanged: onGroupingChanged),
-          ],
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.only(right: 7),
+                decoration: BoxDecoration(color: theme.colorScheme.primary, shape: BoxShape.circle),
+              ),
+              Text(
+                'Active',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: CalmTokens.of(theme.brightness).sageDeep,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 14),
-        ..._sections(compact),
       ],
     );
   }
-
-  List<Widget> _sections(bool compact) {
-    final entries = homeMock.entries;
-    final sections = <Widget>[];
-
-    void add(WorklistSection section) {
-      if (sections.isNotEmpty) sections.add(const SizedBox(height: 20));
-      sections.add(section);
-    }
-
-    if (grouping == _Grouping.status) {
-      final upcoming = entries.where((x) => !x.logged).toList();
-      final logged = entries.where((x) => x.logged).toList();
-      add(WorklistSection(
-        title: 'Upcoming',
-        trailing: '${upcoming.length} to handle',
-        actionLabel: 'Confirm all',
-        entries: upcoming,
-        compact: compact,
-      ));
-      add(WorklistSection(
-        title: 'Logged',
-        trailing: '${logged.length} flows',
-        actionLabel: 'View in Activity',
-        entries: logged,
-        compact: compact,
-        addLabel: compact ? 'Add to June' : 'Add an expense or income to June',
-      ));
-    } else {
-      final byType = <EntryType, ({String title, List<HomeEntry> items})>{
-        EntryType.recurring: (title: 'Recurring', items: []),
-        EntryType.planned: (title: 'Planned', items: []),
-        EntryType.adhoc: (title: 'Ad-hoc', items: []),
-      };
-      for (final e in entries) {
-        byType[e.type]!.items.add(e);
-      }
-      final order = [EntryType.recurring, EntryType.planned, EntryType.adhoc];
-      for (var i = 0; i < order.length; i++) {
-        final group = byType[order[i]]!;
-        if (group.items.isEmpty) continue;
-        add(WorklistSection(
-          title: group.title,
-          trailing: '${group.items.length}',
-          entries: group.items,
-          compact: compact,
-          addLabel: order[i] == EntryType.adhoc
-              ? (compact ? 'Add to June' : 'Add an expense or income to June')
-              : null,
-        ));
-      }
-    }
-
-    return sections;
-  }
 }
 
-class _GroupingToggle extends StatelessWidget {
-  const _GroupingToggle({required this.value, required this.onChanged});
+class _EmptyPeriod extends StatelessWidget {
+  const _EmptyPeriod({required this.monthLabel});
 
-  final _Grouping value;
-  final ValueChanged<_Grouping> onChanged;
+  final String monthLabel;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
       decoration: BoxDecoration(
-        color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
+        color: theme.colorScheme.surface,
+        border: Border.all(color: theme.colorScheme.outline),
+        borderRadius: BorderRadius.circular(CalmTokens.radiusLg),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
         children: [
-          _segment(context, 'Status', _Grouping.status),
-          _segment(context, 'Type', _Grouping.type),
-        ],
-      ),
-    );
-  }
-
-  Widget _segment(BuildContext context, String label, _Grouping group) {
-    final theme = Theme.of(context);
-    final selected = value == group;
-    return GestureDetector(
-      onTap: () => onChanged(group),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? theme.colorScheme.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
-          boxShadow: selected
-              ? [BoxShadow(color: theme.colorScheme.shadow.withValues(alpha: 0.08), blurRadius: 3, offset: const Offset(0, 1))]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: selected ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            fontWeight: FontWeight.w600,
+          Container(
+            width: 52,
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.receipt_long_outlined, color: theme.colorScheme.primary, size: 24),
           ),
-        ),
+          const SizedBox(height: 16),
+          Text(
+            'Nothing logged yet',
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Add an expense or income and it will show up here once $monthLabel is wired to your data.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(color: muted, height: 1.5),
+          ),
+        ],
       ),
     );
   }
@@ -305,7 +201,7 @@ class _Fab extends StatelessWidget {
       shadowColor: theme.colorScheme.secondary.withValues(alpha: 0.5),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () {/* TODO: add an expense or income to the active period */},
+        onTap: () => showAddEntry(context),
         child: SizedBox(
           height: extended ? 50 : 56,
           width: extended ? null : 56,
@@ -314,4 +210,43 @@ class _Fab extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The current accounting period as the empty cockpit header needs it — label,
+/// calendar span and day-in-period, derived from [containingPeriod] (ADR-0013).
+class _Period {
+  _Period({required this.monthLabel, required this.span});
+
+  final String monthLabel;
+  final String span;
+
+  factory _Period.current(DateTime now, int startDay) {
+    final p = containingPeriod(now, startDay);
+    final start = _anchor(p.year, p.month, startDay);
+    final next = p.month == 12 ? (year: p.year + 1, month: 1) : (year: p.year, month: p.month + 1);
+    final endExclusive = _anchor(next.year, next.month, startDay);
+    final lastDay = endExclusive.subtract(const Duration(days: 1));
+
+    final today = DateTime(now.year, now.month, now.day);
+    final dayOfPeriod = today.difference(start).inDays + 1;
+    final totalDays = endExclusive.difference(start).inDays;
+
+    final span = '${_short[start.month - 1]} ${start.day} – ${_short[lastDay.month - 1]} ${lastDay.day}'
+        ' · day $dayOfPeriod of $totalDays';
+
+    return _Period(monthLabel: '${_full[p.month - 1]} ${p.year}', span: span);
+  }
+
+  static DateTime _anchor(int year, int month, int startDay) {
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    return DateTime(year, month, startDay < daysInMonth ? startDay : daysInMonth);
+  }
+
+  static const List<String> _short = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  static const List<String> _full = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
 }
