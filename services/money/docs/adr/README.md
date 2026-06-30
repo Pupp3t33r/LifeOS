@@ -79,7 +79,7 @@ The following decisions have been identified but **intentionally deferred** unti
 |---|---|
 | CloudEvents envelope for Kafka events | The first Money event is published to Kafka |
 | Wolverine outbox conventions (topic naming, partition keys) | The first cross-domain event is wired |
-| Projection strategy (inline vs async, snapshots, rebuild) | The first projection lands (MonthProjection per ADR-0007 is the forcing function) |
+| Projection strategy (inline vs async, snapshots, rebuild) | **Partially settled:** the first read-models landed **inline** (`SavingsMovementRecordProjection`, `FlowEntryRecordProjection`) — single-event, low-volume, cheap to keep inline. The full inline-vs-async / snapshot / rebuild call still waits on the composed `MonthProjection` (ADR-0007), which fans in six aggregate families and is the real forcing function. |
 | Transfer aggregate (first-class vs paired transactions) | Real-world transfer volume justifies a dedicated aggregate; for v1 paired transactions with `TransferId` suffice (ADR-0009) |
 | Skip-periods (catch-up UX when months behind) | Wallet close-flow UX implementation (ADR-0023). |
 | Asset aggregate shape (bundle→Asset granularity, `AssetTracked` event, Asset fields) | Phase 3 Asset implementation (amends ADR-0010; the paid-entry→Asset path is fixed in ADR-0018, the shape is not). |

@@ -12,5 +12,15 @@ Money is the source of truth (see apps/wallet/AGENTS.md).
 auth). Watched by the app root so it lives for the session. The other trigger is
 the feature's, right after an `enqueue`: `ref.read(outboxDrainerProvider).drain()`.
 
-Deferred: connectivity-driven auto-drain (`connectivity_plus`) and refreshing
-cached read models (the "fetch & cache" half).
+The "fetch & cache" half (refreshing cached read models) now exists for the period
+flow ledger — stale-while-revalidate plus an outbox-decoded optimistic overlay. It
+lives in the feature layer (`features/money/data/period_flows_repository.dart` +
+`features/money/application/period_flows_providers.dart`), not here; see
+`features/money/data/drift/README.md` for the strategy and its known limitations.
+
+One coupling is deliberately *not* wired: a successful drain does **not** notify the
+cache to refresh the affected period, so a just-synced entry can briefly flicker (the
+drift README's "Sync flicker" note). Closing it would mean the drainer signalling the
+money feature on sync — deferred.
+
+Deferred: connectivity-driven auto-drain (`connectivity_plus`).

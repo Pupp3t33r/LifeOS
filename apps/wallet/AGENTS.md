@@ -39,6 +39,8 @@ Offline flow:
 - When offline: append to `pending_operations`, optionally apply optimistically to cached read models for instant UI, replay on reconnect.
 - Conflict (server rejects): mark op as failed, surface to user.
 
+The period flow ledger is the first read model wired this way — see [`features/money/data/drift/README.md`](lib/features/money/data/drift/README.md) for how it lands in practice (stale-while-revalidate; known issues). One refinement of the "apply optimistically to cached read models" point above: there, optimistic entries are **overlaid from the outbox at read time, not written into the cache** — the cache only ever holds server-confirmed truth, so there is no provisional state to reconcile.
+
 **Hard rule:** no client-side aggregates, no client-side projections, no client-side event log. Money's business rules run once, on the server.
 
 ### Feature modules
