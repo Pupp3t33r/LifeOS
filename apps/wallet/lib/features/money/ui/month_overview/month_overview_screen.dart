@@ -35,6 +35,13 @@ class MonthOverviewScreen extends ConsumerWidget {
     final entries = ref.watch(periodFlowsProvider(key)).value ?? const <FlowEntry>[];
     final totals = ref.watch(periodTotalsProvider(key));
     final syncedAt = ref.watch(periodSyncedAtProvider(key)).value;
+
+    // The in-flight portion of the net (ADR-0004 §5, "Option A"): the signed sum of
+    // just the pending entries, per currency, zero-nets dropped. The headline net
+    // already includes these; this is only the honest label of how much isn't synced.
+    final pendingTotals = _sumByCurrency(entries.where((x) => x.pending))
+        .where((x) => x.amount != 0)
+        .toList();
     final categories = ref.watch(categoriesProvider).value ?? const <Category>[];
     final nameById = {for (final c in categories) c.id: c.name};
 
@@ -54,7 +61,12 @@ class MonthOverviewScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _PeriodHeader(period: period, totals: totals, syncedAt: syncedAt),
+                      _PeriodHeader(
+                        period: period,
+                        totals: totals,
+                        pendingTotals: pendingTotals,
+                        syncedAt: syncedAt,
+                      ),
                       const SizedBox(height: 24),
                       if (entries.isEmpty)
                         _EmptyPeriod(monthLabel: period.monthLabel)
@@ -78,10 +90,16 @@ class MonthOverviewScreen extends ConsumerWidget {
 }
 
 class _PeriodHeader extends StatelessWidget {
-  const _PeriodHeader({required this.period, required this.totals, required this.syncedAt});
+  const _PeriodHeader({
+    required this.period,
+    required this.totals,
+    required this.pendingTotals,
+    required this.syncedAt,
+  });
 
   final _Period period;
   final List<Money> totals;
+  final List<Money> pendingTotals;
   final DateTime? syncedAt;
 
   @override
@@ -108,6 +126,7 @@ class _PeriodHeader extends StatelessWidget {
                 const SizedBox(height: 10),
                 _NetTotals(totals: totals),
               ],
+              if (pendingTotals.isNotEmpty) _PendingCaption(totals: pendingTotals),
               if (syncedAt != null) ...[
                 const SizedBox(height: 6),
                 Text(
@@ -186,6 +205,52 @@ class _NetTotals extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// The in-flight portion of the net, labelled honestly (ADR-0004 §5). The headline
+/// already includes these amounts; this caption says how much of it isn't synced yet,
+/// and self-erases the moment everything confirms. The accent colour marks it as
+/// not-yet-applied; the ± sign in the text carries direction.
+class _PendingCaption extends StatelessWidget {
+  const _PendingCaption({required this.totals});
+
+  final List<Money> totals;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = CalmTokens.of(theme.brightness);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final amounts = totals.map((x) => _signed(x.amount, x.currency)).join(', ');
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.cloud_upload_outlined, size: 12, color: muted),
+          const SizedBox(width: 5),
+          Flexible(
+            child: RichText(
+              text: TextSpan(
+                style: theme.textTheme.labelSmall?.copyWith(color: muted),
+                children: [
+                  const TextSpan(text: 'includes '),
+                  TextSpan(
+                    text: amounts,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: tokens.clay,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const TextSpan(text: ' syncing'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -502,6 +567,22 @@ String _money(num amount, String currency) {
 String _signed(num amount, String currency) {
   final sign = amount < 0 ? '−' : '+';
   return '$sign${_money(amount, currency)}';
+}
+
+/// Signed net per currency over [entries] (currencies sorted). Used for the pending
+/// caption; the headline net is the same fold over the full merged list
+/// (`periodTotalsProvider`).
+List<Money> _sumByCurrency(Iterable<FlowEntry> entries) {
+  final byCurrency = <String, num>{};
+  for (final entry in entries) {
+    byCurrency.update(
+      entry.total.currency,
+      (sum) => sum + entry.total.amount,
+      ifAbsent: () => entry.total.amount,
+    );
+  }
+  final currencies = byCurrency.keys.toList()..sort();
+  return [for (final c in currencies) Money(amount: byCurrency[c]!, currency: c)];
 }
 
 /// Coarse relative time for the cache freshness line. Computed at build (it doesn't
