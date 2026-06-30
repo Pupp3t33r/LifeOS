@@ -11,6 +11,7 @@ Each ADR is a single markdown file following the [Nygard format](https://adr.git
 | [0001](./0001-app-localization.md) | In-app localization — `flutter_localizations` + `intl` (ARB), English + Russian, client-only device-local locale | 2026-06-29 |
 | [0002](./0002-navigation-and-information-architecture.md) | Navigation & information architecture — the current-period cockpit and a four-destination shell (Home · Activity · Accounts · Wishlist) | 2026-06-29 |
 | [0003](./0003-category-colour-system.md) | Category colour system — a curated 12-colour Calm palette, client-assigned, light/dark | 2026-06-29 |
+| [0004](./0004-offline-first-sync.md) | Offline-first sync — cached read models, a write outbox, idempotent replay; pending shown & counted via overlay but never cached | 2026-06-30 |
 
 ## Related decisions housed elsewhere
 

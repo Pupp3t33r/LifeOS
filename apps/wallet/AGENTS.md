@@ -34,14 +34,15 @@ Wallet does **not** event-source locally. The Money service is the single source
 1. **Cached read models** — server projection responses (e.g., `MonthProjection`, account balances, transaction lists). Always available offline.
 2. **`pending_operations` outbox** — queued HTTP mutations with idempotency keys (per Money ADR-0003) and status (`pending` / `syncing` / `failed` / `synced`).
 
-Offline flow:
-- When online: POST mutation immediately, update cached read models from response.
-- When offline: append to `pending_operations`, optionally apply optimistically to cached read models for instant UI, replay on reconnect.
-- Conflict (server rejects): mark op as failed, surface to user.
+Offline flow — **frozen in [Wallet ADR-0004](docs/adr/0004-offline-first-sync.md)** (authoritative; the summary below must track it):
+- **Writes always go through the outbox** — online and offline alike, one uniform path. The UI returns when the local row commits; a drainer replays it. (No "POST directly when online" special case.)
+- **Reads are stale-while-revalidate** — render the cache instantly, revalidate in the background, swallow network errors so offline reads stand.
+- **Pending work is shown and counted in the view, never written to the cache.** A queued op is overlaid from the outbox at read time (and counts toward figures like the period net), deduped by client id once confirmed; the cache holds only server-confirmed truth. The in-flight portion is surfaced honestly (a self-erasing "includes −$X syncing" caption + "Syncing" rows).
+- **Replay outcomes:** 2xx/409 → `synced` (409 = already applied, ADR-0003); transient/offline → stays `pending`; other 4xx → `failed` (server-rejected) — **excluded from every figure**, surfaced as resolve-me, never folded into a calculation.
 
-The period flow ledger is the first read model wired this way — see [`features/money/data/drift/README.md`](lib/features/money/data/drift/README.md) for how it lands in practice (stale-while-revalidate; known issues). One refinement of the "apply optimistically to cached read models" point above: there, optimistic entries are **overlaid from the outbox at read time, not written into the cache** — the cache only ever holds server-confirmed truth, so there is no provisional state to reconcile.
+The period flow ledger is the first read model wired this way — see [`features/money/data/drift/README.md`](lib/features/money/data/drift/README.md) for how it lands in practice (and its known issues).
 
-**Hard rule:** no client-side aggregates, no client-side projections, no client-side event log. Money's business rules run once, on the server.
+**Hard rule:** no client-side aggregates, no client-side projections, no client-side event log; Money's business rules run once, on the server. (Display-time arithmetic over already-signed figures — summing line totals into a net — is presentation, not domain logic; ADR-0004 §1/§5 draws the line.)
 
 ### Feature modules
 

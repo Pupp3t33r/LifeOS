@@ -27,13 +27,16 @@ The cockpit renders the cache **immediately** and revalidates in the background:
 fetch on screen open and on every outbox change, rewrite the period's rows in one
 transaction, and swallow network errors so offline reads stand.
 
-**Optimistic writes do NOT touch the cache.** The cache only ever holds
-server-confirmed truth. A just-added (or offline) entry is shown by decoding the
-pending `record_flow` op straight from the outbox and merging it into the view as a
-"Syncing" row, deduped by `entryId` once the confirmed row lands. This *refines* the
-"apply optimistically to cached read models" line in `apps/wallet/AGENTS.md` — we
-overlay from the outbox rather than writing provisional rows into the cache, so the
-cache never holds unconfirmed state to reconcile.
+**Optimistic writes are shown and counted, but never touch the cache** (frozen in
+[Wallet ADR-0004](../../../../../docs/adr/0004-offline-first-sync.md) §5). The cache only
+ever holds server-confirmed truth. A just-added (or offline) entry is shown by
+decoding the pending `record_flow` op straight from the outbox and merging it into the
+view as a "Syncing" row, deduped by `entryId` once the confirmed row lands.
+`pending`/`syncing` ops **do** count toward computed figures like the period net
+(display-time aggregation over signed totals — presentation, not domain logic); the
+in-flight portion is surfaced by a self-erasing "includes −$X syncing" caption. A
+`failed` op (server-rejected, not a network error) is **excluded** from every figure —
+it's a resolve-me/log state, never folded into a calculation.
 
 ## Retention — keep everything, no eviction (deliberate)
 

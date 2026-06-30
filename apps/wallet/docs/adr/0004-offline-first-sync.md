@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 Date: 2026-06-30
 
@@ -33,7 +33,7 @@ A single local drift database (`lib/app/data/`) holds:
 1. **Cached read models** — local mirrors of server read-model responses (the period flow ledger today; `MonthProjection`, account balances, etc. as they land). Read-through caches, never an event log.
 2. **A write outbox** (`pending_operations`) — queued HTTP mutations, each carrying a client-assigned idempotency id (Money ADR-0003) and a status.
 
-No client-side aggregates, projections, or event log. **Money's business rules run once, on the server.**
+No client-side aggregates, projections, or event log. **Money's business rules run once, on the server.** Display-time arithmetic over already-signed figures — e.g. summing line totals into a net badge — is presentation, not domain logic, and is allowed; the forbidden kind is re-deriving domain outcomes (period bucketing, projected/target/actual savings, close allocation, validation invariants). See §5.
 
 ### 2. Writes always go through the outbox — online and offline alike
 
@@ -47,16 +47,24 @@ The drainer replays `method`/`path`/`payload` **verbatim** — no client validat
 
 - **2xx** → `synced`.
 - **409 Conflict** → `synced`. The server already has this client-assigned id (Money ADR-0003), so the op is effectively applied; a blind replay after an uncertain earlier send is therefore safe.
-- **other 4xx** (400/403/404/422…) → `failed`. A request the user must fix; replaying it unchanged cannot succeed. Surfaced to the user.
+- **other 4xx** (400/403/404/422…) → `failed`. A request the server *rejected* (not a network problem); replaying it unchanged cannot succeed. A `failed` op is **excluded from every displayed figure** (it is not a real change) — it is a log/diagnostic state, surfaced to the user as something to resolve, never folded into a calculation. Contrast `pending`/`syncing`, which *are* counted (§5).
 - **401/408/429, any 5xx, or no response** (offline/DNS/timeout) → left `pending` for the next drain. Transient.
 
 ### 4. Reads are stale-while-revalidate
 
 A screen renders from the cache **immediately** and revalidates in the background: fetch the relevant read model, rewrite its cached rows in one transaction, and **swallow network errors** so the existing cache stands for offline reads. There is no TTL — revalidation is eager (on screen open and on outbox change). A per-read-model "last synced" timestamp is surfaced so the user can see freshness.
 
-### 5. Optimistic UI is an outbox overlay, not a cache write
+### 5. Pending operations are shown — and counted — but never cached
 
-A just-added (or offline) mutation appears instantly by **decoding the pending outbox op and overlaying it** onto the rendered view, marked as syncing — **deduped by the client-assigned id** once the confirmed row arrives via revalidation. The cache itself holds **only server-confirmed truth**; provisional state never enters it, so there is nothing to "un-apply" if a write ultimately fails. (This refines AGENTS' "apply optimistically to cached read models" toward an overlay model.)
+Pending work **is** reflected in the UI, including in computed figures like the period net. It is shown by **decoding the queued outbox op and overlaying it** onto the rendered view, marked as syncing, and **deduped by the client-assigned id** once the confirmed row arrives via revalidation. What is *not* done is persisting it: the **cache holds only server-confirmed truth**, so provisional state never enters storage and there is nothing to "un-apply" if a write ultimately fails. (This corrects the earlier AGENTS phrasing "apply optimistically to cached read models" / "we don't optimistically apply": we *do* apply optimistically **to the view**, never to the **cache**.)
+
+Which ops count:
+
+- **`pending` / `syncing`** — counted. They are real changes in flight; for a personal ledger a just-logged expense reflects reality the moment it's entered, regardless of whether the server has acknowledged it. Summing their signed totals into the net is the display arithmetic blessed in §1, not domain logic.
+- **`failed`** (server-rejected, §3) — **not** counted. A rejected op is not a real change; it drops out of every figure and lives only as a diagnostic/log state to resolve.
+- **`synced`** — counted via the cache (the confirmed row), with the overlay twin deduped away.
+
+**Surfacing the in-flight portion (the chosen UX — "Option A").** The headline net **includes pending**, so it matches the user's lived reality. The in-flight portion is made honest by a **self-erasing caption** beneath the figure — e.g. *"includes −$300 syncing"* — which appears only while unsynced work exists and vanishes once everything is confirmed. The per-entry breakdown is already carried by the **"Syncing" rows** in the worklist, so the headline needs no further detail. `failed` ops are **not** part of this caption; they get their own distinct, resolve-me treatment so a rejected op can never masquerade as in-flight.
 
 ### 6. Cache retention: keep everything (no eviction in v1)
 
@@ -68,7 +76,7 @@ Positive:
 
 - Offline reads and writes both work; a queued write survives kill/offline and applies exactly once (idempotency).
 - One write path means one failure surface and no connectivity-boundary race.
-- The cache can never hold unconfirmed state, so there is no client-side reconciliation/rollback logic.
+- The cache can never hold unconfirmed state, so there is no client-side reconciliation/rollback logic — yet pending work is still **visible and counted** in the view (overlay + display-time aggregation), with a self-erasing caption keeping the in-flight portion honest.
 - The client adds nothing to Money's domain surface — it mirrors responses and replays requests.
 
 Negative:
@@ -84,7 +92,7 @@ Neutral:
 
 ## Deferred sub-decisions (captured, non-blocking)
 
-- **Operations log instead of a drain queue.** Evolve `pending_operations` from a transient queue (synced rows retired) into a **durable log of all operations — complete and pending — showing only pending by default**: an audit/history of every change, a real answer to "what did I do while offline?", and a clean pair with the uniform-queue path (§2). Deferred until a history/activity surface or audit need forces the schema (retain + status filter + a retention/pruning policy). Today's drainer still retires synced rows.
+- **Operations log instead of a drain queue.** Evolve `pending_operations` from a transient queue (synced rows retired) into a **durable log of all operations — `synced`, `pending`, and `failed` — showing only pending by default**: an audit/history of every change, a real answer to "what did I do while offline?", the natural home for the `failed`/resolve-me surface (§3, §5), and a clean pair with the uniform-queue path (§2). Deferred until a history/activity surface or audit need forces the schema (retain + status filter + a retention/pruning policy). Today's drainer still retires synced rows, and the `failed`-op surface is minimal.
 - **Response-aware drain (kill the flicker).** Have the drain write the confirmed row from the mutation's 2xx response instead of waiting for a revalidation GET. Removes the §-Consequences flicker but couples the generic drainer to per-feature response shapes. Deferred; the generic drainer (with sub-second flicker) stands for now.
 - **Connectivity-driven auto-drain** (`connectivity_plus`) — drain the instant the network returns, not just on the next trigger. Deferred.
 - **Revalidation throttle / TTL** — bound eager refetching if it proves noisy. Deferred.
@@ -98,6 +106,12 @@ Neutral:
 4. **Client-side projection/event-log (full local replica).** Rejected hard: re-implements Money's domain on the client, the exact thing the architecture forbids; enormous surface for the client and server to disagree.
 5. **No cache — fetch on every view.** Rejected: breaks offline reads entirely and makes the UI network-bound.
 6. **TTL-based cache invalidation.** Rejected for v1 in favour of eager revalidation (simpler, and cheap for a solo user); a TTL/throttle is captured as a deferred refinement.
+
+For **surfacing the in-flight portion** specifically (§5), three were weighed:
+
+7. **Headline = confirmed-only; pending shown only as list rows.** Rejected: the net would lag the user's lived reality (a just-logged expense wouldn't move it), which is confusing for a personal ledger.
+8. **Dual figure — "confirmed · −$300 pending" side by side, pending in a distinct colour.** A close runner-up and the most explicit; rejected as the default only because two numbers cost more glance-effort than one headline + a caption that disappears when synced. Its coloured-delta treatment informs how the secondary/caption text is styled.
+9. **A "include pending" toggle.** Rejected: a persistent mode to solve what a self-erasing caption solves, and it still forces a default (which is the headline-content question underneath). Over-engineered for a solo user.
 
 ---
 
