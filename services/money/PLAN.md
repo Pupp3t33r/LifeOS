@@ -122,7 +122,11 @@ Built (Part B — AccountingPeriod occurrence tracking):
 - **Status join**: `get-occurrences` now derives each occurrence's **status** — `projected` / `paid` (with `ActualAmount`/`PaidOn` from the confirming flow) / `skipped` — by joining computed/listed occurrences against period back-refs (`FlowEntryRecord.Recurring` + `SkippedOccurrenceRecord`). This is the `RecurringScheduleProjection` role, computed at read.
 - Tests: 138 money-suite total, green (adds AccountingPeriod occurrence-idempotency + confirm/skip/status lifecycle).
 
-**Still deferred:** the "unconfirmed only" guard on Materialized line edit/remove (needs the period join at write time — currently unguarded); un-confirm/correct (`FlowReverted`, ADR-0026).
+**Still deferred (Part B known gaps):**
+- **"Unconfirmed only" guard on Materialized line edit/remove** — ADR-0017 forbids editing/removing a line whose occurrence is already confirmed on a period; not enforced (needs a write-time period join). The one gap that can desync schedule vs ledger. Currently unguarded.
+- **Cross-period double-confirm not blocked** — idempotency is within a single period (per ADR-0017). Confirming the *same* occurrence in two *different* periods (by setting `occurredAt` into another month) is not write-blocked, since each period aggregate has its own `ResolvedOccurrences`. The status read still shows it paid (it joins across all periods), so nothing is lost — just not blocked. ADR-0027's stream-enforced marker (Part C) closes this.
+- **Un-confirm / correct** (`FlowReverted`, ADR-0026) — no reversal/amount-correction of a confirmation yet.
+- **Confirm is on-time only** — the flow routes to `occurredAt`'s period (ADR-0016); a due-date-vs-actual-date mismatch (early pay) gets no `OccurrencePaidInAdvance` marker. That's ADR-0027 (Part C).
 
 **Part C (later) — needs planned-purchases (ADR-0018) first:** carry-make-up (ADR-0020) and early-payment (ADR-0027, cross-period confirm + `OccurrencePaidInAdvance` marker).
 
