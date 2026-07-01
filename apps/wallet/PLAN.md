@@ -110,6 +110,7 @@ Auth is **dev-complete and verified** as of 2026-06-26. None of the below are bl
 - [ ] **Native / platform passkey authenticator** *(manual verify)* — passkey enrollment + passwordless login verified on web with a virtual authenticator; a real device/platform authenticator is untested.
 - [ ] **In-app passkey enrollment deep-link** *(optional UX)* — the enrollment *mechanism* works (Keycloak `webauthn-register-passwordless` required action / Account Console); surface it from Wallet settings as the in-app opt-in ("A+B").
 - [ ] **Prod hardening** *(deployment phase)* — real WebAuthn RP ID (passkeys currently assume `localhost`); Postgres-backed Keycloak DB (dev uses an H2 data volume); real secrets (not `devsecret` / `admin`/`admin`); brute-force protection (currently `bruteForceProtected: false` in the dev realm).
+  - ⚠️ **Do NOT carry the dev realm's seed users to prod.** `aspire/LifeOS.AppHost/keycloak/lifeos-realm.json` is a **dev-only** realm: it ships known-password test users (`devuser`, `alice`, `bob`, and `contract` — the last one exists solely so the ROPC-based `KeycloakContractTests` work, since `alice` carries a passkey required action that blocks direct-grant). Prod is a separate, IaC-managed Keycloak (per AppHost.cs) that must **not** import this file. When wiring prod: provision real users only, drop all seed users, and rotate every secret. Treat this dev realm as fixtures, never a prod seed.
 
 ---
 
