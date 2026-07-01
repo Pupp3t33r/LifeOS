@@ -20,4 +20,8 @@ public sealed class FlowEntryRecord
     public DateTimeOffset OccurredAt { get; set; }
     public DateTimeOffset RecordedAt { get; set; }
     public string? Description { get; set; }
+
+    /// Set when this entry confirmed a recurring occurrence (ADR-0017); the join key
+    /// the occurrence-status read uses to mark that occurrence paid. Null for ad-hoc.
+    public RecurringReference? Recurring { get; set; }
 }

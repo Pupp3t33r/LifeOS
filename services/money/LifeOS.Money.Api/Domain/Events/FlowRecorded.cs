@@ -6,6 +6,10 @@ using LifeOS.Money.Api.Domain;
 /// balance-bearing and never touches a savings account — that is a
 /// <c>SavingsMovementRecorded</c> (ADR-0026). The entry total is Σ line amounts
 /// (signed). Idempotent on [EntryId] (ADR-0003).
+///
+/// <see cref="Recurring"/> is set only when this flow is the confirmation of a
+/// recurring occurrence (ADR-0017): it back-references the occurrence so the
+/// projection can mark it paid. Null for an ad-hoc flow.
 public sealed record FlowRecorded(
     Guid PeriodId,
     string OwnerId,
@@ -16,4 +20,5 @@ public sealed record FlowRecorded(
     IReadOnlyList<Line> Lines,
     DateTimeOffset OccurredAt,
     DateTimeOffset RecordedAt,
-    string? Description);
+    string? Description,
+    RecurringReference? Recurring = null);

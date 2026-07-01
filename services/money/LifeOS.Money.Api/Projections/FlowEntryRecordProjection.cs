@@ -22,7 +22,8 @@ public sealed partial class FlowEntryRecordProjection : EventProjection
             Total = new CurrencyAmount(total, currency),
             OccurredAt = @event.OccurredAt,
             RecordedAt = @event.RecordedAt,
-            Description = @event.Description
+            Description = @event.Description,
+            Recurring = @event.Recurring
         };
     }
 }

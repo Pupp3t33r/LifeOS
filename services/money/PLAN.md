@@ -28,7 +28,7 @@ ADR-0001 through ADR-0027 — see [`docs/adr/README.md`](./docs/adr/README.md) f
 
 - UserPreferences document (ADR-0013; display currency + configurable month start day — see §3.0)
 - AccountingPeriod aggregate + MonthProjection (ADR-0016, renamed from MonthlyReview; holds lifecycle + flow ledger + planned purchases)
-- ~~RecurringPayment aggregate (ADR-0017; Live + Materialized modes; collapses InstallmentPlan)~~ — **Part A DONE (2026-07-01)**: rules/generator/aggregate/endpoints. Part B (period integration: confirm/skip + status) pending. See §3.2
+- ~~RecurringPayment aggregate (ADR-0017; Live + Materialized modes; collapses InstallmentPlan)~~ — **Parts A + B DONE (2026-07-01)**: rules/generator/aggregate/endpoints + AccountingPeriod occurrence tracking (confirm/skip + projected/paid/skipped status). Part C (carry-make-up/early-pay) needs planned-purchases first. See §3.2
 - WishlistItem + Package documents + WishlistItemStatus projection (ADR-0022; non-event-sourced)
 - Planned-purchase events on AccountingPeriod (ADR-0018/0019)
 - Budget aggregate (ADR-0006)
@@ -103,9 +103,9 @@ Implemented backend (frontend/client cache + Rates view deferred, ADR-0015):
 
 **Deferred (not blocking):** cross-currency **triangulation** (reads answer stored pairs + inverse only); the client 15-min rate cache + in-app **Rates view** (frontend); `DefaultSpendingCurrency` on `UserPreferences` (ADR-0015 amends ADR-0013 — a separate preferences change); Belarusbank **BUY** side (foreign-currency income). Confirm the Belarusbank per-unit scales against live payloads (`FxOptions.BelarusbankUnitScale`).
 
-### 3.2 RecurringPayment aggregate (ADR-0017, as amended by ADR-0019/0020) — **Part A DONE (2026-07-01)**
+### 3.2 RecurringPayment aggregate (ADR-0017, as amended by ADR-0019/0020) — **Part A + B DONE (2026-07-01)**
 
-Built (Part A — definition, schedule, occurrence *computation*; period integration is Part B):
+Built (Part A — definition, schedule, occurrence *computation*):
 
 - **Recurrence model** (`Domain/Recurring/`): sealed `RecurrenceRule` hierarchy (Daily/Weekly/Monthly/Yearly) + `RecurrenceEnd` (Never/OnDate/AfterCount) + `MonthDayAnchor` (day-of-month clamped / last-day) + `AnnualDate`, serialized as a `kind`-discriminated STJ union (`[JsonPolymorphic]`) mirrored by the Dart client. `RecurrenceGenerator` — pure, exhaustive-switch occurrence computation (every-N-days, bi-weekly, quarterly, clamping, count/date end, forward `Take(n)`), heavily unit-tested.
 - **Aggregate** (`Domain/RecurringPayment.cs`) + events (`RecurringPaymentCreated`/`RuleChanged`/`ScheduleLineAdded`/`Edited`/`Removed`/`RecurringPaymentEdited`/`RecurringPaymentCancelled`), inline snapshot. **Two modes**: Live (rule + `EstimateLines`) / Materialized (`ScheduleLine` list, each with a `list<Line>` breakdown, ADR-0019). Status Active→Cancelled (terminal).
@@ -114,9 +114,17 @@ Built (Part A — definition, schedule, occurrence *computation*; period integra
 
 **Serializer note:** Marten switched to System.Text.Json (`Program.cs`) so the rule union round-trips identically in the event store and the API contract. **`AllowOutOfOrderMetadataProperties` is required** — STJ writes `kind` first but Postgres jsonb reorders keys, so the polymorphic reader would otherwise fail on read. Pre-prod, no migration; a local dev money-db with pre-switch (Newtonsoft) events must be reset (drop the `money-db` volume).
 
-**Part B (next) — AccountingPeriod integration:** `confirm-occurrence` (→ `FlowRecorded` with `{recurringId, occurrenceRef}` back-ref) and `skip-occurrence` (→ `OccurrenceSkipped`); the per-occurrence **status** (projected/paid/skipped) join in get-occurrences and a `RecurringScheduleProjection` for "what's due in period P." The "unconfirmed only" guard on Materialized line edit/remove also lands here (needs the period join).
+Built (Part B — AccountingPeriod occurrence tracking):
 
-**Part C (later) — needs planned-purchases (ADR-0018) first:** carry-make-up (ADR-0020) and early-payment (ADR-0027).
+- **Back-reference** `RecurringReference {RecurringId, OccurrenceRef}` (`Domain/`); `FlowRecorded` gains an optional `Recurring` back-ref (additive), threaded into `FlowEntryRecord`. New `OccurrenceSkipped` event + `SkippedOccurrenceRecord` projection.
+- **AccountingPeriod** now tracks `ResolvedOccurrences` (confirmed via a back-ref'd `FlowRecorded`, or skipped) with **within-period idempotency** (ADR-0017): a second confirm/skip of the same occurrence → `DuplicateOccurrenceException` (409). An occurrence maps to exactly one period by its date — no cross-period scan.
+- **Endpoints**: `POST /recurring/{id}/occurrences/confirm` (→ `FlowRecorded` with back-ref in the period the *actual date* maps to, ADR-0016; actual amount/date adjustable via an optional line override; user-driven, never auto-posts) and `.../skip` (→ `OccurrenceSkipped` in the due-date period).
+- **Status join**: `get-occurrences` now derives each occurrence's **status** — `projected` / `paid` (with `ActualAmount`/`PaidOn` from the confirming flow) / `skipped` — by joining computed/listed occurrences against period back-refs (`FlowEntryRecord.Recurring` + `SkippedOccurrenceRecord`). This is the `RecurringScheduleProjection` role, computed at read.
+- Tests: 138 money-suite total, green (adds AccountingPeriod occurrence-idempotency + confirm/skip/status lifecycle).
+
+**Still deferred:** the "unconfirmed only" guard on Materialized line edit/remove (needs the period join at write time — currently unguarded); un-confirm/correct (`FlowReverted`, ADR-0026).
+
+**Part C (later) — needs planned-purchases (ADR-0018) first:** carry-make-up (ADR-0020) and early-payment (ADR-0027, cross-period confirm + `OccurrencePaidInAdvance` marker).
 
 ### 3.3 Wishlist items, packages, and derived status (ADR-0022)
 
