@@ -35,6 +35,7 @@ See [`template.md`](./template.md) to start a new ADR.
 | [0025](./0025-budget-period-centric-and-category-targeted.md) | Budget — period-centric, category-targeted document (supersedes 0006 aggregate, amends 0006) | 2026-06-28 |
 | [0026](./0026-actuals-honesty-and-savings-movements.md) | Actuals honesty & savings movements — drop override → `UnaccountedFlowRecorded`; names `SavingsMovementRecorded` (amends 0007/0021, resolves 0021 deferred sub-questions) | 2026-06-28 |
 | [0027](./0027-early-payment-of-future-period-occurrence.md) | Early payment of a future-period occurrence — 2-event model (amends 0016/0017/0023) | 2026-06-28 |
+| [0028](./0028-recurring-contents-at-root.md) | RecurringPayment — contents at the aggregate root; Materialized payments carry money only (amends 0017/0019) | 2026-07-01 |
 
 ## Superseded
 
@@ -70,6 +71,7 @@ See [`template.md`](./template.md) to start a new ADR.
 | 0016 §period-events | `AccountingPeriod` carries lifecycle + flow + planned-purchase events | [0027](./0027-early-payment-of-future-period-occurrence.md) | Gains `OccurrencePaidInAdvance` / `OccurrencePaidInAdvanceRetracted` — status-reference markers (not actuals) for early-paid occurrences. |
 | 0017 §occurrence-tracking | Occurrence status derived purely by within-period join; idempotency within one period | [0027](./0027-early-payment-of-future-period-occurrence.md) | Early-paid occurrences get a **local marker** on the occurrence's own period (a bounded, partial reversal of derive-by-join); early-pay idempotency is **stream-enforced** via Marten concurrency on the occurrence's period (replaces the within-period-only check for the cross-period case). Normal confirms unchanged. |
 | 0023 §future-period-writes | Future periods accept planning operations only | [0027](./0027-early-payment-of-future-period-occurrence.md) | Named exception: an `OccurrencePaidInAdvance` status marker may be written to a future period **atomically with the paying actual** (same door ADR-0020 opened). Future periods still reject actuals (`FlowRecorded`) and close. |
+| 0017 §Materialized-schedule + 0019 §schedule-line-items | Materialized `ScheduleLine` carries its own line-item breakdown (`Lines`); contents held per payment | [0028](./0028-recurring-contents-at-root.md) | Contents move to the aggregate **root** (`Items`); a schedule line becomes pure money (`{LineId, DueDate, Amount}`), Σ payments = Σ items. Universal line-items retained on the root contents, the Live estimate, and the confirmed `FlowRecorded`; removed only from the payment. Confirm records a **proportional slice** of the items. Grouping / "what's in it" / order status come from ADR-0022 via `Line.WishlistItemId`. |
 
 ## Deferred decisions
 

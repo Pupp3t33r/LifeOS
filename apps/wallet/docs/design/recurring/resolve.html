@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Recurring — resolving a due item</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B;
+    --line:#E6E1D6; --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif;
+    --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);
+    -webkit-font-smoothing:antialiased;padding:56px 40px 80px}
+  .board{max-width:1480px;margin:0 auto}
+
+  .masthead{color:#EDE7DC;margin-bottom:48px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;
+    text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 34px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:820px;color:#B9B1A3;font-size:15px;line-height:1.6}
+  .masthead p em{color:#D9966E;font-style:normal}
+  .note{margin-top:16px;max-width:820px;font-size:12.5px;line-height:1.6;color:#9C9384;
+    border-left:2px solid #4E6B5A;padding-left:14px}
+  .note b{color:#B9B1A3;font-weight:600}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.92em;color:#C7BFB1;
+    background:rgba(255,255,255,.05);padding:1px 5px;border-radius:5px}
+  /* row one-tap (no sheet) */
+  .worklist{padding:14px 16px 20px}
+  .wrow{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+  .wrow:last-child{border-bottom:0}
+  .cbx{width:22px;height:22px;border-radius:999px;border:1.8px solid #cfc8ba;flex:0 0 22px}
+  .cbx.tap{border-color:var(--sage);box-shadow:0 0 0 4px rgba(94,126,107,.14)}
+  .wrow .nm{flex:1}.wrow .nm b{font:500 13.5px/1.2 var(--body)}
+  .wrow .nm small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+  .wrow .amt{font:600 14px/1 var(--disp);color:var(--clay)}
+  .mp{font:600 11.5px/1 var(--body);color:var(--sageDeep);border:1px solid var(--sage);
+    background:rgba(94,126,107,.06);padding:8px 12px;border-radius:999px;white-space:nowrap;margin-left:4px}
+  .mp.tap{background:var(--sageDeep);color:#fff;border-color:var(--sageDeep)}
+  .tapcap{display:flex;align-items:center;gap:8px;margin-top:16px;padding:11px 13px;border-radius:12px;
+    background:rgba(94,126,107,.08);font-size:12px;color:var(--sageDeep);line-height:1.5}
+  .tapcap b{color:var(--sageDeep);font-weight:700}
+
+  .row{display:flex;gap:40px;align-items:flex-start;margin-bottom:64px}
+  .meta{flex:0 0 232px;position:sticky;top:24px;color:#EDE7DC}
+  .meta .tag{display:inline-block;font:600 11px/1 var(--body);letter-spacing:1.8px;
+    text-transform:uppercase;color:#15120e;background:#D9966E;
+    padding:6px 11px;border-radius:999px;margin-bottom:16px}
+  .meta .tag.q{background:#8FB39E}
+  .meta h2{font:600 23px/1.1 var(--disp);margin-bottom:12px;letter-spacing:-.01em}
+  .meta .thesis{font-size:13.5px;line-height:1.65;color:#C7BFB1;margin-bottom:14px}
+  .meta .thesis em{color:#D9966E;font-style:normal}
+  .meta .why{font-size:12.5px;line-height:1.6;color:#9C9384;
+    border-left:2px solid #4E6B5A;padding-left:13px}
+  .meta .why b{color:#B9B1A3;font-weight:600}
+  .mocks{flex:1;display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;
+    color:#8a8276;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+  .pos{color:var(--sageDeep)} .neg{color:var(--clay)}
+
+  /* phone frame */
+  .phone{flex:0 0 320px}
+  .screen{background:var(--bone);border-radius:30px;overflow:hidden;
+    box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative;min-height:150px}
+  .scrim{background:var(--bone)}
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px}
+  .wm{font:700 18px/1 var(--disp);letter-spacing:-.02em;color:var(--ink)}
+  .wm i{color:var(--clay);font-style:normal}
+  .gear{width:28px;height:28px;border-radius:999px;border:1px solid var(--line);
+    display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:13px}
+  .dim{padding:14px 18px 30px;filter:blur(1px);opacity:.5}
+  .dline{height:12px;background:var(--line);border-radius:6px;margin-bottom:12px}
+  .dline.s{width:55%} .dline.m{width:80%}
+
+  /* bottom sheet — flows in-frame so nothing clips (the phone is just a visual wrapper) */
+  .sheet{background:var(--surface);border-radius:26px 26px 0 0;border-top:1px solid var(--line);
+    box-shadow:0 -20px 50px -20px rgba(12,10,8,.6);padding:12px 20px 22px;margin-top:6px}
+  .grab{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 16px}
+  .sheet-h{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+  .sheet-h .ic{width:36px;height:36px;border-radius:11px;background:rgba(192,122,82,.13);
+    color:var(--clay);display:grid;place-items:center;font-size:16px;flex:0 0 36px}
+  .sheet-h b{font:600 17px/1.1 var(--disp);letter-spacing:-.01em}
+  .sheet-h small{display:block;color:var(--muted);font-size:11.5px;margin-top:3px}
+
+  .expected{display:flex;align-items:center;justify-content:space-between;
+    padding:11px 14px;border-radius:14px;background:rgba(94,126,107,.07);
+    border:1px solid var(--line);margin-bottom:14px}
+  .expected .k{font-size:12px;color:var(--muted)}
+  .expected .v{font:600 14px/1 var(--disp);color:var(--ink)}
+
+  .fieldlbl{font:600 10.5px/1 var(--body);letter-spacing:1.1px;text-transform:uppercase;
+    color:var(--muted);margin:0 0 8px 2px}
+  .amtfield{display:flex;align-items:center;gap:10px;border:1.5px solid var(--sage);
+    border-radius:16px;padding:13px 15px;background:var(--bone)}
+  .amtfield.plain{border-color:var(--line)}
+  .amtfield .cur{font:600 13px/1 var(--body);color:var(--muted)}
+  .amtfield .big{flex:1;font:600 26px/1 var(--disp);letter-spacing:-.01em;color:var(--ink)}
+  .amtfield .ccy{font:600 13px/1 var(--body);color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:var(--surface)}
+  .diff{display:flex;align-items:center;gap:7px;margin:9px 2px 0;font-size:11.5px;color:var(--clay)}
+  .diff .d{width:5px;height:5px;border-radius:999px;background:var(--clay)}
+
+  .rowfields{display:flex;gap:10px;margin-top:16px}
+  .rowfields .ff{flex:1}
+  .selfield{display:flex;align-items:center;justify-content:space-between;
+    border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--bone);
+    font-size:13.5px;color:var(--ink)}
+  .selfield .cx{color:var(--muted);font-size:13px}
+
+  .confirm{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+    margin-top:20px;padding:15px;border-radius:16px;border:0;background:var(--sageDeep);
+    color:#fff;font:600 15px/1 var(--body);cursor:pointer}
+  .confirm .amt{font-family:var(--disp)}
+  .skip{display:block;width:100%;text-align:center;margin-top:12px;padding:6px;
+    background:transparent;border:0;color:var(--muted);font:500 13px/1 var(--body);cursor:pointer}
+  .skip u{color:var(--clay);text-decoration:none;font-weight:600}
+
+  .footnote{display:flex;gap:9px;margin-top:16px;padding:11px 13px;border-radius:13px;
+    background:rgba(192,122,82,.06);border:1px solid rgba(192,122,82,.2)}
+  .footnote .fi{color:var(--clay);font-size:13px;flex:0 0 auto}
+  .footnote p{font-size:11.5px;line-height:1.55;color:var(--muted)}
+  .footnote p b{color:var(--ink);font-weight:600}
+
+  /* ---- interaction treatments (row-level) ---- */
+  .treat{flex:0 0 340px}
+  .tcard{background:var(--surface);border:1px solid var(--line);border-radius:20px;
+    padding:18px;box-shadow:var(--shadow)}
+  .tcard h3{font:600 15px/1 var(--disp);margin-bottom:4px}
+  .tcard .sub{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px}
+  .demo{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bone)}
+  .rrow{display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--bone)}
+  .ring{width:13px;height:13px;border-radius:999px;border:1.6px dashed var(--clay);flex:0 0 13px}
+  .rrow .nm{flex:1}.rrow .nm b{font:500 14px/1.2 var(--body)}
+  .rrow .nm small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+  .rrow .amt{font:600 15px/1 var(--disp);color:var(--clay)}
+  .rrow .chev{color:var(--muted);margin-left:8px}
+  .inlinebtns{display:flex;gap:8px;padding:0 15px 13px}
+  .ibtn{flex:1;text-align:center;padding:9px;border-radius:11px;font:600 12.5px/1 var(--body)}
+  .ibtn.c{background:var(--sageDeep);color:#fff}
+  .ibtn.s{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .swipe{display:flex;align-items:stretch}
+  .swipe .rev-skip{background:var(--clay);color:#fff;display:flex;align-items:center;
+    padding:0 16px;font:600 12.5px/1 var(--body);gap:6px}
+  .swipe .rrow{flex:1;transform:translateX(-6px)}
+  .verdict{margin-top:14px;font-size:11.5px;line-height:1.55;color:var(--muted)}
+  .verdict b{color:var(--ink);font-weight:600}
+  .verdict.pick b{color:var(--sageDeep)}
+
+  @media(max-width:1180px){.row{flex-direction:column}.meta{position:static;flex-basis:auto}}
+</style>
+</head>
+<body>
+<div class="board">
+
+  <div class="masthead">
+    <div class="kicker">wallet · recurring — marking paid</div>
+    <h1>Mark paid — <b>plan vs. real</b></h1>
+    <p>Two paths, by frequency. <em>Paid as planned</em> (the common case): one tap on <b>Mark paid</b> / the
+      checkbox — logs the planned amount, done, no sheet. <em>Different real amount</em>: tap the row to open the
+      sheet pre-filled, type the real figure. Utilities planned −$200, bill came to <em>−$180</em> → open, type 180.
+      The plan stays $200; only this month records $180.</p>
+    <p class="note">Per your notes: no "just this month" warning, and the plan-vs-real cue is kept light — the logged
+      row shows <code>planned −$200</code> as a faint strikethrough <b>only when the two differ</b>. If even that
+      reads as too much, it can go — the real number alone is enough.</p>
+  </div>
+
+  <!-- ============================================================ THE SHEET -->
+  <div class="row">
+    <div class="meta">
+      <span class="tag">Two paths</span>
+      <h2>One tap, or open</h2>
+      <p class="thesis">Paid exactly as planned? <em>Mark paid</em> on the row logs it — no sheet at all. Different
+        real amount? Tap the row body to open the sheet, pre-filled to the plan; overwrite the figure and confirm.</p>
+      <p class="why"><b>The mechanism:</b> the sheet's amount field seeds from the plan and you can overwrite it.
+        Confirming records the <em>real</em> amount as a flow on this period; the plan is never touched. That's the
+        API's optional line-override — surfaced only when you actually need it, not on every confirm.</p>
+    </div>
+    <div class="mocks">
+
+      <!-- paid as planned — one tap, no sheet -->
+      <div class="phone">
+        <div class="label">Paid as planned · one tap, no sheet</div>
+        <div class="screen">
+          <div class="scrim">
+            <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+            <div class="worklist">
+              <div class="wrow">
+                <span class="cbx"></span>
+                <span class="nm"><b>Rent</b><small>due Jul 1 · Housing</small></span>
+                <span class="amt">−$1,000</span><span class="mp">Mark paid</span>
+              </div>
+              <div class="wrow">
+                <span class="cbx tap"></span>
+                <span class="nm"><b>Utilities</b><small>due Jul 15 · Housing</small></span>
+                <span class="amt">−$200</span><span class="mp tap">Mark paid</span>
+              </div>
+              <div class="wrow">
+                <span class="cbx"></span>
+                <span class="nm"><b>Salary</b><small>due Jul 25 · income</small></span>
+                <span class="amt pos" style="color:var(--sageDeep)">+$4,200</span><span class="mp">Got it</span>
+              </div>
+              <div class="tapcap">◉ Tapping <b>Mark paid</b> logs −$200 as planned and ticks the row. Done — no sheet.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- corrected -->
+      <div class="phone">
+        <div class="label">Different amount · tap the row → sheet</div>
+        <div class="screen">
+          <div class="scrim">
+            <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+            <div class="dim"><div class="dline m"></div><div class="dline s"></div><div class="dline"></div><div class="dline m"></div></div>
+          </div>
+          <div class="sheet">
+            <div class="grab"></div>
+            <div class="sheet-h">
+              <span class="ic">⌁</span>
+              <div><b>Utilities</b><small>Jul 15 · Housing</small></div>
+            </div>
+            <div class="expected"><span class="k">Planned</span><span class="v neg">−$200.00</span></div>
+            <div class="fieldlbl">Amount paid</div>
+            <div class="amtfield">
+              <span class="cur">−</span><span class="big">180.00</span><span class="ccy">USD</span>
+            </div>
+            <div class="rowfields">
+              <div class="ff"><div class="fieldlbl">Paid on</div>
+                <div class="selfield">Jul 15, 2026 <span class="cx">▾</span></div></div>
+              <div class="ff"><div class="fieldlbl">Category</div>
+                <div class="selfield">Housing <span class="cx">▾</span></div></div>
+            </div>
+            <button class="confirm">Mark paid <span class="amt">−$180.00</span></button>
+            <button class="skip">Didn't happen? <u>Skip this month</u></button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

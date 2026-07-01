@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Recurring on Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:56px 40px 80px}
+  .board{max-width:1480px;margin:0 auto}
+
+  .masthead{color:#EDE7DC;margin-bottom:44px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 33px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:840px;color:#B9B1A3;font-size:15px;line-height:1.6}
+  .masthead p em{color:#D9966E;font-style:normal}
+  .note{margin-top:16px;max-width:840px;font-size:12.5px;line-height:1.6;color:#9C9384;
+    border-left:2px solid #4E6B5A;padding-left:14px}
+  .note b{color:#B9B1A3;font-weight:600}
+
+  .row{display:flex;gap:40px;align-items:flex-start;margin-bottom:60px}
+  .meta{flex:0 0 232px;position:sticky;top:24px;color:#EDE7DC}
+  .meta .tag{display:inline-block;font:600 11px/1 var(--body);letter-spacing:1.8px;text-transform:uppercase;
+    color:#15120e;background:#8FB39E;padding:6px 11px;border-radius:999px;margin-bottom:16px}
+  .meta .tag.b{background:#D9966E}
+  .meta h2{font:600 22px/1.1 var(--disp);margin-bottom:12px;letter-spacing:-.01em}
+  .meta .thesis{font-size:13.5px;line-height:1.65;color:#C7BFB1;margin-bottom:14px}
+  .meta .thesis em{color:#D9966E;font-style:normal}
+  .meta .why{font-size:12.5px;line-height:1.6;color:#9C9384;border-left:2px solid #4E6B5A;padding-left:13px}
+  .meta .why b{color:#B9B1A3;font-weight:600}
+  .mocks{flex:1;display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+
+  .desktop{flex:1;min-width:520px}.phone{flex:0 0 320px}
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative}
+  .phone .screen{border-radius:30px}
+
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:15px 22px 13px;border-bottom:1px solid var(--line)}
+  .wm{font:700 19px/1 var(--disp);letter-spacing:-.02em}.wm i{color:var(--clay);font-style:normal}
+  .gear{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:14px}
+  .body{display:flex}
+  .rail{flex:0 0 124px;border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+  .rail .nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;font-size:12.5px;color:var(--muted)}
+  .rail .nav.on{background:rgba(94,126,107,.12);color:var(--sageDeep);font-weight:600}
+  .content{flex:1;padding:22px 26px 26px;min-width:0}
+
+  .pswitch{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .pswitch .left{display:flex;align-items:center;gap:12px}
+  .pswitch .arw{width:32px;height:32px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink);font-size:15px}
+  .pswitch .mo{font:600 24px/1 var(--disp);letter-spacing:-.01em}
+  .pswitch .span{font-size:12px;color:var(--muted);margin-top:3px}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font:600 11px/1 var(--body);background:rgba(94,126,107,.14);color:var(--sageDeep)}
+  .badge .d{width:7px;height:7px;border-radius:999px;background:var(--sage)}
+
+  .net{font:600 22px/1 var(--disp);letter-spacing:-.01em;margin:2px 0 8px}
+  .net .neg{color:var(--clay)} .net small{font:500 12px/1 var(--body);color:var(--muted);margin-left:6px}
+
+  .sec{margin-top:22px}
+  .sechd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;padding:0 2px}
+  .sechd .t{font:600 12px/1 var(--body);letter-spacing:.3px;text-transform:uppercase;color:var(--muted)}
+  .sechd .t b{color:var(--ink);font-weight:600;text-transform:none;letter-spacing:0;font-size:13px}
+  .sechd .a{font-size:12px;color:var(--sageDeep);font-weight:600}
+  .list{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+
+  /* cockpit item vocabulary — checkbox, not a due-dot */
+  .item{display:flex;align-items:center;gap:13px;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:0}
+  .cb{width:22px;height:22px;border-radius:999px;border:1.8px solid #cfc8ba;flex:0 0 auto;display:grid;place-items:center;color:transparent;font-size:12px}
+  .cb.done{background:var(--sage);border-color:var(--sage);color:#fff}
+  .cb.income{border-color:#b9cabf}
+  .nm{flex:1;min-width:0}
+  .nm .n{font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .nm .n .rep{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);font-weight:500}
+  .nm .n .due{font-size:11px;color:var(--muted);font-weight:500}
+  .nm .n .due.now{color:var(--clay);font-weight:600}
+  .nm .sub{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .amt{font:600 14px/1 var(--disp);white-space:nowrap;color:var(--clay)}
+  .amt.pos{color:var(--sageDeep)}
+  .amt .plan{display:block;font:500 10px/1 var(--body);color:var(--muted);text-align:right;margin-top:4px;text-decoration:line-through}
+  .act{flex:0 0 auto;font:600 11.5px/1 var(--body);color:var(--sageDeep);border:1px solid var(--sage);background:rgba(94,126,107,.06);padding:8px 13px;border-radius:999px;white-space:nowrap;margin-left:4px}
+  .addrow{display:flex;align-items:center;gap:9px;padding:12px 16px;color:var(--sageDeep);font-size:12.5px;font-weight:600;background:rgba(94,126,107,.05)}
+  .addrow .pl{width:22px;height:22px;border-radius:999px;border:1.5px dashed var(--sage);display:grid;place-items:center}
+
+  .fab{position:absolute;right:22px;bottom:22px;height:50px;padding:0 20px;border-radius:999px;background:var(--clay);color:#fff;font:600 13.5px/50px var(--disp);box-shadow:0 12px 24px -8px rgba(192,122,82,.6);display:flex;align-items:center;gap:9px}
+  .fab b{font-size:20px;font-weight:400}
+  .pbody{padding:18px 16px 84px}
+  .bnav{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;border-top:1px solid var(--line);background:var(--surface);padding:9px 4px 12px}
+  .bnav .nav{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;color:var(--muted)}
+  .bnav .nav.on{color:var(--sageDeep);font-weight:600}
+  .phone .fab{height:48px;width:48px;padding:0;justify-content:center;right:16px;bottom:74px}.phone .fab span{display:none}
+  .phone .pswitch .mo{font-size:21px}
+
+  /* create — the Repeats toggle inside the add sheet */
+  .sheetcard{background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:18px 18px 20px;max-width:340px}
+  .grab{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 16px}
+  .seg{display:flex;background:rgba(44,42,38,.06);border-radius:999px;padding:3px;margin-bottom:16px}
+  .seg span{flex:1;text-align:center;font:600 12px/1 var(--body);padding:8px;border-radius:999px;color:var(--muted)}
+  .seg span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.09)}
+  .amtfield{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--bone);margin-bottom:12px}
+  .amtfield .cur{font:600 13px/1 var(--body);color:var(--muted)}
+  .amtfield .big{flex:1;font:600 22px/1 var(--disp);color:var(--ink)}
+  .amtfield .ccy{font:600 12px/1 var(--body);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:var(--surface)}
+  .field{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:var(--bone);font-size:13px;margin-bottom:10px}
+  .field .k{color:var(--muted);font-size:11.5px}
+  .field .v{color:var(--ink);font-weight:500}
+  .field .v .cx{color:var(--muted);margin-left:6px}
+  /* the repeats switch */
+  .rep-toggle{display:flex;align-items:center;gap:11px;padding:12px 13px;border:1.5px solid var(--sage);
+    border-radius:14px;background:rgba(94,126,107,.06);margin-bottom:12px}
+  .rep-toggle .sw{width:38px;height:22px;border-radius:999px;background:var(--sage);position:relative;flex:0 0 38px}
+  .rep-toggle .sw::after{content:"";position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:999px;background:#fff}
+  .rep-toggle .tx{flex:1}
+  .rep-toggle .tx b{display:block;font:600 13px/1.2 var(--body);color:var(--ink)}
+  .rep-toggle .tx small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+  .cadence{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
+  .cadence .cr{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;font-size:13px;border-bottom:1px solid var(--line)}
+  .cadence .cr:last-child{border-bottom:0}
+  .cadence .cr .k{color:var(--muted);font-size:11.5px}
+  .cadence .cr .v{color:var(--ink);font-weight:500}
+  .cadence .cr .v .cx{color:var(--muted);margin-left:6px}
+  .save{display:block;width:100%;text-align:center;padding:14px;border-radius:14px;background:var(--sageDeep);color:#fff;font:600 14px/1 var(--body);border:0;margin-top:4px}
+
+  @media(max-width:1180px){.row{flex-direction:column}.meta{position:static;flex-basis:auto}.desktop{min-width:0;width:100%}.phone{align-self:center}}
+</style>
+</head>
+<body>
+<div class="board">
+
+  <div class="masthead">
+    <div class="kicker">wallet · recurring — all on Home</div>
+    <h1>Recurring, in the Home <b>worklist</b></h1>
+    <p>A recurring item is not a new kind of thing on screen — it's an <em>Upcoming</em> row you tick off, exactly
+      like a planned purchase. Same checkbox, same "Mark paid," same Upcoming→Logged move. <em>Rent</em> −$1,000 on
+      the 1st, <em>Utilities</em> ~−$200 on the 15th, <em>Salary</em> +$4,200 on the 25th, plus a <em>Laptop</em>
+      installment. Marking paid logs the planned amount in one tap; open the row to log a different real amount.</p>
+    <p class="note"><b>Reconciled with your notes:</b> Plan tab untouched. No separate "due" colour or icon — an item
+      is just unticked (Upcoming) or ticked (Logged); "due Jul 1" is only a date. <b>Creating</b> a recurring is its
+      own dialog from the Home FAB — see <code>create-options.html</code>. All vocabulary borrowed from
+      <code>cockpit-final.html</code>.</p>
+  </div>
+
+  <!-- ============================================================ A · WORKLIST -->
+  <div class="row">
+    <div class="meta">
+      <span class="tag">A · On the worklist</span>
+      <h2>Appear &amp; mark paid</h2>
+      <p class="thesis">Recurring items land in <em>Upcoming</em> with an empty checkbox. Tap <em>Mark paid</em> (or
+        the checkbox) to log them as planned — they move to <em>Logged</em>, ticked. The date sits inline as a plain
+        label; the row that's past its date just reads its date in clay.</p>
+      <p class="why"><b>Why:</b> nothing new to learn — it's the planned-purchase interaction you already designed.
+        Income (Salary) uses the same row with a + amount. "Due" was never a state; it's just an unticked row in the
+        period you're looking at.</p>
+    </div>
+    <div class="mocks">
+
+      <!-- desktop -->
+      <div class="desktop">
+        <div class="label">Desktop · web / windows</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="body">
+            <div class="rail">
+              <div class="nav on">◆ Home</div><div class="nav">≣ Activity</div>
+              <div class="nav">▢ Accounts</div><div class="nav">♡ Wishlist</div>
+            </div>
+            <div class="content">
+              <div class="pswitch">
+                <div class="left"><div class="arw">‹</div>
+                  <div><div class="mo">July 2026</div><div class="span">Jul 1 – Jul 31 · day 12 of 31</div></div>
+                  <div class="arw">›</div></div>
+                <span class="badge"><span class="d"></span>Active</span>
+              </div>
+              <div class="net"><span class="neg">−$2,340</span><small>net so far</small></div>
+
+              <div class="sec">
+                <div class="sechd"><div class="t"><b>Upcoming</b> · 4 to handle</div><div class="a">Mark all paid</div></div>
+                <div class="list">
+                  <div class="item">
+                    <div class="cb"></div>
+                    <div class="nm"><div class="n">Rent <span class="rep">↻ monthly</span><span class="due now">due Jul 1</span></div>
+                      <div class="sub">Housing</div></div>
+                    <div class="amt">−$1,000</div><div class="act">Mark paid</div>
+                  </div>
+                  <div class="item">
+                    <div class="cb"></div>
+                    <div class="nm"><div class="n">Utilities <span class="rep">↻ monthly</span><span class="due">due Jul 15</span></div>
+                      <div class="sub">Housing · usually ~$200</div></div>
+                    <div class="amt">−$200</div><div class="act">Mark paid</div>
+                  </div>
+                  <div class="item">
+                    <div class="cb"></div>
+                    <div class="nm"><div class="n">Laptop <span class="rep">↻ 4 of 4</span><span class="due">due Jul 3</span></div>
+                      <div class="sub">Electronics · final payment</div></div>
+                    <div class="amt">−$200</div><div class="act">Mark paid</div>
+                  </div>
+                  <div class="item">
+                    <div class="cb income"></div>
+                    <div class="nm"><div class="n">Salary <span class="rep">↻ monthly</span><span class="due">due Jul 25</span></div>
+                      <div class="sub">Income</div></div>
+                    <div class="amt pos">+$4,200</div><div class="act">Mark received</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sec">
+                <div class="sechd"><div class="t"><b>Logged</b> · 3 · −$271</div><div class="a">View in Activity</div></div>
+                <div class="list">
+                  <div class="item"><div class="cb done">✓</div>
+                    <div class="nm"><div class="n">Utilities <span class="rep">↻ monthly</span></div><div class="sub">Jun 15 · Housing</div></div>
+                    <div class="amt">−$180<span class="plan">planned −$200</span></div></div>
+                  <div class="item"><div class="cb done">✓</div>
+                    <div class="nm"><div class="n">Groceries · Lidl</div><div class="sub">Jul 11 · Food</div></div>
+                    <div class="amt">−$86</div></div>
+                  <div class="addrow"><div class="pl">+</div>Add an expense or income to July</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="fab"><b>+</b><span>Add</span></div>
+        </div>
+      </div>
+
+      <!-- phone -->
+      <div class="phone">
+        <div class="label">Phone</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pbody">
+            <div class="pswitch">
+              <div class="left"><div class="arw">‹</div>
+                <div><div class="mo">July 2026</div><div class="span">Jul 1–31 · day 12</div></div><div class="arw">›</div></div>
+            </div>
+            <div class="net" style="margin-top:12px"><span class="neg">−$2,340</span><small>net</small></div>
+            <div class="sec">
+              <div class="sechd"><div class="t"><b>Upcoming</b> · 4</div><div class="a">Mark all</div></div>
+              <div class="list">
+                <div class="item"><div class="cb"></div>
+                  <div class="nm"><div class="n">Rent <span class="due now">Jul 1</span></div><div class="sub">↻ monthly · Housing</div></div>
+                  <div class="act">Pay</div></div>
+                <div class="item"><div class="cb"></div>
+                  <div class="nm"><div class="n">Utilities <span class="due">Jul 15</span></div><div class="sub">↻ monthly · ~$200</div></div>
+                  <div class="act">Pay</div></div>
+                <div class="item"><div class="cb income"></div>
+                  <div class="nm"><div class="n">Salary <span class="due">Jul 25</span></div><div class="sub">↻ monthly · income</div></div>
+                  <div class="act">Got it</div></div>
+              </div>
+            </div>
+            <div class="sec">
+              <div class="sechd"><div class="t"><b>Logged</b> · 3</div></div>
+              <div class="list">
+                <div class="item"><div class="cb done">✓</div>
+                  <div class="nm"><div class="n">Utilities</div><div class="sub">Jun 15 · ↻ monthly</div></div>
+                  <div class="amt">−$180<span class="plan">planned −$200</span></div></div>
+                <div class="addrow"><div class="pl">+</div>Add to July</div>
+              </div>
+            </div>
+          </div>
+          <div class="fab"><b>+</b><span>Add</span></div>
+          <div class="bnav"><div class="nav on">◆<span>Home</span></div><div class="nav">≣<span>Activity</span></div>
+            <div class="nav">▢<span>Accounts</span></div><div class="nav">♡<span>Wishlist</span></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

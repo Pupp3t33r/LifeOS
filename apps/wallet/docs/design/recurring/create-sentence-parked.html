@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · New recurring — sentence builder (parked)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:56px 40px 80px}
+  .board{max-width:1100px;margin:0 auto}
+  .masthead{color:#EDE7DC;margin-bottom:36px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 30px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:760px;color:#B9B1A3;font-size:14.5px;line-height:1.6}
+  .parked{display:inline-block;margin-bottom:14px;font:600 11px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;
+    color:#15120e;background:#C7BFB1;padding:6px 12px;border-radius:999px}
+  .mocks{display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin-bottom:11px}
+
+  .dlg{flex:0 0 360px;background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:20px;position:relative}
+  .grab{width:38px;height:5px;border-radius:999px;background:rgba(44,42,38,.18);margin:0 auto 14px}
+  .dtitle{font:600 17px/1 var(--disp);letter-spacing:-.01em;margin-bottom:2px}
+  .dsub{font-size:12px;color:var(--muted);margin-bottom:18px}
+
+  .sentence{font:500 19px/1.9 var(--disp);color:var(--ink);letter-spacing:-.005em}
+  .tok{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 11px 4px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+  .tok .cx{font-size:10px;opacity:.6}
+  .tok.verb{background:rgba(94,126,107,.13);color:var(--sageDeep);border-color:rgba(94,126,107,.28)}
+  .tok.money{background:rgba(192,122,82,.13);color:var(--clay);border-color:rgba(192,122,82,.3)}
+  .tok.norm{background:var(--bone);color:var(--ink);border-color:var(--line)}
+  .tok.faint{background:transparent;color:var(--muted);border-color:var(--line);border-style:dashed}
+  .tok.sel{border-color:var(--sage);box-shadow:0 0 0 3px rgba(94,126,107,.12)}
+  .preview{display:flex;align-items:center;gap:8px;margin:16px 0 4px;padding:11px 13px;border-radius:12px;background:rgba(94,126,107,.07);font-size:12px;color:var(--sageDeep);line-height:1.5}
+  .preview b{font-weight:700}
+  .save{display:block;width:100%;text-align:center;padding:14px;border-radius:14px;background:var(--sageDeep);color:#fff;font:600 14px/1 var(--body);border:0;margin-top:14px}
+  .pop{position:absolute;left:20px;right:20px;bottom:76px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 -14px 40px -18px rgba(12,10,8,.5);padding:8px;z-index:5}
+  .ph{font:600 10px/1 var(--body);letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);padding:8px 10px 6px}
+  .opt{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border-radius:10px;font-size:13.5px;color:var(--ink)}
+  .opt.on{background:rgba(94,126,107,.1);color:var(--sageDeep);font-weight:600}
+  .opt small{color:var(--muted);font-size:11px;font-weight:400}
+  .opt.reveal{color:var(--clay)}
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="masthead">
+    <span class="parked">Parked · reference only</span>
+    <div class="kicker">wallet · recurring creation — the road not taken (for now)</div>
+    <h1>Sentence builder — <b>kept for reference</b></h1>
+    <p>Set aside in favour of the classic multiline form (more usable, reuses the add-entry muscle memory). Preserved
+      because the fill-in-the-blank voice is distinctive and might return for a "quick add" mode. The rule reads as one
+      sentence; every highlighted word is a tappable picker; direction lives in the verb.</p>
+  </div>
+  <div class="mocks">
+    <div>
+      <div class="label">Resting</div>
+      <div class="dlg">
+        <div class="grab"></div>
+        <div class="dtitle">New recurring</div>
+        <div class="dsub">Tap any highlighted word to change it.</div>
+        <div class="sentence">
+          <span class="tok verb">Pay<span class="cx">▾</span></span>
+          <span class="tok money">$1,000.00<span class="cx">▾</span></span> for
+          <span class="tok norm">Rent<span class="cx">▾</span></span> in
+          <span class="tok norm">Housing<span class="cx">▾</span></span> every
+          <span class="tok norm">month<span class="cx">▾</span></span> on the
+          <span class="tok norm">1st<span class="cx">▾</span></span>, starting
+          <span class="tok norm">Jul 2026<span class="cx">▾</span></span>,
+          <span class="tok faint">ongoing<span class="cx">▾</span></span>.
+        </div>
+        <div class="preview">↻ Next on <b>Aug 1</b> · then Sep 1, Oct 1 …</div>
+        <button class="save">Save recurring</button>
+      </div>
+    </div>
+    <div>
+      <div class="label">Picker · "ongoing" → installment</div>
+      <div class="dlg">
+        <div class="grab"></div>
+        <div class="dtitle">New recurring</div>
+        <div class="dsub">Choosing when it ends.</div>
+        <div class="sentence">
+          <span class="tok verb">Pay</span> <span class="tok money">$1,000.00</span> for
+          <span class="tok norm">Rent</span> every <span class="tok norm">month</span> on the
+          <span class="tok norm">1st</span>, <span class="tok norm sel">ongoing<span class="cx">▾</span></span>.
+        </div>
+        <div class="pop">
+          <div class="ph">Ends</div>
+          <div class="opt on">Ongoing <small>never stops</small></div>
+          <div class="opt">On a date <small>e.g. Jun 2027</small></div>
+          <div class="opt reveal">After a number of payments <small>→ installment plan</small></div>
+        </div>
+        <button class="save">Save recurring</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

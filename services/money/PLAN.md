@@ -103,7 +103,7 @@ Implemented backend (frontend/client cache + Rates view deferred, ADR-0015):
 
 **Deferred (not blocking):** cross-currency **triangulation** (reads answer stored pairs + inverse only); the client 15-min rate cache + in-app **Rates view** (frontend); `DefaultSpendingCurrency` on `UserPreferences` (ADR-0015 amends ADR-0013 — a separate preferences change); Belarusbank **BUY** side (foreign-currency income). Confirm the Belarusbank per-unit scales against live payloads (`FxOptions.BelarusbankUnitScale`).
 
-### 3.2 RecurringPayment aggregate (ADR-0017, as amended by ADR-0019/0020) — **Part A + B DONE (2026-07-01)**
+### 3.2 RecurringPayment aggregate (ADR-0017, as amended by ADR-0019/0020/0028) — **Part A + B DONE (2026-07-01)**
 
 Built (Part A — definition, schedule, occurrence *computation*):
 
@@ -113,6 +113,8 @@ Built (Part A — definition, schedule, occurrence *computation*):
 - Tests: generator + JSON round-trip + aggregate + endpoint integration (36 total, green).
 
 **Serializer note:** Marten switched to System.Text.Json (`Program.cs`) so the rule union round-trips identically in the event store and the API contract. **`AllowOutOfOrderMetadataProperties` is required** — STJ writes `kind` first but Postgres jsonb reorders keys, so the polymorphic reader would otherwise fail on read. Pre-prod, no migration; a local dev money-db with pre-switch (Newtonsoft) events must be reset (drop the `money-db` volume).
+
+**Materialized restructure — [ADR-0028](./docs/adr/0028-recurring-contents-at-root.md) (Accepted 2026-07-01), pending implementation.** The current Materialized shape above (`ScheduleLine` carries a per-payment `list<Line>`) is superseded: line-item **contents move to a root `Items` list** on the aggregate (symmetric with Live's `EstimateLines`), and a **`ScheduleLine` becomes bare money** (`{ LineId, DueDate, Amount }`), with the invariant **Σ payments = Σ items**. A plan is *one uniformly-financed purchase*; confirm records a **proportional slice** of the items (budgets exact). Grouping / "what's in it" / order status reuse **ADR-0022** (Wishlist items + Packages) via `Line.WishlistItemId` — not the payment plan. UI: two named create surfaces, **Ongoing** (Live) and **Payment plan** (Materialized) — see `apps/wallet/docs/design/recurring/`. Touches: aggregate fields/factory/deciders/Apply, the Materialized events, create/edit endpoints, `RecurringOccurrences`, `ConfirmOccurrenceEndpoint`, the occurrences projection, and tests. Live mode is untouched.
 
 Built (Part B — AccountingPeriod occurrence tracking):
 

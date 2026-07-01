@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Payment plan — one financed purchase, items at root</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+    --game:#6480A0; --acc:#9B6E8E; --fee:#8C8275;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:56px 40px 90px}
+  .board{max-width:1500px;margin:0 auto}
+  .masthead{color:#EDE7DC;margin-bottom:14px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 32px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#D9966E}
+  .masthead p{margin-top:14px;max-width:900px;color:#B9B1A3;font-size:15px;line-height:1.6}
+  .masthead p em{color:#D9966E;font-style:normal}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.92em;color:#C7BFB1;background:rgba(255,255,255,.05);padding:1px 5px;border-radius:5px}
+  .note{margin-top:16px;max-width:900px;font-size:12.5px;line-height:1.6;color:#9C9384;border-left:2px solid #4E6B5A;padding-left:14px}
+  .note b{color:#C7BFB1;font-weight:600}
+
+  .band{margin-top:40px}
+  .bandhd{font:600 11px/1 var(--body);letter-spacing:1.8px;text-transform:uppercase;color:#D9966E;margin-bottom:6px}
+  .bandsub{color:#9C9384;font-size:13px;margin-bottom:22px;max-width:820px;line-height:1.55}
+  .gallery{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .cell{flex:0 0 336px}
+  .clabel{font:600 10.5px/1 var(--body);letter-spacing:1.4px;text-transform:uppercase;color:#8a8276;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .clabel .n{width:18px;height:18px;border-radius:999px;background:#3a342b;color:#EDE7DC;display:grid;place-items:center;font-size:10px}
+  .cnote{color:#9C9384;font-size:11.5px;line-height:1.5;margin-top:11px}
+  .cnote b{color:#C7BFB1;font-weight:600}
+
+  .dlg{background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:16px 18px 18px;position:relative}
+  .grab{width:38px;height:5px;border-radius:999px;background:rgba(44,42,38,.18);margin:0 auto 12px}
+  .eyebrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .eyebrow .t{font:600 11px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:var(--clay)}
+  .eyebrow .x{color:var(--muted);font-size:16px}
+  .seg{display:flex;background:rgba(44,42,38,.06);border-radius:999px;padding:3px;margin-bottom:16px}
+  .seg span{flex:1;text-align:center;font:600 12.5px/1 var(--body);padding:9px;border-radius:999px;color:var(--muted)}
+  .seg span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.09)}
+  .tf{border:1px solid var(--line);border-radius:13px;padding:12px 14px;background:var(--bone);font-size:13.5px;color:var(--ink);margin-bottom:14px}
+  .tf.ph{color:#a49d90}
+
+  .shd{display:flex;align-items:baseline;justify-content:space-between;margin:4px 2px 9px}
+  .shd .k{font:600 10.5px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--clay)}
+  .shd .k .sub{display:block;color:var(--muted);letter-spacing:0;text-transform:none;font-weight:400;font-size:11px;margin-top:5px}
+  .shd .k.money{color:var(--sageDeep)}
+  .shd .tot{font:700 14px/1 var(--disp);color:var(--ink)}
+
+  .listbox{border:1px solid var(--line);border-radius:15px;overflow:hidden;margin-bottom:16px}
+  .it{display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--line)}
+  .it .cd{width:9px;height:9px;border-radius:999px;flex:0 0 9px}
+  .it .nm{flex:1}.it .nm b{font:500 13px/1.2 var(--body)}.it .nm small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+  .it .amt{font:600 13px/1 var(--disp);color:var(--clay)}
+  .it .x{color:var(--muted);font-size:12px;margin-left:3px}
+  .addrow{display:flex;align-items:center;gap:9px;padding:12px 13px;font:600 12px/1 var(--body);border-bottom:1px solid var(--line)}
+  .addrow.item{color:var(--clay);background:rgba(192,122,82,.05)}
+  .addrow.item .pl{width:20px;height:20px;border-radius:999px;border:1.5px dashed var(--clay);display:grid;place-items:center}
+  .addrow.pay{color:var(--sageDeep);background:rgba(94,126,107,.05)}
+  .addrow.pay .pl{width:20px;height:20px;border-radius:999px;border:1.5px dashed var(--sage);display:grid;place-items:center}
+  .empty{padding:18px 13px;text-align:center;color:#a49d90;font-size:12px;border-bottom:1px solid var(--line)}
+
+  .pay{display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--line)}
+  .pay .num{width:20px;height:20px;border-radius:999px;background:rgba(94,126,107,.12);color:var(--sageDeep);display:grid;place-items:center;font:600 10.5px/1 var(--body);flex:0 0 20px}
+  .pay .when{flex:1;font-size:13px;color:var(--ink)}
+  .pay .amt{font:600 13px/1 var(--disp);color:var(--ink)}
+  .pay .x{color:var(--muted);font-size:12px;margin-left:3px}
+
+  .bal{display:flex;align-items:center;gap:9px;padding:11px 13px;border-radius:12px;font-size:12px;margin-bottom:14px}
+  .bal.ok{background:rgba(94,126,107,.09);color:var(--sageDeep)}
+  .bal.warn{background:rgba(192,122,82,.09);color:var(--clay)}
+  .bal .ic{font-size:13px}.bal b{font-weight:700}.bal .grow{flex:1}
+  .helper{font:600 11.5px/1 var(--body);color:var(--sageDeep);padding:2px 4px}
+
+  .field{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:var(--bone);margin-bottom:10px}
+  .field.sel{border-color:var(--clay);box-shadow:0 0 0 3px rgba(192,122,82,.1)}
+  .field .k{color:var(--muted);font-size:11.5px}
+  .field .v{color:var(--ink);font-weight:500;font-size:13px}
+  .field .v .cx{color:var(--muted);margin-left:6px}
+  .heroline{display:flex;align-items:baseline;gap:6px;justify-content:center;padding:2px 0 10px}
+  .heroline .sgn{font:400 26px/1 var(--disp);color:var(--clay)}
+  .heroline .val{font:700 30px/1 var(--disp);color:var(--ink);letter-spacing:-.02em}
+
+  .save{display:block;width:100%;text-align:center;padding:14px;border-radius:14px;background:var(--sageDeep);color:#fff;font:600 14px/1 var(--body);border:0;margin-top:6px}
+  .save.off{background:rgba(44,42,38,.08);color:#a49d90}
+
+  /* separate entries + future package callout */
+  .side{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 17px}
+  .side h4{font:600 11px/1 var(--body);letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .sepline{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .sepline:last-of-type{border-bottom:0}
+  .sepline .cd{width:9px;height:9px;border-radius:999px;flex:0 0 9px}
+  .sepline .nm{flex:1;font-size:13px;color:var(--ink)}
+  .sepline .nm small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+  .sepline .amt{font:600 13px/1 var(--disp);color:var(--clay)}
+  .sepline .tag{font:600 9px/1 var(--body);letter-spacing:.5px;text-transform:uppercase;color:var(--fee);border:1px solid var(--line);border-radius:999px;padding:3px 7px}
+  .pkg{margin-top:14px;padding:13px;border-radius:14px;border:1px dashed #b98b62;background:rgba(192,122,82,.05)}
+  .pkg .h{display:flex;align-items:center;gap:7px;font:600 12px/1 var(--disp);color:var(--clay);margin-bottom:8px}
+  .pkg p{font-size:11.5px;line-height:1.55;color:var(--muted)}
+  .pkg p b{color:var(--ink);font-weight:600}
+
+  /* fab */
+  .entry{flex:0 0 300px}
+  .phone{background:var(--bone);border-radius:30px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative;min-height:360px}
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:15px 20px 12px;border-bottom:1px solid var(--line)}
+  .wm{font:700 18px/1 var(--disp)}.wm i{color:var(--clay);font-style:normal}
+  .gear{width:28px;height:28px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:13px}
+  .pdim{padding:16px 18px;filter:blur(1px);opacity:.45}
+  .pdline{height:12px;background:var(--line);border-radius:6px;margin-bottom:12px}.pdline.s{width:55%}.pdline.m{width:78%}
+  .fabmenu{position:absolute;right:18px;bottom:80px;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+  .mi{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:10px 15px;font:600 12.5px/1 var(--body);color:var(--ink);box-shadow:var(--shadow)}
+  .mi.on{background:var(--clay);color:#fff;border-color:var(--clay)}
+  .mi.rep{background:var(--sageDeep);color:#fff;border-color:var(--sageDeep)}
+  .fabx{position:absolute;right:16px;bottom:18px;width:52px;height:52px;border-radius:999px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:24px;box-shadow:0 12px 24px -8px rgba(32,30,26,.5);transform:rotate(45deg)}
+
+  @media(max-width:900px){body{padding:40px 20px}}
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="masthead">
+    <div class="kicker">wallet · payment plan — one financed purchase</div>
+    <h1>Payment plan = <b>one item list + a money schedule</b></h1>
+    <p>A plan is <em>one purchase you're financing</em>: its <em>items</em> live once at the root (what you bought),
+      and the <em>payments</em> below are just money (a date + an amount) that draw the whole thing down. Every item is
+      financed by the whole schedule — so anything paid <em>outside</em> it (an upfront extra, a separately-bought
+      add-on) is its own entry, not an item here. The one rule: <em>payments sum to items</em>.</p>
+    <p class="note">Structure per <b>ADR-0028</b> (Proposed, amends 0017/0019): items at the root, payments money-only,
+      Σ balance. Confirming a payment records a <b>proportional slice</b> of the items (ADR-0028 §4), so budgets stay
+      exact — trivial here since the package is all one category. Grouping, "what's in the box," and order status come
+      from the existing <b>ADR-0022</b> (Wishlist items + Packages) via <code>Line.WishlistItemId</code> — not from
+      the plan.</p>
+  </div>
+
+  <!-- BAND: the structure -->
+  <div class="band">
+    <div class="bandhd">The structure · empty → items → payments</div>
+    <div class="bandsub">The board-game pre-order: an all-in package (base game + 3 addons), $171, billed in 3 monthly payments of $57. Sleeves and shipping are paid upfront — so they're separate (right).</div>
+    <div class="gallery">
+
+      <div class="entry">
+        <div class="clabel"><span class="n">0</span> FAB</div>
+        <div class="phone">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pdim"><div class="pdline m"></div><div class="pdline s"></div><div class="pdline"></div><div class="pdline m"></div><div class="pdline s"></div></div>
+          <div class="fabmenu">
+            <div class="mi">＋ Add</div>
+            <div class="mi rep">↻ Ongoing</div>
+            <div class="mi on">▤ Payment plan</div>
+          </div>
+          <div class="fabx">+</div>
+        </div>
+      </div>
+
+      <div class="cell">
+        <div class="clabel"><span class="n">1</span> Empty</div>
+        <div class="dlg">
+          <div class="grab"></div>
+          <div class="eyebrow"><span class="t">▤ Payment plan</span><span class="x">✕</span></div>
+          <div class="seg"><span class="on">Expense</span><span>Income</span></div>
+          <div class="tf ph">What is it?  e.g. Gloomhaven pledge</div>
+          <div class="shd"><span class="k">Items <span class="sub">what you bought</span></span><span class="tot">$0.00</span></div>
+          <div class="listbox">
+            <div class="empty">Nothing yet</div>
+            <div class="addrow item"><span class="pl">+</span>Add item</div>
+          </div>
+          <div class="shd"><span class="k money">Payments <span class="sub">how you pay it</span></span><span class="tot">$0.00</span></div>
+          <div class="listbox">
+            <div class="empty">No payments yet</div>
+            <div class="addrow pay"><span class="pl">+</span>Add payment</div>
+          </div>
+          <button class="save off">Save</button>
+        </div>
+      </div>
+
+      <div class="cell">
+        <div class="clabel"><span class="n">2</span> Items · the “what”</div>
+        <div class="dlg">
+          <div class="grab"></div>
+          <div class="eyebrow"><span class="t">▤ Payment plan · Gloomhaven pledge</span><span class="x">✕</span></div>
+          <div class="shd"><span class="k">Items <span class="sub">what you bought</span></span><span class="tot">−$171.00</span></div>
+          <div class="listbox">
+            <div class="it"><span class="cd" style="background:var(--game)"></span><span class="nm"><b>Base game</b><small>Board games</small></span><span class="amt">−90.00</span><span class="x">✕</span></div>
+            <div class="it"><span class="cd" style="background:var(--game)"></span><span class="nm"><b>Addon · Forgotten Circles</b><small>Board games</small></span><span class="amt">−36.00</span><span class="x">✕</span></div>
+            <div class="it"><span class="cd" style="background:var(--game)"></span><span class="nm"><b>Addon · Solo scenarios</b><small>Board games</small></span><span class="amt">−27.00</span><span class="x">✕</span></div>
+            <div class="it"><span class="cd" style="background:var(--game)"></span><span class="nm"><b>Addon · Sticker set</b><small>Board games</small></span><span class="amt">−18.00</span><span class="x">✕</span></div>
+            <div class="addrow item"><span class="pl">+</span>Add item</div>
+          </div>
+          <div class="shd"><span class="k money">Payments</span><span class="tot" style="color:var(--clay)">−$171 to schedule</span></div>
+          <div class="listbox">
+            <div class="empty">No payments yet</div>
+            <div class="addrow pay"><span class="pl">+</span>Add payment</div>
+          </div>
+        </div>
+        <div class="cnote"><b>“What's in the pledge”</b> is this list — four items, one category. All are financed by the schedule, so budgets already see Board games −$171.</div>
+      </div>
+
+      <div class="cell">
+        <div class="clabel"><span class="n">3</span> Payments · the money · balanced</div>
+        <div class="dlg">
+          <div class="grab"></div>
+          <div class="eyebrow"><span class="t">▤ Payment plan · Gloomhaven pledge</span><span class="x">✕</span></div>
+          <div class="shd"><span class="k">Items</span><span class="tot">−$171.00</span></div>
+          <div class="listbox">
+            <div class="it"><span class="cd" style="background:var(--game)"></span><span class="nm"><b>Base game + 3 addons</b><small>Board games · 4 items</small></span><span class="amt">−171.00</span><span class="x">▾</span></div>
+            <div class="addrow item"><span class="pl">+</span>Add item</div>
+          </div>
+          <div class="shd"><span class="k money">Payments <span class="sub">how you pay it</span></span><span class="tot">−$171.00</span></div>
+          <div class="listbox">
+            <div class="pay"><span class="num">1</span><span class="when">Jul 2026</span><span class="amt">−$57.00</span><span class="x">✕</span></div>
+            <div class="pay"><span class="num">2</span><span class="when">Aug 2026</span><span class="amt">−$57.00</span><span class="x">✕</span></div>
+            <div class="pay"><span class="num">3</span><span class="when">Sep 2026</span><span class="amt">−$57.00</span><span class="x">✕</span></div>
+            <div class="addrow pay"><span class="pl">+</span>Add payment</div>
+          </div>
+          <div class="bal ok"><span class="ic">✓</span><span class="grow">Payments match the items — <b>$0.00 left</b></span></div>
+          <button class="save">Save</button>
+        </div>
+        <div class="cnote">Payments are just money; each draws the whole pledge down by a third. Confirm payment 1 → records −$57 Board games (a proportional slice — trivial here, one category).</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BAND: separate entries, add-payment, grouping -->
+  <div class="band">
+    <div class="bandhd">Around the plan · separate entries + the future package</div>
+    <div class="bandsub">Sleeves and shipping aren't financed by the schedule, so they're not items of the plan. They're logged separately — and a future Package (ADR-0022) is what reunites everything into "one shipment".</div>
+    <div class="gallery">
+
+      <div class="cell">
+        <div class="clabel"><span class="n">4</span> Add payment · pre-filled</div>
+        <div class="dlg">
+          <div class="listbox" style="margin-bottom:12px">
+            <div class="pay"><span class="num">1</span><span class="when">Jul 2026</span><span class="amt">−$57.00</span><span class="x">✕</span></div>
+            <div class="pay"><span class="num">2</span><span class="when">Aug 2026</span><span class="amt">−$57.00</span><span class="x">✕</span></div>
+          </div>
+          <div style="border:1.5px solid var(--clay);border-radius:14px;padding:13px;background:rgba(192,122,82,.04)">
+            <div class="field sel" style="margin-bottom:8px"><span class="k">Date</span><span class="v">Sep 2026 <span class="cx">▾</span></span></div>
+            <div class="heroline"><span class="sgn">−</span><span class="val">57.00</span></div>
+            <button class="save" style="margin-top:0;padding:11px">Add payment</button>
+          </div>
+          <div class="bal warn" style="margin-top:12px"><span class="ic">!</span><span class="grow"><b>−$57.00</b> still to schedule</span><span class="helper">Split evenly ›</span></div>
+        </div>
+        <div class="cnote">A payment is just <b>date + amount</b>; the new one pre-fills from the last and the remaining balance. Can't save until payments = items ($0 left).</div>
+      </div>
+
+      <div class="cell">
+        <div class="clabel"><span class="n">5</span> Logged separately</div>
+        <div class="side">
+          <h4>Also on the order — separate entries</h4>
+          <div class="sepline"><span class="cd" style="background:var(--acc)"></span><span class="nm"><b>Premium sleeves ×3</b><small>Accessories · Add (one-off)</small></span><span class="amt">−24.00</span></div>
+          <div class="sepline"><span class="cd" style="background:var(--fee)"></span><span class="nm"><b>Shipping</b><small>Fees</small></span><span class="tag">shipping</span></div>
+          <div class="pkg">
+            <div class="h">▤ Future · Package (ADR-0022)</div>
+            <p>A <b>Package</b> groups the pledge's items + the sleeves into one order, derives <b>planned → ordered → received</b> status, and (later) allocates <b>shipping</b> ∝ price. It spans the plan <i>and</i> the separate entries — which is exactly why it can't live inside the plan.</p>
+          </div>
+        </div>
+        <div class="cnote">Sleeves paid upfront ⇒ not financed by the schedule ⇒ a separate entry. Shipping is a <b>shipping-tagged line</b> (ADR-0019/0022), never an item, never a wishlist item.</div>
+      </div>
+
+      <div class="cell">
+        <div class="clabel"><span class="n">6</span> Full plan · ready</div>
+        <div class="dlg">
+          <div class="grab"></div>
+          <div class="eyebrow"><span class="t">▤ Payment plan · Gloomhaven pledge</span><span class="x">✕</span></div>
+          <div class="seg"><span class="on">Expense</span><span>Income</span></div>
+          <div class="tf">Gloomhaven pledge</div>
+          <div class="shd"><span class="k">Items</span><span class="tot">−$171.00</span></div>
+          <div class="listbox">
+            <div class="it"><span class="cd" style="background:var(--game)"></span><span class="nm"><b>Base game + 3 addons</b><small>Board games · 4 items</small></span><span class="amt">−171.00</span><span class="x">▾</span></div>
+          </div>
+          <div class="shd"><span class="k money">Payments · 3</span><span class="tot">−$171.00</span></div>
+          <div class="listbox">
+            <div class="pay"><span class="num">1</span><span class="when">Jul 2026</span><span class="amt">−$57.00</span><span class="x">✕</span></div>
+            <div class="pay"><span class="num">2</span><span class="when">Aug 2026</span><span class="amt">−$57.00</span><span class="x">✕</span></div>
+            <div class="pay"><span class="num">3</span><span class="when">Sep 2026</span><span class="amt">−$57.00</span><span class="x">✕</span></div>
+            <div class="addrow pay"><span class="pl">+</span>Add payment</div>
+          </div>
+          <div class="bal ok"><span class="ic">✓</span><span class="grow">Balanced — <b>$0.00 left</b></span></div>
+          <button class="save">Save</button>
+        </div>
+        <div class="cnote">One purchase, four items, three even payments. It ends after payment 3 — the list <i>is</i> the end. Later reads "Gloomhaven · payment 2 of 3".</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
