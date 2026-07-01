@@ -2,12 +2,15 @@ using FluentValidation;
 using JasperFx;
 using JasperFx.Events.Projections;
 using LifeOS.Money.Api.Domain;
+using LifeOS.Money.Api.Domain.Fx;
 using LifeOS.Money.Api.Features.Accounts;
 using LifeOS.Money.Api.Features.UserPreferences;
+using LifeOS.Money.Api.Fx;
 using LifeOS.Money.Api.Http;
 using LifeOS.Money.Api.Projections;
 using Marten;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Wolverine;
 using Wolverine.Http;
@@ -56,7 +59,31 @@ public class Program
             // UserPreferences (ADR-0013) is a plain document keyed by the owner's
             // Keycloak subject, not an event-sourced aggregate.
             options.Schema.For<UserPreferences>().Identity(x => x.OwnerId);
+
+            // FxRate (ADR-0008/0015) is external observed data, not user-authored
+            // domain state, so it lives in a query table the fetch service upserts —
+            // not the event store. Keyed by the deterministic Base:Quote:Date:Source
+            // id (idempotent re-fetch). Indexed for the by-pair conversion query.
+            options.Schema.For<FxRate>()
+                .Identity(x => x.Id)
+                .Duplicate(x => x.Base)
+                .Duplicate(x => x.Quote);
         }).IntegrateWithWolverine();
+
+        // FX rate service (ADR-0015): hourly BackgroundService fetching Belarusbank
+        // card SELL rates (preferred) + Frankfurter (fallback) into the FxRate table.
+        builder.Services.Configure<FxOptions>(builder.Configuration.GetSection(FxOptions.SectionName));
+        builder.Services.AddHttpClient<BelarusbankRateSource>();
+        builder.Services.AddHttpClient<FrankfurterRateSource>((sp, client) =>
+        {
+            // Frankfurter source issues relative requests ("latest?base=..."); anchor
+            // them on the configured base URL (trailing slash so the path appends).
+            var fxOptions = sp.GetRequiredService<IOptions<FxOptions>>().Value;
+            client.BaseAddress = new Uri(fxOptions.FrankfurterBaseUrl.TrimEnd('/') + "/");
+        });
+        builder.Services.AddTransient<IFxRateSource>(sp => sp.GetRequiredService<BelarusbankRateSource>());
+        builder.Services.AddTransient<IFxRateSource>(sp => sp.GetRequiredService<FrankfurterRateSource>());
+        builder.Services.AddHostedService<FxRateFetchService>();
 
         builder.Services.AddValidatorsFromAssemblyContaining<OpenAccountValidator>();
         builder.Services.AddWolverineHttp();

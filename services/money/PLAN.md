@@ -32,7 +32,7 @@ ADR-0001 through ADR-0027 — see [`docs/adr/README.md`](./docs/adr/README.md) f
 - WishlistItem + Package documents + WishlistItemStatus projection (ADR-0022; non-event-sourced)
 - Planned-purchase events on AccountingPeriod (ADR-0018/0019)
 - Budget aggregate (ADR-0006)
-- FX rate service + FxRate projection (ADR-0008/0015)
+- ~~FX rate service + FxRate document (ADR-0015)~~ — **backend DONE (2026-07-01)**, see §3.1 (client cache/Rates view deferred)
 - Asset aggregate (ADR-0010; Phase 3, ingestion path amended by ADR-0018)
 - ~~PurchaseOrder aggregate~~ — **dropped** per ADR-0018 (planned purchases live on AccountingPeriod)
 - ~~InstallmentPlan aggregate~~ — **collapsed** into RecurringPayment per ADR-0017
@@ -90,13 +90,18 @@ Each item is a discrete feature slice following the per-feature folder conventio
 - Period helper: `anchor(Y, M) = min(MonthStartDay, daysInMonth(Y, M))`; period `(Y, M) = [anchor(Y, M), anchor(next))`. This helper is consumed by Budget (§3.6) and MonthlyReview/MonthProjection (§3.7) bucketing.
 - Why first: §3.1 FX syncs "the user's display currency plus account currencies," and the period helper is a prerequisite for §3.6/§3.7. `DisplayCurrency` is the canvas/budget aggregation currency throughout.
 
-### 3.1 FX rate service (ADR-0008) — *prerequisite for all multi-currency work*
+### 3.1 FX rate service (ADR-0015, supersedes ADR-0008 FX section) — *prerequisite for all multi-currency work* — **backend DONE (2026-07-01)**
 
-- Quartz cron job (daily, configurable schedule).
-- Frankfurter HTTP client (`Features/FxRates/SyncFxRates.cs`).
-- `FxRate` projection: `{ Base, Quote, Date, Rate }`.
-- Read endpoint: `GET /api/money/fx-rates?base={base}&quote={quote}&date={date}` with forward-fill.
-- Failure handling: structured logging, stale-rate alert.
+Implemented backend (frontend/client cache + Rates view deferred, ADR-0015):
+
+- **`FxRate` document** (`Domain/Fx/FxRate.cs`) — Marten document, not events: `{ Id, Base, Quote, Date, Rate, Source, RetrievedAt }`, deterministic id `Base:Quote:Date:Source` (idempotent re-fetch). `FxSource` constants (`belarusbank` | `frankfurter`).
+- **Two sources** (`Fx/IFxRateSource.cs`): `BelarusbankRateSource` (`kurs_cards`, SELL side, direct foreign→BYN pairs, defensive regex parse, per-unit scale for RUB-per-100) + `FrankfurterRateSource` (`latest?base=&symbols=`, fallback). Sources tolerate outages (return empty, never throw).
+- **`FxRateFetchService`** — plain `BackgroundService` + `PeriodicTimer`, **hourly** (no Quartz, per ADR-0015). Currency set = config ∪ display currencies ∪ account currencies; upserts both sources; stale-rate warning; `Fx:Enabled` gate (off in tests). Immediate fetch on startup.
+- **Read endpoints**: `GET /api/money/fx-rates?base=&quote=&date=` (forward-fill + source precedence + inverse-pair reciprocation; 404 when uncovered) and `GET /api/money/fx-rates/latest` (one row per pair+source, uncollapsed — feeds the future client cache + Settings). `FxRateResolver` holds the pure forward-fill/precedence logic.
+- **Config** (`Fx` section) + `FxOptions`: interval, currency list, pivot (BYN), URLs, staleness, and **`SourcePriority`** — an ordered list driving read precedence, the hook a future per-user *source Settings* feature (priority + on/off toggles) plugs into. All sources are always stored independently.
+- Tests: `BelarusbankRateSource.Parse` unit tests, `FxRateResolver` unit tests, endpoint integration tests (18 total, green).
+
+**Deferred (not blocking):** cross-currency **triangulation** (reads answer stored pairs + inverse only); the client 15-min rate cache + in-app **Rates view** (frontend); `DefaultSpendingCurrency` on `UserPreferences` (ADR-0015 amends ADR-0013 — a separate preferences change); Belarusbank **BUY** side (foreign-currency income). Confirm the Belarusbank per-unit scales against live payloads (`FxOptions.BelarusbankUnitScale`).
 
 ### 3.2 RecurringPayment aggregate (ADR-0017, as amended by ADR-0019/0020)
 

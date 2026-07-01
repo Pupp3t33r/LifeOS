@@ -31,6 +31,9 @@ public sealed class MoneyApiFactory : WebApplicationFactory<Program>, IAsyncLife
         // throwaway Testcontainers database (production uses AutoCreate.None — see PLAN.md §8).
         builder.UseEnvironment("Development");
         builder.UseSetting("ConnectionStrings:money-db", _postgres.GetConnectionString());
+        // Never run the hourly FX fetch loop under test — it would reach real external
+        // APIs and pollute the FxRate table. Tests seed FxRate documents directly.
+        builder.UseSetting("Fx:Enabled", "false");
         builder.UseSetting("Keycloak:Authority", "http://test-keycloak/realms/lifeos");
         builder.UseSetting("Keycloak:Audience", TestJwtFactory.Audience);
 
