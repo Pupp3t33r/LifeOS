@@ -18,7 +18,8 @@ public class KeycloakContractTests : IClassFixture<KeycloakAuthFactory>
     [Fact]
     public async Task Money_AcceptsRealKeycloakIssuedToken()
     {
-        var token = await _factory.GetAccessTokenAsync("alice", "alicepass");
+        var token = await _factory.GetAccessTokenAsync(
+            TestUsers.Contract.Username, TestUsers.Contract.Password);
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -31,7 +32,8 @@ public class KeycloakContractTests : IClassFixture<KeycloakAuthFactory>
     public async Task RealToken_CarriesMoneyApiAudience()
     {
         // The realm's oidc-audience-mapper must put 'money-api' in aud, or Money rejects the token.
-        var token = await _factory.GetAccessTokenAsync("alice", "alicepass");
+        var token = await _factory.GetAccessTokenAsync(
+            TestUsers.Contract.Username, TestUsers.Contract.Password);
 
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 

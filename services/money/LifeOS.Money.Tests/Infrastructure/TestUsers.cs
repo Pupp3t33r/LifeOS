@@ -20,4 +20,16 @@ public static class TestUsers
         Password: "bobpass",
         Email: "bob@lifeos.local",
         DisplayName: "Bob Tester");
+
+    /// The auth **contract** identity (KeycloakContractTests). Distinct from Alice
+    /// because Alice carries the `webauthn-register-passwordless` required action for
+    /// passkey testing, and any pending required action makes Keycloak reject the
+    /// direct-grant (ROPC) password login the contract tests use ("Account is not
+    /// fully set up"). This user is seeded with no required actions.
+    public static readonly TestUser Contract = new(
+        Id: "c04124ac-0000-4000-8000-000000000003",
+        Username: "contract",
+        Password: "contractpass",
+        Email: "contract@lifeos.local",
+        DisplayName: "Contract Tester");
 }

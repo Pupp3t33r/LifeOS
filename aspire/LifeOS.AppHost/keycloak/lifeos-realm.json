@@ -192,6 +192,24 @@
         }
       ],
       "realmRoles": ["offline_access"]
+    },
+    {
+      "id": "c04124ac-0000-4000-8000-000000000003",
+      "username": "contract",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "contract@lifeos.local",
+      "firstName": "Contract",
+      "lastName": "Tester",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "contractpass",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["offline_access"]
     }
   ]
 }
