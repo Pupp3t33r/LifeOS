@@ -9,8 +9,9 @@ namespace LifeOS.Money.Api.Features.Recurring;
 public static class EditScheduleLineEndpoint
 {
     // Edit an unconfirmed Materialized line in place (ADR-0017) — the debt-reschedule
-    // honesty valve. The route LineId is authoritative (the body's is ignored). The
-    // "unconfirmed only" guard against the AccountingPeriod lands with Part B.
+    // honesty valve. The route LineId is authoritative (the body's is ignored).
+    // DEFERRED: the "unconfirmed only" guard (reject editing a line already confirmed
+    // on a period) needs a period-join at write time and is not enforced yet.
     [WolverinePut("/recurring/{id}/schedule-lines/{lineId}")]
     public static (RecurringResponse, Events) Handle(
         Guid id,
