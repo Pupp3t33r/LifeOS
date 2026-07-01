@@ -28,7 +28,7 @@ ADR-0001 through ADR-0027 — see [`docs/adr/README.md`](./docs/adr/README.md) f
 
 - UserPreferences document (ADR-0013; display currency + configurable month start day — see §3.0)
 - AccountingPeriod aggregate + MonthProjection (ADR-0016, renamed from MonthlyReview; holds lifecycle + flow ledger + planned purchases)
-- RecurringPayment aggregate (ADR-0017; Live + Materialized modes; collapses InstallmentPlan)
+- ~~RecurringPayment aggregate (ADR-0017; Live + Materialized modes; collapses InstallmentPlan)~~ — **Part A DONE (2026-07-01)**: rules/generator/aggregate/endpoints. Part B (period integration: confirm/skip + status) pending. See §3.2
 - WishlistItem + Package documents + WishlistItemStatus projection (ADR-0022; non-event-sourced)
 - Planned-purchase events on AccountingPeriod (ADR-0018/0019)
 - Budget aggregate (ADR-0006)
@@ -103,14 +103,20 @@ Implemented backend (frontend/client cache + Rates view deferred, ADR-0015):
 
 **Deferred (not blocking):** cross-currency **triangulation** (reads answer stored pairs + inverse only); the client 15-min rate cache + in-app **Rates view** (frontend); `DefaultSpendingCurrency` on `UserPreferences` (ADR-0015 amends ADR-0013 — a separate preferences change); Belarusbank **BUY** side (foreign-currency income). Confirm the Belarusbank per-unit scales against live payloads (`FxOptions.BelarusbankUnitScale`).
 
-### 3.2 RecurringPayment aggregate (ADR-0017, as amended by ADR-0019/0020)
+### 3.2 RecurringPayment aggregate (ADR-0017, as amended by ADR-0019/0020) — **Part A DONE (2026-07-01)**
 
-- Domain: `Domain/RecurringPayment.cs`, events under `Domain/Events/`.
-- **Two schedule modes**: Live (recurrence rule; computed occurrences) and Materialized (finite list of `ScheduleLine`s; arbitrary dates, varying amounts). Installments/debt are Materialized — no separate InstallmentPlan aggregate (collapsed per ADR-0017).
-- **Line-items (ADR-0019)**: the Live estimate and each Materialized `ScheduleLine` carry `list<Line>` (the breakdown — e.g., all-in preorder with shipping in payment 1).
-- Occurrences are tracked via back-refs on AccountingPeriod (`FlowRecorded`/`OccurrenceSkipped`), not on the recurring aggregate.
-- Endpoints: create, edit-rule/schedule, cancel (+ optional reimbursement), list, get-next-N, confirm-occurrence, skip-occurrence, carry-make-up (ADR-0020).
-- Projection: `RecurringScheduleProjection` for "what's due in period P" + per-occurrence status (projected/paid/skipped) joined against AccountingPeriod.
+Built (Part A — definition, schedule, occurrence *computation*; period integration is Part B):
+
+- **Recurrence model** (`Domain/Recurring/`): sealed `RecurrenceRule` hierarchy (Daily/Weekly/Monthly/Yearly) + `RecurrenceEnd` (Never/OnDate/AfterCount) + `MonthDayAnchor` (day-of-month clamped / last-day) + `AnnualDate`, serialized as a `kind`-discriminated STJ union (`[JsonPolymorphic]`) mirrored by the Dart client. `RecurrenceGenerator` — pure, exhaustive-switch occurrence computation (every-N-days, bi-weekly, quarterly, clamping, count/date end, forward `Take(n)`), heavily unit-tested.
+- **Aggregate** (`Domain/RecurringPayment.cs`) + events (`RecurringPaymentCreated`/`RuleChanged`/`ScheduleLineAdded`/`Edited`/`Removed`/`RecurringPaymentEdited`/`RecurringPaymentCancelled`), inline snapshot. **Two modes**: Live (rule + `EstimateLines`) / Materialized (`ScheduleLine` list, each with a `list<Line>` breakdown, ADR-0019). Status Active→Cancelled (terminal).
+- **Endpoints** (`Features/Recurring/`): create (both modes), get, list, edit-rule (Live, forward-only), edit-header, add/edit/remove schedule line (Materialized), cancel, and get-occurrences (computed window). Owner-scoped; lifecycle/mode guards → 404/409; client-assigned id idempotency (ADR-0003).
+- Tests: generator + JSON round-trip + aggregate + endpoint integration (36 total, green).
+
+**Serializer note:** Marten switched to System.Text.Json (`Program.cs`) so the rule union round-trips identically in the event store and the API contract. **`AllowOutOfOrderMetadataProperties` is required** — STJ writes `kind` first but Postgres jsonb reorders keys, so the polymorphic reader would otherwise fail on read. Pre-prod, no migration; a local dev money-db with pre-switch (Newtonsoft) events must be reset (drop the `money-db` volume).
+
+**Part B (next) — AccountingPeriod integration:** `confirm-occurrence` (→ `FlowRecorded` with `{recurringId, occurrenceRef}` back-ref) and `skip-occurrence` (→ `OccurrenceSkipped`); the per-occurrence **status** (projected/paid/skipped) join in get-occurrences and a `RecurringScheduleProjection` for "what's due in period P." The "unconfirmed only" guard on Materialized line edit/remove also lands here (needs the period join).
+
+**Part C (later) — needs planned-purchases (ADR-0018) first:** carry-make-up (ADR-0020) and early-payment (ADR-0027).
 
 ### 3.3 Wishlist items, packages, and derived status (ADR-0022)
 

@@ -11,6 +11,7 @@ using LifeOS.Money.Api.Projections;
 using Marten;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using Weasel.Core;
 using Serilog;
 using Wolverine;
 using Wolverine.Http;
@@ -41,6 +42,24 @@ public class Program
         {
             options.Connection(connectionString);
 
+            // System.Text.Json for event/document storage so the RecurringPayment
+            // recurrence-rule discriminated union (ADR-0017: STJ [JsonPolymorphic]
+            // `kind` discriminator) round-trips identically in the event store and in
+            // the API contract the Dart client mirrors — one serialization definition,
+            // not two. Marten otherwise defaults to Newtonsoft, which cannot rehydrate
+            // an abstract rule type. Pre-prod, no migration; a local dev money-db with
+            // Newtonsoft-written events must be reset (drop the money-db volume).
+            //
+            // AllowOutOfOrderMetadataProperties is required: STJ writes the `kind`
+            // discriminator first, but Postgres jsonb normalizes (reorders) object
+            // keys, so on read the discriminator is rarely first. Without this option
+            // the polymorphic reader fails with "must specify a type discriminator".
+            // (net9+ feature; the project targets net10.)
+            options.UseSystemTextJsonForSerialization(
+                EnumStorage.AsInteger,
+                Casing.Default,
+                json => json.AllowOutOfOrderMetadataProperties = true);
+
             // Schema migration policy (see PLAN.md §8): Development creates/updates the schema at
             // startup for fast iteration; every other environment never touches the schema at
             // runtime and expects it to already exist. Applying migrations as a dedicated
@@ -53,6 +72,7 @@ public class Program
             options.Events.UseIdentityMapForAggregates = true;
             options.Projections.Snapshot<Account>(SnapshotLifecycle.Inline);
             options.Projections.Snapshot<AccountingPeriod>(SnapshotLifecycle.Inline);
+            options.Projections.Snapshot<RecurringPayment>(SnapshotLifecycle.Inline);
             options.Projections.Add<SavingsMovementRecordProjection>(ProjectionLifecycle.Inline);
             options.Projections.Add<FlowEntryRecordProjection>(ProjectionLifecycle.Inline);
 
