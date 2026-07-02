@@ -7,7 +7,13 @@ import 'create_payment_plan_sheet.dart';
 /// The FAB's create menu: three separate verbs (design/recurring) — **Add** (a
 /// one-off expense/income), **Ongoing** (a Live recurring), **Payment plan** (a
 /// Materialized plan). No chooser umbrella; each opens its own dedicated sheet.
-Future<void> showCreateMenu(BuildContext context) async {
+///
+/// [allowOneOff] gates the one-off **Add**: a one-off is always a *actual* dated
+/// today-or-earlier (ADR-0016) and so lands in the active period regardless of what
+/// the user is browsing. While the cockpit shows a non-active period, Add is disabled
+/// so an actual can't be filed somewhere the user isn't looking (ADR-0023); the
+/// period-agnostic recurring verbs stay available.
+Future<void> showCreateMenu(BuildContext context, {bool allowOneOff = true}) async {
   final choice = await showModalBottomSheet<_Create>(
     context: context,
     backgroundColor: Theme.of(context).colorScheme.surface,
@@ -25,8 +31,11 @@ Future<void> showCreateMenu(BuildContext context) async {
               icon: Icons.add,
               color: tokens.sageDeep,
               title: 'Add',
-              subtitle: 'A one-off expense or income',
-              onTap: () => Navigator.of(context).pop(_Create.add),
+              subtitle: allowOneOff
+                  ? 'A one-off expense or income'
+                  : 'Switch to the current period to add',
+              enabled: allowOneOff,
+              onTap: allowOneOff ? () => Navigator.of(context).pop(_Create.add) : null,
             ),
             _MenuItem(
               icon: Icons.autorenew,
@@ -69,23 +78,27 @@ class _MenuItem extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.enabled = true,
   });
 
   final IconData icon;
   final Color color;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tint = enabled ? color : theme.colorScheme.onSurface.withValues(alpha: 0.35);
     return ListTile(
+      enabled: enabled,
       leading: Container(
         width: 40, height: 40,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
-        child: Icon(icon, color: color, size: 20),
+        decoration: BoxDecoration(color: tint.withValues(alpha: 0.12), shape: BoxShape.circle),
+        child: Icon(icon, color: tint, size: 20),
       ),
       title: Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
       subtitle: Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(

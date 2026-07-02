@@ -5,9 +5,9 @@ import '../../../../app/theme/category_colors.dart';
 import '../../application/categories_providers.dart';
 import '../../application/period_flows_providers.dart';
 import '../../application/preferences_providers.dart';
-import '../../application/recurring_providers.dart';
+import '../../application/recurring_providers.dart' hide PeriodKey;
+import '../../application/selected_period_providers.dart';
 import '../../domain/category.dart';
-import '../../domain/month_period.dart';
 import '../../domain/money.dart';
 import '../../domain/period_flows.dart';
 import '../../domain/recurring/recurring_payment.dart';
@@ -34,8 +34,9 @@ class MonthOverviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final startDay = ref.watch(preferencesProvider).value?.monthStartDay ?? 1;
-    final period = _Period.current(DateTime.now(), startDay);
-    final key = (year: period.year, month: period.month);
+    final key = ref.watch(viewedPeriodProvider);
+    final status = ref.watch(viewedPeriodStatusProvider);
+    final period = _Period.forKey(key, startDay, DateTime.now());
 
     final entries = ref.watch(periodFlowsProvider(key)).value ?? const <FlowEntry>[];
     final totals = ref.watch(periodTotalsProvider(key));
@@ -69,13 +70,23 @@ class MonthOverviewScreen extends ConsumerWidget {
                     children: [
                       _PeriodHeader(
                         period: period,
+                        status: status,
                         totals: totals,
                         pendingTotals: pendingTotals,
                         syncedAt: syncedAt,
+                        onPrevious: () =>
+                            ref.read(selectedPeriodProvider.notifier).previous(),
+                        onNext: () => ref.read(selectedPeriodProvider.notifier).next(),
+                        onJumpToActive: () =>
+                            ref.read(selectedPeriodProvider.notifier).jumpToActive(),
                       ),
                       const SizedBox(height: 24),
                       if (upcoming.isNotEmpty) ...[
-                        _UpcomingList(occurrences: upcoming, nameById: nameById),
+                        _UpcomingList(
+                          occurrences: upcoming,
+                          nameById: nameById,
+                          status: status,
+                        ),
                         const SizedBox(height: 24),
                       ],
                       if (entries.isNotEmpty)
@@ -90,7 +101,7 @@ class MonthOverviewScreen extends ConsumerWidget {
             Positioned(
               right: wide ? 24 : 16,
               bottom: wide ? 24 : 16,
-              child: _Fab(extended: wide),
+              child: _Fab(extended: wide, allowOneOff: status == PeriodStatus.active),
             ),
           ],
         );
@@ -102,80 +113,178 @@ class MonthOverviewScreen extends ConsumerWidget {
 class _PeriodHeader extends StatelessWidget {
   const _PeriodHeader({
     required this.period,
+    required this.status,
     required this.totals,
     required this.pendingTotals,
     required this.syncedAt,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onJumpToActive,
   });
 
   final _Period period;
+  final PeriodStatus status;
   final List<Money> totals;
   final List<Money> pendingTotals;
   final DateTime? syncedAt;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onJumpToActive;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
+        Row(
+          children: [
+            Flexible(
+              child: Text(
                 period.monthLabel,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontFamily: CalmTokens.fontDisplay,
                   fontWeight: FontWeight.w600,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
-              Text(period.span, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
-              if (totals.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                _NetTotals(totals: totals),
-              ],
-              if (pendingTotals.isNotEmpty) _PendingCaption(totals: pendingTotals),
-              if (syncedAt != null) ...[
-                const SizedBox(height: 6),
-                Text(
-                  'Updated ${_relativeTime(syncedAt!, DateTime.now())}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-                  ),
-                ),
-              ],
-            ],
-          ),
+            ),
+            const SizedBox(width: 4),
+            _NavArrow(icon: Icons.chevron_left, tooltip: 'Previous period', onTap: onPrevious),
+            _NavArrow(icon: Icons.chevron_right, tooltip: 'Next period', onTap: onNext),
+            const Spacer(),
+            if (status != PeriodStatus.active)
+              _JumpToActiveButton(onTap: onJumpToActive)
+            else
+              _StatusBadge(status: status),
+          ],
         ),
-        const SizedBox(width: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
+        if (status != PeriodStatus.active) ...[
+          const SizedBox(height: 6),
+          _StatusBadge(status: status),
+        ],
+        const SizedBox(height: 4),
+        Text(period.span, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+        if (totals.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          _NetTotals(totals: totals),
+        ],
+        if (pendingTotals.isNotEmpty) _PendingCaption(totals: pendingTotals),
+        if (syncedAt != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Updated ${_relativeTime(syncedAt!, DateTime.now())}',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
           ),
+        ],
+      ],
+    );
+  }
+}
+
+/// A period-step chevron (‹ / ›) for the switcher (ADR-0002).
+class _NavArrow extends StatelessWidget {
+  const _NavArrow({required this.icon, required this.tooltip, required this.onTap});
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onTap,
+      visualDensity: VisualDensity.compact,
+      iconSize: 26,
+      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+      icon: Icon(icon),
+    );
+  }
+}
+
+/// Snap-back-to-today pill, shown only while browsing a non-active period.
+class _JumpToActiveButton extends StatelessWidget {
+  const _JumpToActiveButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.primary.withValues(alpha: 0.10),
+      shape: const StadiumBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 7,
-                height: 7,
-                margin: const EdgeInsets.only(right: 7),
-                decoration: BoxDecoration(color: theme.colorScheme.primary, shape: BoxShape.circle),
-              ),
+              Icon(Icons.today_outlined, size: 15, color: theme.colorScheme.primary),
+              const SizedBox(width: 6),
               Text(
-                'Active',
+                'Current',
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: CalmTokens.of(theme.brightness).sageDeep,
+                  color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+/// The viewed period's status chip: Active (you're here), Planning (a future period —
+/// preview only, ADR-0023), or Past.
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.status});
+
+  final PeriodStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = CalmTokens.of(theme.brightness);
+    final (label, dot, text) = switch (status) {
+      PeriodStatus.active => ('Active', theme.colorScheme.primary, tokens.sageDeep),
+      PeriodStatus.future => ('Planning', tokens.clay, tokens.clay),
+      PeriodStatus.past => ('Past', tokens.line, theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      decoration: BoxDecoration(
+        color: dot.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            margin: const EdgeInsets.only(right: 7),
+            decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: text,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -468,9 +577,13 @@ class _EmptyPeriod extends StatelessWidget {
 }
 
 class _Fab extends StatelessWidget {
-  const _Fab({required this.extended});
+  const _Fab({required this.extended, required this.allowOneOff});
 
   final bool extended;
+
+  /// Whether the one-off "Add" verb is offered — only on the active period, since a
+  /// one-off is always an actual that files into the current period (ADR-0023).
+  final bool allowOneOff;
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +616,7 @@ class _Fab extends StatelessWidget {
       shadowColor: theme.colorScheme.secondary.withValues(alpha: 0.5),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => showCreateMenu(context),
+        onTap: () => showCreateMenu(context, allowOneOff: allowOneOff),
         child: SizedBox(
           height: extended ? 50 : 56,
           width: extended ? null : 56,
@@ -519,22 +632,30 @@ class _Fab extends StatelessWidget {
 /// body opens its resolve surface (an editable sheet for Ongoing, a read-only detail
 /// for a Payment plan).
 class _UpcomingList extends StatelessWidget {
-  const _UpcomingList({required this.occurrences, required this.nameById});
+  const _UpcomingList({
+    required this.occurrences,
+    required this.nameById,
+    required this.status,
+  });
 
   final List<PeriodOccurrence> occurrences;
   final Map<String, String> nameById;
+  final PeriodStatus status;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    // A future period is planning-only (ADR-0023): its occurrences are a projection,
+    // not yet payable, so the worklist reads as a preview with no resolve actions.
+    final preview = status == PeriodStatus.future;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Text(
-            'Upcoming · ${occurrences.length}',
+            '${preview ? 'Planned' : 'Upcoming'} · ${occurrences.length}',
             style: theme.textTheme.labelLarge?.copyWith(
               color: muted,
               fontWeight: FontWeight.w600,
@@ -553,21 +674,37 @@ class _UpcomingList extends StatelessWidget {
             children: [
               for (var i = 0; i < occurrences.length; i++) ...[
                 if (i > 0) Divider(height: 1, color: theme.colorScheme.outline),
-                _OccurrenceTile(item: occurrences[i], nameById: nameById),
+                _OccurrenceTile(
+                  item: occurrences[i],
+                  nameById: nameById,
+                  preview: preview,
+                ),
               ],
             ],
           ),
         ),
+        if (preview)
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 8),
+            child: Text(
+              'Preview — these become payable once the period begins.',
+              style: theme.textTheme.labelSmall?.copyWith(color: muted),
+            ),
+          ),
       ],
     );
   }
 }
 
 class _OccurrenceTile extends ConsumerWidget {
-  const _OccurrenceTile({required this.item, required this.nameById});
+  const _OccurrenceTile({required this.item, required this.nameById, this.preview = false});
 
   final PeriodOccurrence item;
   final Map<String, String> nameById;
+
+  /// In a future ("Planning") period the occurrence is a projection only — no resolve
+  /// sheet, no Mark paid (ADR-0023). The row renders as a static preview line.
+  final bool preview;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -602,7 +739,7 @@ class _OccurrenceTile extends ConsumerWidget {
     }
 
     return InkWell(
-      onTap: openDetail,
+      onTap: preview ? null : openDetail,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
@@ -642,25 +779,27 @@ class _OccurrenceTile extends ConsumerWidget {
                 color: recurring.isIncome ? tokens.sageDeep : theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(width: 10),
-            Material(
-              color: tokens.sage.withValues(alpha: 0.06),
-              shape: StadiumBorder(side: BorderSide(color: tokens.sage)),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: markPaid,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Text(
-                    'Mark paid',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: tokens.sageDeep,
-                      fontWeight: FontWeight.w600,
+            if (!preview) ...[
+              const SizedBox(width: 10),
+              Material(
+                color: tokens.sage.withValues(alpha: 0.06),
+                shape: StadiumBorder(side: BorderSide(color: tokens.sage)),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: markPaid,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Text(
+                      'Mark paid',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: tokens.sageDeep,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -668,35 +807,34 @@ class _OccurrenceTile extends ConsumerWidget {
   }
 }
 
-/// The current accounting period as the cockpit header needs it — label, calendar
-/// span, day-in-period and the `(year, month)` key, derived from [containingPeriod]
-/// (ADR-0013).
+/// The viewed accounting period as the cockpit header needs it — its display label
+/// and calendar span, anchored on the user's month-start-day (ADR-0013).
 class _Period {
-  _Period({required this.year, required this.month, required this.monthLabel, required this.span});
+  _Period({required this.monthLabel, required this.span});
 
-  final int year;
-  final int month;
   final String monthLabel;
   final String span;
 
-  factory _Period.current(DateTime now, int startDay) {
-    final p = containingPeriod(now, startDay);
-    final start = _anchor(p.year, p.month, startDay);
-    final next = p.month == 12 ? (year: p.year + 1, month: 1) : (year: p.year, month: p.month + 1);
+  /// Header label + calendar span for [key] under [startDay]. The "day X of Y"
+  /// progress suffix is added only when [key] is the period containing [now] — for
+  /// any other browsed period it would be meaningless, so the span is just the range.
+  factory _Period.forKey(PeriodKey key, int startDay, DateTime now) {
+    final start = _anchor(key.year, key.month, startDay);
+    final next = key.month == 12 ? (year: key.year + 1, month: 1) : (year: key.year, month: key.month + 1);
     final endExclusive = _anchor(next.year, next.month, startDay);
     final lastDay = endExclusive.subtract(const Duration(days: 1));
 
     final today = DateTime(now.year, now.month, now.day);
-    final dayOfPeriod = today.difference(start).inDays + 1;
-    final totalDays = endExclusive.difference(start).inDays;
+    final isActive = !today.isBefore(start) && today.isBefore(endExclusive);
 
-    final span = '${_shortMonths[start.month - 1]} ${start.day} – ${_shortMonths[lastDay.month - 1]} ${lastDay.day}'
-        ' · day $dayOfPeriod of $totalDays';
+    final range = '${_shortMonths[start.month - 1]} ${start.day} – '
+        '${_shortMonths[lastDay.month - 1]} ${lastDay.day}';
+    final span = isActive
+        ? '$range · day ${today.difference(start).inDays + 1} of ${endExclusive.difference(start).inDays}'
+        : range;
 
     return _Period(
-      year: p.year,
-      month: p.month,
-      monthLabel: '${_fullMonths[p.month - 1]} ${p.year}',
+      monthLabel: '${_fullMonths[key.month - 1]} ${key.year}',
       span: span,
     );
   }
