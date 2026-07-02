@@ -84,6 +84,7 @@ class _ResolveOngoingSheetState extends ConsumerState<_ResolveOngoingSheet> {
           entryId: recurringUuidV4(),
           occurredAt: _date,
           lines: [RecurringLineDraft(amount: amount, categoryId: _categoryId)],
+          description: widget.recurring.name,
         );
     if (!mounted) return;
     Navigator.of(context).pop();

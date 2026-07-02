@@ -13,12 +13,14 @@ Future<void> markOccurrencePaidAsPlanned(
   WidgetRef ref, {
   required String recurringId,
   required Occurrence occurrence,
+  String? description,
 }) {
   return ref.read(recurringOutboxProvider).confirm(
         recurringId: recurringId,
         occurrenceRef: occurrence.occurrenceRef,
         entryId: recurringUuidV4(),
         occurredAt: occurrence.dueDate,
+        description: description,
       );
 }
 

@@ -54,7 +54,8 @@ class _PlanOccurrenceSheet extends ConsumerWidget {
   }
 
   Future<void> _markPaid(BuildContext context, WidgetRef ref) async {
-    await markOccurrencePaidAsPlanned(ref, recurringId: recurring.id, occurrence: occurrence);
+    await markOccurrencePaidAsPlanned(
+        ref, recurringId: recurring.id, occurrence: occurrence, description: recurring.name);
     if (context.mounted) Navigator.of(context).pop();
   }
 

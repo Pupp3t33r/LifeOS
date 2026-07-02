@@ -586,7 +586,8 @@ class _OccurrenceTile extends ConsumerWidget {
     final due = 'due ${_shortMonths[occ.dueDate.month - 1]} ${occ.dueDate.day}';
 
     Future<void> markPaid() async {
-      await markOccurrencePaidAsPlanned(ref, recurringId: recurring.id, occurrence: occ);
+      await markOccurrencePaidAsPlanned(
+          ref, recurringId: recurring.id, occurrence: occ, description: recurring.name);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked paid')));
       }

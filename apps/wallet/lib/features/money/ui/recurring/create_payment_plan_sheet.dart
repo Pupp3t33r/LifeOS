@@ -357,13 +357,26 @@ class _BalanceBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
-    final ok = balanced;
-    final color = ok ? tokens.sage : tokens.clay;
-    final text = ok
+    // Nothing to balance yet (empty, or one side still empty at zero) reads as a
+    // neutral prompt, not an error.
+    final neutral = !balanced && remainingCents == 0;
+    final color = balanced
+        ? tokens.sage
+        : neutral
+            ? theme.colorScheme.onSurface.withValues(alpha: 0.55)
+            : tokens.clay;
+    final icon = balanced
+        ? Icons.check_circle_outline
+        : neutral
+            ? Icons.info_outline
+            : Icons.error_outline;
+    final text = balanced
         ? 'Balanced — ${formatMagnitude(0, currency)} left'
-        : remainingCents > 0
-            ? '${formatMagnitude(remainingCents / 100, currency)} still to schedule'
-            : '${formatMagnitude(remainingCents / 100, currency)} over — remove a payment';
+        : neutral
+            ? 'Add items and payments that balance'
+            : remainingCents > 0
+                ? '${formatMagnitude(remainingCents / 100, currency)} still to schedule'
+                : '${formatMagnitude(remainingCents / 100, currency)} over — remove a payment';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
       decoration: BoxDecoration(
@@ -373,7 +386,7 @@ class _BalanceBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(ok ? Icons.check_circle_outline : Icons.error_outline, size: 18, color: color),
+          Icon(icon, size: 18, color: color),
           const SizedBox(width: 9),
           Expanded(child: Text(text, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface))),
         ],
