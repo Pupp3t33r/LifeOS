@@ -31,8 +31,12 @@ internal static class RecurringMapping
     }
 
     public static ScheduleLine ToScheduleLine(
-        ScheduleLineRequest request, FlowDirection direction, string currency) =>
-        new(request.LineId, request.DueDate, ToLines(request.Lines, direction, currency));
+        ScheduleLineRequest request, FlowDirection direction, string currency)
+    {
+        var sign = direction == FlowDirection.Out ? -1m : 1m;
+        return new ScheduleLine(
+            request.LineId, request.DueDate, new CurrencyAmount(sign * request.Amount, currency));
+    }
 
     public static RecurringResponse ToResponse(RecurringPayment recurring)
     {
@@ -52,11 +56,12 @@ internal static class RecurringMapping
             recurring.Rule,
             recurring.EstimateLines,
             estimated,
-            recurring.ScheduleLines.Select(x => ToScheduleLineResponse(x, recurring.Currency)).ToList(),
+            recurring.Items,
+            recurring.ScheduleLines.Select(ToScheduleLineResponse).ToList(),
             StatusString(recurring.Status),
             recurring.CreatedAt);
     }
 
-    private static ScheduleLineResponse ToScheduleLineResponse(ScheduleLine line, string currency) =>
-        new(line.LineId, line.DueDate, line.Lines, new CurrencyAmount(line.Total, currency));
+    private static ScheduleLineResponse ToScheduleLineResponse(ScheduleLine line) =>
+        new(line.LineId, line.DueDate, line.Amount);
 }

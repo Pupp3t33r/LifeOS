@@ -9,8 +9,11 @@ public class RecurringPaymentTests
 {
     private static readonly DateTimeOffset Now = DateTimeOffset.Parse("2026-07-01T00:00:00Z");
 
-    private static Line Out(decimal amount, string currency = "USD") =>
-        new(null, new CurrencyAmount(-amount, currency), null);
+    private static Line Out(decimal amount, string currency = "USD", Guid? category = null) =>
+        new(null, new CurrencyAmount(-amount, currency), category);
+
+    private static ScheduleLine Pay(Guid lineId, DateOnly due, decimal amount, string currency = "USD") =>
+        new(lineId, due, new CurrencyAmount(-amount, currency));
 
     private static RecurringPayment Rehydrate(RecurringPaymentCreated created)
     {
@@ -24,10 +27,10 @@ public class RecurringPaymentTests
         new MonthlyRule(new DateOnly(2026, 1, 1), new NeverEnds(), 1, [new OnDayOfMonth(1)]),
         [Out(1000m)], Now);
 
-    private static RecurringPaymentCreated NewMaterialized(params ScheduleLine[] lines) =>
-        RecurringPayment.CreateMaterialized(
-            Guid.NewGuid(), "owner-1", "Laptop installments", FlowDirection.Out, "USD", null, null,
-            lines, Now);
+    // A minimal balanced plan: one $200 item financed by one $200 payment.
+    private static RecurringPaymentCreated NewMaterialized() => RecurringPayment.CreateMaterialized(
+        Guid.NewGuid(), "owner-1", "Laptop", FlowDirection.Out, "USD", null, null,
+        [Out(200m)], [Pay(Guid.NewGuid(), new DateOnly(2026, 2, 1), 200m)], Now);
 
     [Fact]
     public void CreateLive_SetsRuleAndEstimate()
@@ -37,19 +40,103 @@ public class RecurringPaymentTests
         Assert.Equal(ScheduleMode.Live, agg.Mode);
         Assert.IsType<MonthlyRule>(agg.Rule);
         Assert.Equal(-1000m, Assert.Single(agg.EstimateLines).Amount.Amount);
+        Assert.Empty(agg.Items);
         Assert.Empty(agg.ScheduleLines);
         Assert.Equal(RecurringStatus.Active, agg.Status);
     }
 
     [Fact]
-    public void CreateMaterialized_StoresLines()
+    public void CreateMaterialized_StoresItemsAndBareSchedule()
     {
-        var line = new ScheduleLine(Guid.NewGuid(), new DateOnly(2026, 2, 1), [Out(200m)]);
-        var agg = Rehydrate(NewMaterialized(line));
+        var agg = Rehydrate(NewMaterialized());
 
         Assert.Equal(ScheduleMode.Materialized, agg.Mode);
         Assert.Null(agg.Rule);
-        Assert.Equal(-200m, Assert.Single(agg.ScheduleLines).Total);
+        Assert.Empty(agg.EstimateLines);
+        Assert.Equal(-200m, Assert.Single(agg.Items).Amount.Amount);
+        Assert.Equal(-200m, Assert.Single(agg.ScheduleLines).Amount.Amount);
+    }
+
+    [Fact]
+    public void CreateMaterialized_Unbalanced_Throws()
+    {
+        // Items total -171, payments total -170 → rejected.
+        Assert.Throws<InvalidOperationException>(() => RecurringPayment.CreateMaterialized(
+            Guid.NewGuid(), "owner-1", "Pre-order", FlowDirection.Out, "USD", null, null,
+            [Out(90m), Out(81m)],
+            [Pay(Guid.NewGuid(), new DateOnly(2026, 2, 1), 85m),
+             Pay(Guid.NewGuid(), new DateOnly(2026, 3, 1), 85m)],
+            Now));
+    }
+
+    [Fact]
+    public void CreateMaterialized_NoPayments_Throws()
+    {
+        Assert.Throws<ArgumentException>(() => RecurringPayment.CreateMaterialized(
+            Guid.NewGuid(), "owner-1", "Pre-order", FlowDirection.Out, "USD", null, null,
+            [Out(200m)], [], Now));
+    }
+
+    [Fact]
+    public void CreateMaterialized_DuplicateLineId_Throws()
+    {
+        var id = Guid.NewGuid();
+        Assert.Throws<ArgumentException>(() => RecurringPayment.CreateMaterialized(
+            Guid.NewGuid(), "owner-1", "Plan", FlowDirection.Out, "USD", null, null,
+            [Out(200m)],
+            [Pay(id, new DateOnly(2026, 2, 1), 100m), Pay(id, new DateOnly(2026, 3, 1), 100m)],
+            Now));
+    }
+
+    [Fact]
+    public void SliceForOccurrence_EvenPlan_SplitsItemsProportionally()
+    {
+        // The board-game pledge: base -90 + three addons (-36/-27/-18) = -171, in 3×-57.
+        var games = Guid.NewGuid();
+        var p1 = Guid.NewGuid();
+        var p2 = Guid.NewGuid();
+        var p3 = Guid.NewGuid();
+        var agg = Rehydrate(RecurringPayment.CreateMaterialized(
+            Guid.NewGuid(), "owner-1", "Board game pledge", FlowDirection.Out, "USD", null, null,
+            [Out(90m, category: games), Out(36m, category: games), Out(27m, category: games), Out(18m, category: games)],
+            [Pay(p1, new DateOnly(2026, 2, 1), 57m),
+             Pay(p2, new DateOnly(2026, 3, 1), 57m),
+             Pay(p3, new DateOnly(2026, 4, 1), 57m)],
+            Now));
+
+        var slice = agg.SliceForOccurrence(p1);
+
+        // Each item scaled by 57/171 = 1/3: 30 / 12 / 9 / 6, summing to the payment.
+        Assert.Equal(new[] { -30m, -12m, -9m, -6m }, slice.Select(x => x.Amount.Amount));
+        Assert.All(slice, x => Assert.Equal(games, x.CategoryId));
+        Assert.Equal(-57m, slice.Sum(x => x.Amount.Amount));
+    }
+
+    [Fact]
+    public void SliceForOccurrence_RoundingCase_EachPaymentSumsExact_AndCumulativeExact()
+    {
+        // Three $1.00 items over three $1.00 payments: 1/3 splits force cent rounding.
+        var ids = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+        var agg = Rehydrate(RecurringPayment.CreateMaterialized(
+            Guid.NewGuid(), "owner-1", "Trio", FlowDirection.Out, "USD", null, null,
+            [Out(1m), Out(1m), Out(1m)],
+            [Pay(ids[0], new DateOnly(2026, 2, 1), 1m),
+             Pay(ids[1], new DateOnly(2026, 3, 1), 1m),
+             Pay(ids[2], new DateOnly(2026, 4, 1), 1m)],
+            Now));
+
+        var cumulative = new decimal[3];
+        foreach (var id in ids)
+        {
+            var slice = agg.SliceForOccurrence(id);
+            Assert.Equal(-1.00m, slice.Sum(x => x.Amount.Amount));   // each payment balances
+            for (var j = 0; j < 3; j++)
+            {
+                cumulative[j] += slice[j].Amount.Amount;
+            }
+        }
+
+        Assert.All(cumulative, x => Assert.Equal(-1.00m, x));   // every item fully allocated
     }
 
     [Fact]
@@ -74,43 +161,17 @@ public class RecurringPaymentTests
     }
 
     [Fact]
-    public void ScheduleLines_AddEditRemove_MutateList()
+    public void Cancel_RecordsRefundDisposition_AndIsTerminal()
     {
         var agg = Rehydrate(NewMaterialized());
-        var id = Guid.NewGuid();
 
-        agg.Apply(agg.AddScheduleLine(new ScheduleLine(id, new DateOnly(2026, 3, 1), [Out(100m)])));
-        Assert.Equal(-100m, Assert.Single(agg.ScheduleLines).Total);
-
-        agg.Apply(agg.EditScheduleLine(new ScheduleLine(id, new DateOnly(2026, 3, 5), [Out(150m)])));
-        Assert.Equal(-150m, agg.ScheduleLines.Single().Total);
-        Assert.Equal(new DateOnly(2026, 3, 5), agg.ScheduleLines.Single().DueDate);
-
-        agg.Apply(agg.RemoveScheduleLine(id));
-        Assert.Empty(agg.ScheduleLines);
-    }
-
-    [Fact]
-    public void AddScheduleLine_DuplicateId_Throws()
-    {
-        var agg = Rehydrate(NewMaterialized());
-        var id = Guid.NewGuid();
-        agg.Apply(agg.AddScheduleLine(new ScheduleLine(id, new DateOnly(2026, 3, 1), [Out(100m)])));
-
-        Assert.Throws<ArgumentException>(() =>
-            agg.AddScheduleLine(new ScheduleLine(id, new DateOnly(2026, 4, 1), [Out(100m)])));
-    }
-
-    [Fact]
-    public void Cancel_IsTerminal_BlocksFurtherEdits()
-    {
-        var agg = Rehydrate(NewLive());
-
-        agg.Apply(agg.Cancel(Now));
+        var cancelled = agg.Cancel(refunded: true, Now);
+        Assert.True(cancelled.Refunded);
+        agg.Apply(cancelled);
         Assert.Equal(RecurringStatus.Cancelled, agg.Status);
 
         Assert.Throws<InvalidOperationException>(() => agg.EditHeader("New name", null, null));
-        Assert.Throws<InvalidOperationException>(() => agg.Cancel(Now));
+        Assert.Throws<InvalidOperationException>(() => agg.Cancel(false, Now));
     }
 
     [Fact]

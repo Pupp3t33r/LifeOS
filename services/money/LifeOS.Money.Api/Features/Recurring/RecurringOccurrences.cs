@@ -7,8 +7,8 @@ namespace LifeOS.Money.Api.Features.Recurring;
 /// Resolves an occurrence reference (from get-occurrences) back to its due date and
 /// default line breakdown on the owning recurring payment — shared by confirm and
 /// skip. For Live the ref is the due date (<c>yyyy-MM-dd</c>) and the breakdown is the
-/// estimate; for Materialized the ref is a schedule LineId and both come from that
-/// line.
+/// estimate; for Materialized the ref is a schedule LineId, the due date comes from that
+/// payment, and the breakdown is its **proportional slice** of the plan's items (ADR-0028).
 internal static class RecurringOccurrences
 {
     public static bool TryResolve(
@@ -34,7 +34,7 @@ internal static class RecurringOccurrences
         if (line is not null)
         {
             dueDate = line.DueDate;
-            lines = line.Lines;
+            lines = recurring.SliceForOccurrence(line.LineId);
             return true;
         }
 

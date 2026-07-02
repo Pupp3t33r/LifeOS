@@ -10,12 +10,18 @@ namespace LifeOS.Money.Api.Domain;
 ///
 /// Two schedule modes: <see cref="ScheduleMode.Live"/> (a <see cref="Recurring.RecurrenceRule"/>
 /// whose occurrences are computed) and <see cref="ScheduleMode.Materialized"/> (a
-/// finite, editable <see cref="ScheduleLines"/> list — debt/installments). Edits are
-/// in-place and forward-only for Live; per-line for Materialized. "Completed" is a
-/// derived display state, not a status here.
+/// finite payment plan — debt/installments/a pre-order). Both hold their line-item
+/// *contents* once, at the root (ADR-0028): Live in <see cref="EstimateLines"/>,
+/// Materialized in <see cref="Items"/>. A Materialized <see cref="ScheduleLines"/> entry
+/// is then **bare money** (a when-and-how-much), and confirming one records a
+/// proportional slice of the items (see <see cref="SliceForOccurrence"/>). Live edits
+/// are in-place and forward-only (rule/header); a Materialized plan is authored once and
+/// **immutable except cancellation** — there is no per-line add/edit/remove (ADR-0028).
+/// "Completed" is a derived display state, not a status here.
 ///
-/// HTTP-facing guards (ownership, not-active → 409, wrong-mode, missing line → 404)
-/// live in the endpoints; the aggregate methods throw plain exceptions as backstops.
+/// HTTP-facing guards (ownership, not-active → 409, wrong-mode → 409, unknown
+/// occurrence → 404) live in the endpoints; the aggregate methods throw plain
+/// exceptions as backstops.
 public sealed class RecurringPayment
 {
     public Guid Id { get; set; }
@@ -31,10 +37,15 @@ public sealed class RecurringPayment
     public RecurrenceRule? Rule { get; set; }
 
     /// The per-occurrence line breakdown for a Live payment (ADR-0019). Empty for
-    /// Materialized (each <see cref="ScheduleLine"/> carries its own lines).
+    /// Materialized (which states its contents in <see cref="Items"/>).
     public IReadOnlyList<Line> EstimateLines { get; set; } = [];
 
-    /// The Materialized schedule. Empty for Live.
+    /// The line-item contents of a Materialized plan (ADR-0028) — *what* the plan is
+    /// buying, each with its own category (and, later, wishlist link). Empty for Live.
+    /// The plan's payments (<see cref="ScheduleLines"/>) must sum to these (§3).
+    public IReadOnlyList<Line> Items { get; set; } = [];
+
+    /// The Materialized schedule — bare money payments (ADR-0028). Empty for Live.
     public List<ScheduleLine> ScheduleLines { get; set; } = new();
 
     public RecurringStatus Status { get; set; } = RecurringStatus.Active;
@@ -58,7 +69,7 @@ public sealed class RecurringPayment
         EnsureRuleIsEnumerable(rule);
         return new RecurringPaymentCreated(
             id, ownerId, name, direction, currency, categoryId, accountId,
-            ScheduleMode.Live, rule, estimateLines, [], createdAt);
+            ScheduleMode.Live, rule, estimateLines, [], [], createdAt);
     }
 
     public static RecurringPaymentCreated CreateMaterialized(
@@ -69,23 +80,49 @@ public sealed class RecurringPayment
         string currency,
         Guid? categoryId,
         Guid? accountId,
-        IReadOnlyList<ScheduleLine> lines,
+        IReadOnlyList<Line> items,
+        IReadOnlyList<ScheduleLine> scheduleLines,
         DateTimeOffset createdAt)
     {
         ValidateHeader(name, currency);
-        foreach (var line in lines)
+        ValidateLines(items, currency);
+
+        if (scheduleLines.Count == 0)
         {
-            ValidateLines(line.Lines, currency);
+            throw new ArgumentException(
+                "A payment plan requires at least one scheduled payment.", nameof(scheduleLines));
         }
 
-        if (lines.Select(x => x.LineId).Distinct().Count() != lines.Count)
+        if (scheduleLines.Any(x => x.Amount.Amount == 0))
         {
-            throw new ArgumentException("Schedule line ids must be unique.", nameof(lines));
+            throw new ArgumentException(
+                "Schedule payment amounts must be non-zero.", nameof(scheduleLines));
+        }
+
+        if (scheduleLines.Any(x => x.Amount.Currency != currency))
+        {
+            throw new InvalidOperationException(
+                "All scheduled payments must share the recurring payment's currency (ADR-0019).");
+        }
+
+        if (scheduleLines.Select(x => x.LineId).Distinct().Count() != scheduleLines.Count)
+        {
+            throw new ArgumentException("Schedule line ids must be unique.", nameof(scheduleLines));
+        }
+
+        // Balance invariant (ADR-0028 §3): the plan's payments must sum to its items.
+        var itemsTotal = items.Sum(x => x.Amount.Amount);
+        var scheduleTotal = scheduleLines.Sum(x => x.Amount.Amount);
+        if (itemsTotal != scheduleTotal)
+        {
+            throw new InvalidOperationException(
+                $"A payment plan must balance: scheduled payments total {scheduleTotal} " +
+                $"but items total {itemsTotal} (ADR-0028).");
         }
 
         return new RecurringPaymentCreated(
             id, ownerId, name, direction, currency, categoryId, accountId,
-            ScheduleMode.Materialized, null, [], lines, createdAt);
+            ScheduleMode.Materialized, null, [], items, scheduleLines, createdAt);
     }
 
     public RuleChanged ChangeRule(RecurrenceRule rule, DateTimeOffset changedAt)
@@ -97,34 +134,21 @@ public sealed class RecurringPayment
         return new RuleChanged(Id, rule, changedAt);
     }
 
-    public ScheduleLineAdded AddScheduleLine(ScheduleLine line)
+    /// The proportional slice of the plan's <see cref="Items"/> financed by the payment
+    /// <paramref name="lineId"/> (ADR-0028 §4) — the categorised lines a confirm records
+    /// on the AccountingPeriod. Deterministic and cumulative-exact across the plan;
+    /// payments are ordered chronologically for the cumulative split. Materialized only.
+    public IReadOnlyList<Line> SliceForOccurrence(Guid lineId)
     {
-        RequireActive();
-        RequireMode(ScheduleMode.Materialized);
-        ValidateLines(line.Lines, Currency);
-        if (ScheduleLines.Any(x => x.LineId == line.LineId))
+        var ordered = ScheduleLines.OrderBy(x => x.DueDate).ThenBy(x => x.LineId).ToList();
+        var index = ordered.FindIndex(x => x.LineId == lineId);
+        if (index < 0)
         {
-            throw new ArgumentException($"Schedule line '{line.LineId}' already exists.", nameof(line));
+            throw new ArgumentException($"Schedule line '{lineId}' does not exist.", nameof(lineId));
         }
 
-        return new ScheduleLineAdded(Id, line);
-    }
-
-    public ScheduleLineEdited EditScheduleLine(ScheduleLine line)
-    {
-        RequireActive();
-        RequireMode(ScheduleMode.Materialized);
-        ValidateLines(line.Lines, Currency);
-        RequireLineExists(line.LineId);
-        return new ScheduleLineEdited(Id, line);
-    }
-
-    public ScheduleLineRemoved RemoveScheduleLine(Guid lineId)
-    {
-        RequireActive();
-        RequireMode(ScheduleMode.Materialized);
-        RequireLineExists(lineId);
-        return new ScheduleLineRemoved(Id, lineId);
+        var amounts = ordered.Select(x => x.Amount.Amount).ToList();
+        return ProportionalAllocation.Slice(Items, amounts, index);
     }
 
     public RecurringPaymentEdited EditHeader(string name, Guid? categoryId, Guid? accountId)
@@ -134,13 +158,15 @@ public sealed class RecurringPayment
         return new RecurringPaymentEdited(Id, name, categoryId, accountId);
     }
 
-    public RecurringPaymentCancelled Cancel(DateTimeOffset cancelledAt)
+    /// Cancel a recurring payment (terminal, ADR-0017). <paramref name="refunded"/>
+    /// records whether the cancellation carries a refund (ADR-0028 §6) — for a payment
+    /// plan the user chooses refund / no-refund; the refund flow itself is a separate,
+    /// later concern. Live cancels pass <c>false</c>.
+    public RecurringPaymentCancelled Cancel(bool refunded, DateTimeOffset cancelledAt)
     {
         RequireActive();
-        return new RecurringPaymentCancelled(Id, cancelledAt);
+        return new RecurringPaymentCancelled(Id, refunded, cancelledAt);
     }
-
-    public bool HasScheduleLine(Guid lineId) => ScheduleLines.Any(x => x.LineId == lineId);
 
     /// A detached copy for building an endpoint response: a mutation handler applies
     /// the just-emitted event to this clone to render the post-state, without touching
@@ -159,6 +185,7 @@ public sealed class RecurringPayment
         Mode = Mode,
         Rule = Rule,
         EstimateLines = EstimateLines,
+        Items = Items,
         ScheduleLines = ScheduleLines.ToList(),
         Status = Status,
         CreatedAt = CreatedAt,
@@ -176,26 +203,13 @@ public sealed class RecurringPayment
         Mode = @event.Mode;
         Rule = @event.Rule;
         EstimateLines = @event.EstimateLines;
+        Items = @event.Items;
         ScheduleLines = @event.ScheduleLines.ToList();
         Status = RecurringStatus.Active;
         CreatedAt = @event.CreatedAt;
     }
 
     public void Apply(RuleChanged @event) => Rule = @event.Rule;
-
-    public void Apply(ScheduleLineAdded @event) => ScheduleLines.Add(@event.Line);
-
-    public void Apply(ScheduleLineEdited @event)
-    {
-        var index = ScheduleLines.FindIndex(x => x.LineId == @event.Line.LineId);
-        if (index >= 0)
-        {
-            ScheduleLines[index] = @event.Line;
-        }
-    }
-
-    public void Apply(ScheduleLineRemoved @event) =>
-        ScheduleLines.RemoveAll(x => x.LineId == @event.LineId);
 
     public void Apply(RecurringPaymentEdited @event)
     {
@@ -220,14 +234,6 @@ public sealed class RecurringPayment
         {
             throw new InvalidOperationException(
                 $"Operation requires {mode} mode; this recurring payment is {Mode}.");
-        }
-    }
-
-    private void RequireLineExists(Guid lineId)
-    {
-        if (!HasScheduleLine(lineId))
-        {
-            throw new ArgumentException($"Schedule line '{lineId}' does not exist.", nameof(lineId));
         }
     }
 

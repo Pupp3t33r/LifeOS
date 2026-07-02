@@ -4,8 +4,10 @@ using LifeOS.Money.Api.Domain.Recurring;
 namespace LifeOS.Money.Api.Features.Recurring;
 
 /// A recurring payment's full definition. For Live, <see cref="Rule"/> +
-/// <see cref="EstimateLines"/> + <see cref="EstimatedAmount"/> (Σ estimate) are set
-/// and <see cref="ScheduleLines"/> is empty; for Materialized it is the reverse.
+/// <see cref="EstimateLines"/> + <see cref="EstimatedAmount"/> (Σ estimate) are set and
+/// <see cref="Items"/>/<see cref="ScheduleLines"/> are empty; for Materialized it is the
+/// reverse — <see cref="Items"/> is the plan's contents and <see cref="ScheduleLines"/>
+/// its bare-money payments (ADR-0028).
 public sealed record RecurringResponse(
     Guid Id,
     string OwnerId,
@@ -18,6 +20,7 @@ public sealed record RecurringResponse(
     RecurrenceRule? Rule,
     IReadOnlyList<Line> EstimateLines,
     CurrencyAmount? EstimatedAmount,
+    IReadOnlyList<Line> Items,
     IReadOnlyList<ScheduleLineResponse> ScheduleLines,
     string Status,
     DateTimeOffset CreatedAt);

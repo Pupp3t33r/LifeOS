@@ -17,12 +17,15 @@ public class RecurringEndpointsTests : IClassFixture<MoneyApiFactory>
         id, "Rent", "out", "USD", null, null, "live",
         new MonthlyRule(new DateOnly(2026, 1, 1), new NeverEnds(), 1, [new OnDayOfMonth(1)]),
         [new RecurringLineRequest(1000m, null, "Rent")],
+        null,
         null);
 
+    // A balanced plan: one item worth 200×N, financed by N monthly $200 payments.
     private static CreateRecurringRequest MaterializedInstallments(Guid id, params Guid[] lineIds) => new(
         id, "Laptop", "out", "USD", null, null, "materialized", null, null,
+        [new RecurringLineRequest(200m * lineIds.Length, null, "Laptop")],
         lineIds.Select((lineId, i) => new ScheduleLineRequest(
-            lineId, new DateOnly(2026, 2 + i, 1), [new RecurringLineRequest(200m, null, null)])).ToList());
+            lineId, new DateOnly(2026, 2 + i, 1), 200m)).ToList());
 
     [Fact]
     public async Task CreateLive_ReturnsRuleEstimateAndDerivedAmount()
@@ -38,10 +41,11 @@ public class RecurringEndpointsTests : IClassFixture<MoneyApiFactory>
         Assert.IsType<MonthlyRule>(body.Rule);
         Assert.Equal(-1000m, body.EstimatedAmount!.Amount);   // signed: an 'out'
         Assert.Equal(-1000m, Assert.Single(body.EstimateLines).Amount.Amount);
+        Assert.Empty(body.Items);
     }
 
     [Fact]
-    public async Task CreateMaterialized_StoresLinesWithTotals()
+    public async Task CreateMaterialized_StoresItemsAndBarePayments()
     {
         var client = _factory.CreateClientFor(TestUsers.Alice);
 
@@ -51,8 +55,26 @@ public class RecurringEndpointsTests : IClassFixture<MoneyApiFactory>
         var body = await response.Content.ReadFromJsonAsync<RecurringResponse>();
         Assert.Equal("materialized", body!.Mode);
         Assert.Null(body.Rule);
+        Assert.Equal(-400m, Assert.Single(body.Items).Amount.Amount);   // 200 × 2 payments
         Assert.Equal(2, body.ScheduleLines.Count);
-        Assert.All(body.ScheduleLines, x => Assert.Equal(-200m, x.Total.Amount));
+        Assert.All(body.ScheduleLines, x => Assert.Equal(-200m, x.Amount.Amount));
+    }
+
+    [Fact]
+    public async Task CreateMaterialized_Unbalanced_Returns400()
+    {
+        var client = _factory.CreateClientFor(TestUsers.Alice);
+
+        // One $500 item, but the payments only sum to $400 → invalid.
+        var bad = new CreateRecurringRequest(
+            Guid.NewGuid(), "Laptop", "out", "USD", null, null, "materialized", null, null,
+            [new RecurringLineRequest(500m, null, "Laptop")],
+            [new ScheduleLineRequest(Guid.NewGuid(), new DateOnly(2026, 2, 1), 200m),
+             new ScheduleLineRequest(Guid.NewGuid(), new DateOnly(2026, 3, 1), 200m)]);
+
+        var response = await client.PostAsJsonAsync("/api/recurring", bad);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -122,7 +144,7 @@ public class RecurringEndpointsTests : IClassFixture<MoneyApiFactory>
     }
 
     [Fact]
-    public async Task Occurrences_Materialized_ListScheduleLinesInWindow()
+    public async Task Occurrences_Materialized_ListPaymentsInWindow()
     {
         var client = _factory.CreateClientFor(TestUsers.Alice);
         var id = Guid.NewGuid();
@@ -136,6 +158,9 @@ public class RecurringEndpointsTests : IClassFixture<MoneyApiFactory>
         var only = Assert.Single(occurrences!);
         Assert.Equal(l1.ToString(), only.OccurrenceRef);
         Assert.Equal(new DateOnly(2026, 2, 1), only.DueDate);
+        Assert.Equal(-200m, only.ExpectedAmount.Amount);
+        // Its slice of the single $400 item = the $200 this payment covers.
+        Assert.Equal(-200m, only.Lines.Sum(x => x.Amount.Amount));
     }
 
     [Fact]
@@ -158,43 +183,6 @@ public class RecurringEndpointsTests : IClassFixture<MoneyApiFactory>
         var conflict = await client.PutAsJsonAsync(
             $"/api/recurring/{matId}/rule", new ChangeRuleRequest(newRule));
         Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode);
-    }
-
-    [Fact]
-    public async Task ScheduleLines_AddEditRemove_Roundtrip()
-    {
-        var client = _factory.CreateClientFor(TestUsers.Alice);
-        var id = Guid.NewGuid();
-        await client.PostAsJsonAsync("/api/recurring", MaterializedInstallments(id, Guid.NewGuid()));
-
-        var newLineId = Guid.NewGuid();
-        var add = await client.PostAsJsonAsync($"/api/recurring/{id}/schedule-lines",
-            new ScheduleLineRequest(newLineId, new DateOnly(2026, 5, 1), [new RecurringLineRequest(300m, null, null)]));
-        Assert.Equal(HttpStatusCode.OK, add.StatusCode);
-
-        var edit = await client.PutAsJsonAsync($"/api/recurring/{id}/schedule-lines/{newLineId}",
-            new ScheduleLineRequest(newLineId, new DateOnly(2026, 5, 10), [new RecurringLineRequest(350m, null, null)]));
-        var edited = await edit.Content.ReadFromJsonAsync<RecurringResponse>();
-        var line = Assert.Single(edited!.ScheduleLines, x => x.LineId == newLineId);
-        Assert.Equal(-350m, line.Total.Amount);
-        Assert.Equal(new DateOnly(2026, 5, 10), line.DueDate);
-
-        var remove = await client.DeleteAsync($"/api/recurring/{id}/schedule-lines/{newLineId}");
-        var afterRemove = await remove.Content.ReadFromJsonAsync<RecurringResponse>();
-        Assert.DoesNotContain(afterRemove!.ScheduleLines, x => x.LineId == newLineId);
-    }
-
-    [Fact]
-    public async Task AddScheduleLine_OnLive_Conflicts()
-    {
-        var client = _factory.CreateClientFor(TestUsers.Alice);
-        var id = Guid.NewGuid();
-        await client.PostAsJsonAsync("/api/recurring", LiveRent(id));
-
-        var response = await client.PostAsJsonAsync($"/api/recurring/{id}/schedule-lines",
-            new ScheduleLineRequest(Guid.NewGuid(), new DateOnly(2026, 5, 1), [new RecurringLineRequest(100m, null, null)]));
-
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]

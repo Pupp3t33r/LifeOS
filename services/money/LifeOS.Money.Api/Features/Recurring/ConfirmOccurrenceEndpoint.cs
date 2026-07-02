@@ -1,5 +1,6 @@
 using LifeOS.Money.Api.Auth;
 using LifeOS.Money.Api.Domain;
+using LifeOS.Money.Api.Domain.Recurring;
 using LifeOS.Money.Api.Http;
 using Marten;
 using Wolverine.Http;
@@ -35,6 +36,14 @@ public static class ConfirmOccurrenceEndpoint
         {
             throw new NotFoundException(
                 $"Occurrence '{request.OccurrenceRef}' was not found on recurring payment '{id}'.");
+        }
+
+        // A payment plan (Materialized) records its scheduled proportional slice exactly —
+        // no override (ADR-0028 §4). Override remains a Live affordance (variable actuals).
+        if (recurring.Mode == ScheduleMode.Materialized && request.Lines is { Count: > 0 })
+        {
+            throw new BadRequestException(
+                "A payment-plan payment records its scheduled slice; overriding the amount/lines is not supported (ADR-0028).");
         }
 
         var lines = request.Lines is { Count: > 0 }

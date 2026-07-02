@@ -17,6 +17,7 @@ public class RecurringOccurrenceLifecycleTests : IClassFixture<MoneyApiFactory>
         id, "Rent", "out", "USD", null, null, "live",
         new MonthlyRule(new DateOnly(2026, 1, 1), new NeverEnds(), 1, [new OnDayOfMonth(1)]),
         [new RecurringLineRequest(1000m, null, "Rent")],
+        null,
         null);
 
     private async Task<List<OccurrenceResponse>> Occurrences(HttpClient client, Guid id) =>
@@ -109,14 +110,15 @@ public class RecurringOccurrenceLifecycleTests : IClassFixture<MoneyApiFactory>
     }
 
     [Fact]
-    public async Task Materialized_ConfirmScheduleLine_MarksPaid()
+    public async Task Materialized_ConfirmPayment_RecordsSlice_MarksPaid()
     {
         var client = _factory.CreateClientFor(TestUsers.Alice);
         var id = Guid.NewGuid();
         var lineId = Guid.NewGuid();
         await client.PostAsJsonAsync("/api/recurring", new CreateRecurringRequest(
             id, "Laptop", "out", "USD", null, null, "materialized", null, null,
-            [new ScheduleLineRequest(lineId, new DateOnly(2026, 2, 1), [new RecurringLineRequest(200m, null, null)])]));
+            [new RecurringLineRequest(200m, null, "Laptop")],
+            [new ScheduleLineRequest(lineId, new DateOnly(2026, 2, 1), 200m)]));
 
         await client.PostAsJsonAsync($"/api/recurring/{id}/occurrences/confirm",
             new ConfirmOccurrenceRequest(Guid.NewGuid(), lineId.ToString(),
@@ -126,6 +128,57 @@ public class RecurringOccurrenceLifecycleTests : IClassFixture<MoneyApiFactory>
             $"/api/recurring/{id}/occurrences?from=2026-01-01&to=2026-12-31");
         var line = occurrences!.Single(x => x.OccurrenceRef == lineId.ToString());
         Assert.Equal("paid", line.Status);
-        Assert.Equal(-200m, line.ActualAmount!.Amount);
+        Assert.Equal(-200m, line.ActualAmount!.Amount);   // the whole item, one payment
+    }
+
+    [Fact]
+    public async Task Materialized_ConfirmPayment_RejectsLineOverride()
+    {
+        var client = _factory.CreateClientFor(TestUsers.Alice);
+        var id = Guid.NewGuid();
+        var lineId = Guid.NewGuid();
+        await client.PostAsJsonAsync("/api/recurring", new CreateRecurringRequest(
+            id, "Laptop", "out", "USD", null, null, "materialized", null, null,
+            [new RecurringLineRequest(200m, null, "Laptop")],
+            [new ScheduleLineRequest(lineId, new DateOnly(2026, 2, 1), 200m)]));
+
+        // A plan payment records its scheduled slice; overriding is not supported (ADR-0028).
+        var response = await client.PostAsJsonAsync($"/api/recurring/{id}/occurrences/confirm",
+            new ConfirmOccurrenceRequest(Guid.NewGuid(), lineId.ToString(),
+                DateTimeOffset.Parse("2026-02-01T00:00:00Z"),
+                [new RecurringLineRequest(180m, null, null)], null));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Materialized_ConfirmFirstOfThree_RecordsProportionalSlice()
+    {
+        var client = _factory.CreateClientFor(TestUsers.Alice);
+        var id = Guid.NewGuid();
+        var games = Guid.NewGuid();
+        var p1 = Guid.NewGuid();
+        var p2 = Guid.NewGuid();
+        var p3 = Guid.NewGuid();
+        await client.PostAsJsonAsync("/api/recurring", new CreateRecurringRequest(
+            id, "Board game pledge", "out", "USD", null, null, "materialized", null, null,
+            [new RecurringLineRequest(90m, games, "Base game"),
+             new RecurringLineRequest(36m, games, "Addon 1"),
+             new RecurringLineRequest(27m, games, "Addon 2"),
+             new RecurringLineRequest(18m, games, "Addon 3")],
+            [new ScheduleLineRequest(p1, new DateOnly(2026, 2, 1), 57m),
+             new ScheduleLineRequest(p2, new DateOnly(2026, 3, 1), 57m),
+             new ScheduleLineRequest(p3, new DateOnly(2026, 4, 1), 57m)]));
+
+        await client.PostAsJsonAsync($"/api/recurring/{id}/occurrences/confirm",
+            new ConfirmOccurrenceRequest(Guid.NewGuid(), p1.ToString(),
+                DateTimeOffset.Parse("2026-02-01T00:00:00Z"), null, null));
+
+        var occurrences = await client.GetFromJsonAsync<List<OccurrenceResponse>>(
+            $"/api/recurring/{id}/occurrences?from=2026-01-01&to=2026-12-31");
+        var first = occurrences!.Single(x => x.OccurrenceRef == p1.ToString());
+        Assert.Equal("paid", first.Status);
+        Assert.Equal(-57m, first.ActualAmount!.Amount);   // 1/3 of the $171 pledge
+        Assert.Equal("projected", occurrences.Single(x => x.OccurrenceRef == p2.ToString()).Status);
     }
 }

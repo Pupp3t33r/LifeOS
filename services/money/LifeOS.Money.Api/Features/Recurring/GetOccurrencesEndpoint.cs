@@ -82,7 +82,7 @@ public static class GetOccurrencesEndpoint
             .Where(x => x.DueDate >= from && x.DueDate <= to)
             .OrderBy(x => x.DueDate)
             .Select(x => Build(
-                x.DueDate, x.LineId.ToString(), new CurrencyAmount(x.Total, recurring.Currency), x.Lines))
+                x.DueDate, x.LineId.ToString(), x.Amount, recurring.SliceForOccurrence(x.LineId)))
             .ToList();
     }
 

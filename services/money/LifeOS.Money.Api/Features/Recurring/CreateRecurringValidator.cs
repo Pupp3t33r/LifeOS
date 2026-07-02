@@ -41,17 +41,42 @@ public sealed partial class CreateRecurringValidator : AbstractValidator<CreateR
 
         When(x => x.Mode == "materialized", () =>
         {
+            RuleFor(x => x.Items)
+                .NotEmpty()
+                .WithMessage("A payment plan requires at least one item.");
+            RuleForEach(x => x.Items).ChildRules(item =>
+            {
+                item.RuleFor(x => x.Amount).GreaterThan(0);
+                item.RuleFor(x => x.Description).MaximumLength(500);
+            });
+
+            RuleFor(x => x.ScheduleLines)
+                .NotEmpty()
+                .WithMessage("A payment plan requires at least one scheduled payment.");
             RuleForEach(x => x.ScheduleLines).ChildRules(scheduleLine =>
             {
                 scheduleLine.RuleFor(x => x.LineId).NotEqual(Guid.Empty);
-                scheduleLine.RuleFor(x => x.Lines).NotEmpty();
-                scheduleLine.RuleForEach(x => x.Lines).ChildRules(line =>
-                {
-                    line.RuleFor(x => x.Amount).GreaterThan(0);
-                    line.RuleFor(x => x.Description).MaximumLength(500);
-                });
+                scheduleLine.RuleFor(x => x.Amount).GreaterThan(0);
             });
+
+            RuleFor(x => x)
+                .Must(BalancedPlan)
+                .WithMessage("A payment plan must balance: the scheduled payments must sum to the items total (ADR-0028).");
         });
+    }
+
+    // Σ payments == Σ items (magnitudes; direction sets the sign). Emptiness is reported
+    // by the other rules, so a missing side passes here to avoid a duplicate message.
+    private static bool BalancedPlan(CreateRecurringRequest request)
+    {
+        var items = request.Items ?? [];
+        var schedule = request.ScheduleLines ?? [];
+        if (items.Count == 0 || schedule.Count == 0)
+        {
+            return true;
+        }
+
+        return items.Sum(x => x.Amount) == schedule.Sum(x => x.Amount);
     }
 
     [GeneratedRegex(@"^[A-Z]{3}$", RegexOptions.Compiled)]
