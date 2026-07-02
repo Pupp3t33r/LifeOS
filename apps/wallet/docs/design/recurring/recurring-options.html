@@ -89,8 +89,6 @@
   .amt.pos{color:var(--sageDeep)}
   .amt .plan{display:block;font:500 10px/1 var(--body);color:var(--muted);text-align:right;margin-top:4px;text-decoration:line-through}
   .act{flex:0 0 auto;font:600 11.5px/1 var(--body);color:var(--sageDeep);border:1px solid var(--sage);background:rgba(94,126,107,.06);padding:8px 13px;border-radius:999px;white-space:nowrap;margin-left:4px}
-  .addrow{display:flex;align-items:center;gap:9px;padding:12px 16px;color:var(--sageDeep);font-size:12.5px;font-weight:600;background:rgba(94,126,107,.05)}
-  .addrow .pl{width:22px;height:22px;border-radius:999px;border:1.5px dashed var(--sage);display:grid;place-items:center}
 
   .fab{position:absolute;right:22px;bottom:22px;height:50px;padding:0 20px;border-radius:999px;background:var(--clay);color:#fff;font:600 13.5px/50px var(--disp);box-shadow:0 12px 24px -8px rgba(192,122,82,.6);display:flex;align-items:center;gap:9px}
   .fab b{font-size:20px;font-weight:400}
@@ -143,7 +141,9 @@
     <p>A recurring item is not a new kind of thing on screen — it's an <em>Upcoming</em> row you tick off, exactly
       like a planned purchase. Same checkbox, same "Mark paid," same Upcoming→Logged move. <em>Rent</em> −$1,000 on
       the 1st, <em>Utilities</em> ~−$200 on the 15th, <em>Salary</em> +$4,200 on the 25th, plus a <em>Laptop</em>
-      installment. Marking paid logs the planned amount in one tap; open the row to log a different real amount.</p>
+      installment. Marking paid logs the planned amount in one tap. For an <em>Ongoing</em> item you can open the row
+      to log a <em>different</em> real amount; a <em>Payment plan</em> installment (the Laptop) pays exactly as
+      scheduled — one tap, no override.</p>
     <p class="note"><b>Reconciled with your notes:</b> Plan tab untouched. No separate "due" colour or icon — an item
       is just unticked (Upcoming) or ticked (Logged); "due Jul 1" is only a date. <b>Creating</b> a recurring is its
       own dialog from the Home FAB — see <code>create-options.html</code>. All vocabulary borrowed from
@@ -161,6 +161,9 @@
       <p class="why"><b>Why:</b> nothing new to learn — it's the planned-purchase interaction you already designed.
         Income (Salary) uses the same row with a + amount. "Due" was never a state; it's just an unticked row in the
         period you're looking at.</p>
+      <p class="why"><b>Override is Ongoing-only:</b> tapping the row body to log a different real amount applies to
+        <em>Ongoing</em> items (Rent, Utilities). A <em>Payment plan</em> installment (Laptop) records its scheduled
+        slice — <em>Mark paid</em> is the whole interaction, and its row body doesn't open an amount sheet (ADR-0028).</p>
     </div>
     <div class="mocks">
 
@@ -222,7 +225,6 @@
                   <div class="item"><div class="cb done">✓</div>
                     <div class="nm"><div class="n">Groceries · Lidl</div><div class="sub">Jul 11 · Food</div></div>
                     <div class="amt">−$86</div></div>
-                  <div class="addrow"><div class="pl">+</div>Add an expense or income to July</div>
                 </div>
               </div>
             </div>
@@ -262,7 +264,6 @@
                 <div class="item"><div class="cb done">✓</div>
                   <div class="nm"><div class="n">Utilities</div><div class="sub">Jun 15 · ↻ monthly</div></div>
                   <div class="amt">−$180<span class="plan">planned −$200</span></div></div>
-                <div class="addrow"><div class="pl">+</div>Add to July</div>
               </div>
             </div>
           </div>
