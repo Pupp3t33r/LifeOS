@@ -5,7 +5,6 @@ import '../../../../app/theme/calm_tokens.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/wordmark.dart';
 import '../../../security/application/security_providers.dart';
-import 'onboarding_canvas.dart';
 import 'onboarding_controller.dart';
 import 'onboarding_state.dart';
 
@@ -27,8 +26,8 @@ String _currencyLabel(AppLocalizations l10n, String code) => switch (code) {
 
 /// First-run onboarding — "Set up your first month" (Money ADR-0013). Collects
 /// the first savings account and the month start day, the minimum server-owned
-/// config the savings canvas needs. Responsive: a two-column layout (question +
-/// living canvas) on wide screens, stacked (canvas on top) on phones.
+/// config the app needs. A single centred question column, comfortably width-capped
+/// on wide screens; the whole flow scrolls on short viewports.
 ///
 /// The AppBar carries a language switcher (Wallet's first localized surface, see
 /// `apps/wallet/docs/adr/0001-app-localization.md`) so the whole flow can be read
@@ -38,6 +37,7 @@ class OnboardingScreen extends ConsumerWidget {
 
   static const double _wideBreakpoint = 900;
   static const double _maxWidth = 1180;
+  static const double _formMaxWidth = 520;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,11 +46,6 @@ class OnboardingScreen extends ConsumerWidget {
     final biometricsSupported =
         ref.watch(biometricSupportedProvider).maybeWhen(data: (v) => v, orElse: () => false);
 
-    final canvas = OnboardingCanvas(
-      accountName: state.accountName,
-      currency: state.currency,
-      monthStartDay: state.effectiveMonthStartDay,
-    );
     final ask = _Ask(state: state, biometricsSupported: biometricsSupported);
 
     return Scaffold(
@@ -66,28 +61,15 @@ class OnboardingScreen extends ConsumerWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= _wideBreakpoint;
-                if (wide) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(40, 24, 40, 40),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 92, child: ask),
-                        const SizedBox(width: 48),
-                        Expanded(flex: 108, child: canvas),
-                      ],
-                    ),
-                  );
-                }
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      canvas,
-                      const SizedBox(height: 28),
-                      ask,
-                    ],
+                  padding: wide
+                      ? const EdgeInsets.fromLTRB(40, 24, 40, 40)
+                      : const EdgeInsets.fromLTRB(20, 16, 20, 40),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: _formMaxWidth),
+                      child: ask,
+                    ),
                   ),
                 );
               },
