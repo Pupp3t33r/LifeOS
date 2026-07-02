@@ -5,11 +5,16 @@ import '../../../../app/theme/category_colors.dart';
 import '../../application/categories_providers.dart';
 import '../../application/period_flows_providers.dart';
 import '../../application/preferences_providers.dart';
+import '../../application/recurring_providers.dart';
 import '../../domain/category.dart';
 import '../../domain/month_period.dart';
 import '../../domain/money.dart';
 import '../../domain/period_flows.dart';
-import '../add_entry/add_entry_sheet.dart';
+import '../../domain/recurring/recurring_payment.dart';
+import '../recurring/create_menu.dart';
+import '../recurring/occurrence_actions.dart';
+import '../recurring/plan_occurrence_sheet.dart';
+import '../recurring/resolve_ongoing_sheet.dart';
 
 /// Home — the current-period cockpit (Wallet ADR-0002; nav branch 0).
 ///
@@ -44,6 +49,7 @@ class MonthOverviewScreen extends ConsumerWidget {
         .toList();
     final categories = ref.watch(categoriesProvider).value ?? const <Category>[];
     final nameById = {for (final c in categories) c.id: c.name};
+    final upcoming = ref.watch(upcomingOccurrencesProvider(key));
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -68,10 +74,14 @@ class MonthOverviewScreen extends ConsumerWidget {
                         syncedAt: syncedAt,
                       ),
                       const SizedBox(height: 24),
-                      if (entries.isEmpty)
-                        _EmptyPeriod(monthLabel: period.monthLabel)
-                      else
-                        _Worklist(entries: entries, nameById: nameById),
+                      if (upcoming.isNotEmpty) ...[
+                        _UpcomingList(occurrences: upcoming, nameById: nameById),
+                        const SizedBox(height: 24),
+                      ],
+                      if (entries.isNotEmpty)
+                        _Worklist(entries: entries, nameById: nameById)
+                      else if (upcoming.isEmpty)
+                        _EmptyPeriod(monthLabel: period.monthLabel),
                     ],
                   ),
                 ),
@@ -474,7 +484,7 @@ class _Fab extends StatelessWidget {
                 Icon(Icons.add, color: theme.colorScheme.onSecondary),
                 const SizedBox(width: 9),
                 Text(
-                  'Add expense',
+                  'Add',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontFamily: CalmTokens.fontDisplay,
                     fontWeight: FontWeight.w600,
@@ -493,11 +503,164 @@ class _Fab extends StatelessWidget {
       shadowColor: theme.colorScheme.secondary.withValues(alpha: 0.5),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => showAddEntry(context),
+        onTap: () => showCreateMenu(context),
         child: SizedBox(
           height: extended ? 50 : 56,
           width: extended ? null : 56,
           child: Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
+/// The period's due-but-unresolved recurring occurrences (ADR-0017) — the "Upcoming"
+/// worklist. Each is a projected occurrence with a one-tap Mark paid; tapping the row
+/// body opens its resolve surface (an editable sheet for Ongoing, a read-only detail
+/// for a Payment plan).
+class _UpcomingList extends StatelessWidget {
+  const _UpcomingList({required this.occurrences, required this.nameById});
+
+  final List<PeriodOccurrence> occurrences;
+  final Map<String, String> nameById;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            'Upcoming · ${occurrences.length}',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: muted,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border.all(color: theme.colorScheme.outline),
+            borderRadius: BorderRadius.circular(CalmTokens.radiusLg),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              for (var i = 0; i < occurrences.length; i++) ...[
+                if (i > 0) Divider(height: 1, color: theme.colorScheme.outline),
+                _OccurrenceTile(item: occurrences[i], nameById: nameById),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OccurrenceTile extends ConsumerWidget {
+  const _OccurrenceTile({required this.item, required this.nameById});
+
+  final PeriodOccurrence item;
+  final Map<String, String> nameById;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final tokens = CalmTokens.of(theme.brightness);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final recurring = item.recurring;
+    final occ = item.occurrence;
+
+    final firstCategoryId =
+        occ.lines.map((x) => x.categoryId).firstWhere((x) => x != null, orElse: () => null);
+    final dotColor =
+        firstCategoryId != null ? CategoryPalette.forId(firstCategoryId).of(context) : tokens.line;
+    final currency = occ.expectedAmount.currency;
+    final categoryName = occ.lines.length == 1 && firstCategoryId != null ? nameById[firstCategoryId] : null;
+    final due = 'due ${_shortMonths[occ.dueDate.month - 1]} ${occ.dueDate.day}';
+
+    Future<void> markPaid() async {
+      await markOccurrencePaidAsPlanned(ref, recurringId: recurring.id, occurrence: occ);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked paid')));
+      }
+    }
+
+    void openDetail() {
+      if (recurring.mode == ScheduleMode.materialized) {
+        showPlanOccurrence(context, recurring, occ);
+      } else {
+        showResolveOngoing(context, recurring, occ);
+      }
+    }
+
+    return InkWell(
+      onTap: openDetail,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(right: 13),
+              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recurring.name,
+                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    categoryName != null ? '$due · $categoryName' : due,
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              _signed(occ.expectedAmount.amount, currency),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontFamily: CalmTokens.fontDisplay,
+                fontWeight: FontWeight.w600,
+                color: recurring.isIncome ? tokens.sageDeep : theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Material(
+              color: tokens.sage.withValues(alpha: 0.06),
+              shape: StadiumBorder(side: BorderSide(color: tokens.sage)),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: markPaid,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Text(
+                    'Mark paid',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: tokens.sageDeep,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
