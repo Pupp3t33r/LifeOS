@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:54px 40px 80px}
+  .board{max-width:1500px;margin:0 auto}
+  .masthead{color:#EDE7DC;margin-bottom:40px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 32px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:900px;color:#B9B1A3;font-size:14.5px;line-height:1.6}
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+
+  .stage{display:flex;gap:34px;align-items:flex-start}
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative}
+  .desktop{flex:1;min-width:0}.phone{flex:0 0 332px}.phone .screen{border-radius:32px}
+
+  .appbar{display:flex;align-items:center;gap:14px;padding:15px 22px 13px;border-bottom:1px solid var(--line)}
+  .back{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:16px}
+  .title{font:600 18px/1 var(--disp);letter-spacing:-.01em}
+
+  .search{margin:14px 22px 4px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 14px;color:var(--muted);font-size:13px}
+  .search svg{width:17px;height:17px;flex:0 0 17px}
+
+  .body{display:flex}
+  .toc{flex:0 0 200px;padding:14px 8px 22px 18px;display:flex;flex-direction:column;gap:2px}
+  .toc .t{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:12px;font-size:13px;color:var(--muted)}
+  .toc .t svg{width:18px;height:18px;flex:0 0 18px}
+  .toc .t.on{background:rgba(94,126,107,.10);color:var(--sageDeep);font-weight:600}
+
+  .content{flex:1;min-width:0;padding:8px 22px 30px}
+  .content.wide{max-width:660px}
+
+  .grp{margin-top:16px}
+  .grphd{display:flex;align-items:center;gap:9px;padding:0 4px 12px;color:var(--muted)}
+  .grphd svg{width:18px;height:18px}
+  .grphd .g{font:600 12px/1 var(--body);letter-spacing:.3px;text-transform:uppercase}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:24px;overflow:hidden}
+  .row{padding:14px 16px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .top{display:flex;align-items:center;gap:12px}
+  .row .lbl{flex:1;min-width:0}
+  .row .lbl .n{font-size:14px;color:var(--ink);font-weight:500}
+  .row .lbl .s{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+
+  /* controls */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--bone);margin-top:12px}
+  .seg span{font:600 12.5px/1 var(--body);padding:8px 16px;border-radius:999px;color:var(--muted)}
+  .seg span.on{background:var(--sage);color:#fff}
+  .dd{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bone);border-radius:12px;padding:9px 13px;font:600 13px/1 var(--disp);color:var(--ink);white-space:nowrap}
+  .dd .cx{font-size:11px;color:var(--muted)}
+  .sw{width:44px;height:26px;border-radius:999px;background:var(--sage);position:relative;flex:0 0 auto}
+  .sw::after{content:"";position:absolute;top:3px;left:21px;width:20px;height:20px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .note{font-size:11.5px;color:var(--clay);margin-top:9px;display:flex;align-items:center;gap:6px}
+  .note::before{content:"⚠";font-size:12px}
+
+  .pbody{padding:0 0 20px}
+  .phone .search{margin:14px 16px 4px}
+  .phone .content{padding:6px 16px 26px}
+  @media(max-width:1160px){.stage{flex-direction:column}.phone{align-self:center}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-palette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="9.5" r="1"/><circle cx="15.5" cy="9" r="1"/><circle cx="16.5" cy="13.5" r="1"/><path d="M12 21a3 3 0 0 1 0-6 2 2 0 0 0 0-4"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><path d="M16 14.5h2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+</svg>
+
+<div class="board">
+  <div class="masthead">
+    <div class="kicker">wallet · Settings</div>
+    <h1>Settings — a <b>searchable, grouped</b> page</h1>
+    <p>A single scroll of grouped settings (IDE/Discord-style): a filter narrows by name, and a contents rail on wide screens jumps to — and highlights — the group in view. Only settings with a working write path ship: theme + language (device-local), display currency + month-start (Money ADR-0013), and the biometric app-lock (native only, ADR-0014). Account name / opening balance are absent — immutable server-side, no edit endpoint.</p>
+  </div>
+
+  <div class="stage">
+
+    <!-- DESKTOP -->
+    <div class="desktop">
+      <div class="label">Desktop · web / windows</div>
+      <div class="screen">
+        <div class="appbar"><div class="back">‹</div><div class="title">Settings</div></div>
+        <div class="search"><svg><use href="#i-search"/></svg>Search settings</div>
+        <div class="body">
+          <div class="toc">
+            <div class="t on"><svg><use href="#i-palette"/></svg>Appearance</div>
+            <div class="t"><svg><use href="#i-wallet"/></svg>Money</div>
+            <div class="t"><svg><use href="#i-lock"/></svg>Security</div>
+          </div>
+          <div class="content wide">
+
+            <div class="grp">
+              <div class="grphd"><svg><use href="#i-palette"/></svg><div class="g">Appearance</div></div>
+              <div class="card">
+                <div class="row">
+                  <div class="top"><div class="lbl"><div class="n">Theme</div><div class="s">Follow the system, or force light or dark.</div></div></div>
+                  <div class="seg"><span class="on">System</span><span>Light</span><span>Dark</span></div>
+                </div>
+                <div class="row">
+                  <div class="top"><div class="lbl"><div class="n">Language</div><div class="s">The language of the app.</div></div><div class="dd">English <span class="cx">▾</span></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grp">
+              <div class="grphd"><svg><use href="#i-wallet"/></svg><div class="g">Money</div></div>
+              <div class="card">
+                <div class="row">
+                  <div class="top"><div class="lbl"><div class="n">Display currency</div><div class="s">What your totals roll up into.</div></div><div class="dd">USD <span class="cx">▾</span></div></div>
+                </div>
+                <div class="row">
+                  <div class="top"><div class="lbl"><div class="n">Month start day</div><div class="s">The day your accounting month begins.</div></div><div class="dd">1 (calendar) <span class="cx">▾</span></div></div>
+                  <div class="note">Locks once a month has been closed (ADR-0013).</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grp">
+              <div class="grphd"><svg><use href="#i-lock"/></svg><div class="g">Security</div></div>
+              <div class="card">
+                <div class="row">
+                  <div class="top"><div class="lbl"><div class="n">App lock</div><div class="s">Require biometrics to open the app on this device. Native only.</div></div><div class="sw"></div></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHONE -->
+    <div class="phone">
+      <div class="label">Phone</div>
+      <div class="screen">
+        <div class="appbar"><div class="back">‹</div><div class="title">Settings</div></div>
+        <div class="search"><svg><use href="#i-search"/></svg>Search settings</div>
+        <div class="pbody">
+          <div class="content">
+            <div class="grp">
+              <div class="grphd"><svg><use href="#i-palette"/></svg><div class="g">Appearance</div></div>
+              <div class="card">
+                <div class="row">
+                  <div class="top"><div class="lbl"><div class="n">Theme</div><div class="s">System, light or dark.</div></div></div>
+                  <div class="seg"><span class="on">System</span><span>Light</span><span>Dark</span></div>
+                </div>
+                <div class="row"><div class="top"><div class="lbl"><div class="n">Language</div></div><div class="dd">English <span class="cx">▾</span></div></div></div>
+              </div>
+            </div>
+            <div class="grp">
+              <div class="grphd"><svg><use href="#i-wallet"/></svg><div class="g">Money</div></div>
+              <div class="card">
+                <div class="row"><div class="top"><div class="lbl"><div class="n">Display currency</div></div><div class="dd">USD <span class="cx">▾</span></div></div></div>
+                <div class="row"><div class="top"><div class="lbl"><div class="n">Month start day</div></div><div class="dd">1 <span class="cx">▾</span></div></div><div class="note">Locks after a close.</div></div>
+              </div>
+            </div>
+            <div class="grp">
+              <div class="grphd"><svg><use href="#i-lock"/></svg><div class="g">Security</div></div>
+              <div class="card">
+                <div class="row"><div class="top"><div class="lbl"><div class="n">App lock</div><div class="s">Biometrics to open. Native only.</div></div><div class="sw"></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

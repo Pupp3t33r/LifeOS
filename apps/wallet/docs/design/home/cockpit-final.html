@@ -54,6 +54,13 @@
   .badge.active{background:rgba(94,126,107,.14);color:var(--sageDeep)}
   .badge.active .d{width:7px;height:7px;border-radius:999px;background:var(--sage)}
   .badge.ghost{border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+  .badge.plan{background:rgba(192,122,82,.14);color:var(--clay)}
+  .badge.plan .d{width:7px;height:7px;border-radius:999px;background:var(--clay)}
+  .badge.past{border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+  .badge.past .d{width:7px;height:7px;border-radius:999px;background:#b9b1a3}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:rgba(94,126,107,.10);color:var(--sageDeep);font:600 11px/1 var(--body)}
+  .pstates{margin:-8px 0 18px;font-size:11.5px;color:var(--muted);line-height:1.6}
+  .pstates .badge,.pstates .pill{transform:translateY(3px)}
 
   .strip{background:var(--surface);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:15px 20px;display:flex;align-items:center;gap:22px;border-bottom:0}
   .strip .verdict{display:flex;flex-direction:column;gap:3px;flex:0 0 auto}
@@ -194,9 +201,9 @@
                 </div>
                 <div class="flags">
                   <span class="badge active"><span class="d"></span>Active</span>
-                  <span class="badge ghost">July open ›</span>
                 </div>
               </div>
+              <div class="pstates">Chevrons step months; the app always reopens on the active period. Browse elsewhere and the chip reads <span class="badge plan"><span class="d"></span>Planning</span> (future) or <span class="badge past"><span class="d"></span>Past</span>, with a <span class="pill">↺ Current</span> to jump back. A future period is <b>planning-only</b> (ADR-0023): the worklist is a read-only preview and the one-off <b>Add</b> is disabled.</div>
 
               <div class="strip">
                 <div class="verdict"><div class="k">On track by</div><div class="v">+$250</div></div>

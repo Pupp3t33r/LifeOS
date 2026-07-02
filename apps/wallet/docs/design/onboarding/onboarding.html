@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Onboarding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:54px 40px 80px}
+  .board{max-width:1500px;margin:0 auto}
+  .masthead{color:#EDE7DC;margin-bottom:40px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 32px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:900px;color:#B9B1A3;font-size:14.5px;line-height:1.6}
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+
+  .stage{display:flex;gap:34px;align-items:flex-start}
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative}
+  .desktop{flex:1;min-width:0}.phone{flex:0 0 332px}.phone .screen{border-radius:32px}
+
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:15px 22px 13px;border-bottom:1px solid var(--line)}
+  .wm{font:700 19px/1 var(--disp);letter-spacing:-.02em}.wm i{color:var(--clay);font-style:normal}
+  .lang{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:6px 11px;color:var(--muted);font-size:12px;background:var(--surface)}
+
+  /* single centred question column — no side canvas */
+  .stagew{display:grid;place-items:start center;padding:40px 40px 44px}
+  .phone .stagew{padding:20px 18px 30px}
+  .ask{width:100%;max-width:520px}
+
+  .prog{display:flex;gap:7px;margin-bottom:26px}
+  .prog i{flex:1;height:4px;border-radius:999px;background:var(--line)}
+  .prog i.on{background:var(--sage)}
+
+  .eyebrow{font:600 10.5px/1 var(--body);letter-spacing:1.4px;text-transform:uppercase;color:var(--clay);margin-bottom:12px}
+  .h2{font:600 27px/1.1 var(--disp);letter-spacing:-.01em;margin-bottom:12px}
+  .lede{color:var(--muted);font-size:14.5px;line-height:1.55;margin-bottom:26px}
+
+  .field{margin-bottom:18px}
+  .flabel{font:600 13px/1 var(--body);margin-bottom:8px;display:block}
+  .input{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:13px 14px;font-size:14px;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+  .input.ph{color:var(--muted)}
+  .two{display:flex;gap:16px}.two .field{flex:1}
+  .hint{font-size:12px;color:var(--muted);line-height:1.5}
+
+  .actions{display:flex;align-items:center;gap:12px;margin-top:28px}
+  .btn{flex:1;text-align:center;border-radius:999px;padding:15px;font:600 15px/1 var(--disp)}
+  .btn.primary{background:var(--sage);color:#fff}
+  .btn.ghost{flex:0 0 auto;padding:15px 22px;color:var(--muted);background:transparent}
+
+  @media(max-width:1160px){.stage{flex-direction:column}.phone{align-self:center}}
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="masthead">
+    <div class="kicker">wallet · First-run onboarding</div>
+    <h1>Onboarding — a <b>single centred column</b></h1>
+    <p>"Set up your first month" (Money ADR-0013): the first savings account, display currency, and month-start day. One centred, width-capped question column that scrolls on short viewports. The earlier two-column "savings canvas" preview was dropped — every figure it showed was a pre-setup placeholder ("after setup", "not set yet"), misleading at this stage. The app bar carries a live language switcher (Wallet's first localized surface, ADR-0001).</p>
+  </div>
+
+  <div class="stage">
+
+    <!-- DESKTOP -->
+    <div class="desktop">
+      <div class="label">Desktop · web / windows</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="lang">🌐 English ▾</div></div>
+        <div class="stagew">
+          <div class="ask">
+            <div class="prog"><i class="on"></i><i></i><i></i></div>
+            <div class="eyebrow">Step 1 · Your first account</div>
+            <div class="h2">Where does your money live?</div>
+            <div class="lede">Open your first savings account. You can add more later — the canvas rolls them up into one display currency.</div>
+
+            <div class="field">
+              <span class="flabel">Account name</span>
+              <div class="input ph">Main savings</div>
+            </div>
+            <div class="two">
+              <div class="field">
+                <span class="flabel">Currency</span>
+                <div class="input">USD — US Dollar ▾</div>
+              </div>
+              <div class="field">
+                <span class="flabel">Opening balance</span>
+                <div class="input ph">0.00</div>
+              </div>
+            </div>
+            <div class="hint">This becomes your default display currency — the one totals aggregate into.</div>
+
+            <div class="actions">
+              <div class="btn primary">Continue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHONE -->
+    <div class="phone">
+      <div class="label">Phone</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="lang">🌐 EN ▾</div></div>
+        <div class="stagew">
+          <div class="ask">
+            <div class="prog"><i></i><i class="on"></i><i></i></div>
+            <div class="eyebrow">Step 2 · Your month</div>
+            <div class="h2">When does your month begin?</div>
+            <div class="lede">Pick the day your accounting period starts. Day 1 is a plain calendar month.</div>
+
+            <div class="field">
+              <div class="input" style="border-color:var(--sage);background:rgba(94,126,107,.06)">
+                <span><b>Calendar month</b><br><span class="hint">1st to the last day</span></span>
+                <span style="color:var(--sage)">●</span>
+              </div>
+            </div>
+            <div class="field">
+              <div class="input">
+                <span>Custom day<br><span class="hint">e.g. payday on the 25th</span></span>
+                <span style="color:var(--muted)">○</span>
+              </div>
+            </div>
+
+            <div class="actions">
+              <div class="btn ghost">Back</div>
+              <div class="btn primary">Continue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
