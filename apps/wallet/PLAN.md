@@ -97,7 +97,7 @@ v1 requires the full Phase 1 Money backend (see [Money PLAN.md](../../services/m
 
 ### Auth & first-run (Money [ADR-0014](../../services/money/docs/adr/0014-auth-session-lifetimes-and-passkeys.md))
 
-- **First-run onboarding** *(built)* — "Set up your first month": first savings account + display currency + configurable month start day (Money ADR-0013). The router gates on `UserPreferences.DisplayCurrency` being null; responsive (two-column wide / stacked phone) with a live "savings canvas" preview.
+- **First-run onboarding** *(built)* — "Set up your first month": first savings account + display currency + configurable month start day (Money ADR-0013). The router gates on `UserPreferences.DisplayCurrency` being null; a single centred, width-capped question column that scrolls on short viewports. (The earlier two-column "savings canvas" preview was dropped — its figures were all pre-setup placeholders, misleading at that stage.)
 - **Per-platform session scope** *(built)* — requests `offline_access` on native/desktop only, omits on web (`AuthConfig.scopes` gated on `kIsWeb`). Native gets a long offline session (idle 60d / max 180d); web a short online session (idle 30m / max 24h). One realm config, split by scope.
 - **Biometric app-lock** *(built, native only)* — via `local_auth`: required on cold start, re-lock after ~5 min in background, user-configurable (default on); optional toggle shown in onboarding only where the device supports it. The lock screen always offers **"Use password"** and **"Log out / sign in as a different account."** No-op on web. On-device biometric prompt pending manual verification.
 - **Passkey login** *(built, web-verified)* — WebAuthn/FIDO2 as the preferred Keycloak login method, **password always available as fallback** (bootstrap + recovery). On Keycloak 26.4+ enabling `webAuthnPolicyPasswordlessPasskeysEnabled` auto-integrates passkeys (conditional + modal UI) into the default browser flow — no custom flow JSON needed. The custom login theme's `template.ftl` must include the `rfc4648` import map the base theme provides, or the WebAuthn ES modules fail silently ("Failed to resolve module specifier rfc4648") and `navigator.credentials.create/get` never runs. Verified end-to-end via a Chrome virtual authenticator: enrollment (alice is seeded with the `webauthn-register-passwordless` required action → registers a passkey, password fallback retained) and passkey-only login (conditional-UI autofill → auth code, no password).
@@ -278,7 +278,7 @@ Adaptive: bottom `NavigationBar` (phone-portrait `<720`) → `NavigationRail` (`
 
 | Page | Holds |
 |---|---|
-| **Home** | The **current-period cockpit** (not a stats readout): period switcher (multiple open periods, ADR-0023); reactive **on-track strip** (projected vs. target, ADR-0007) with a `details ▾` expand into **per-category budget bars** (ADR-0025); the **worklist**; add-flow FAB; entry to **Close** (ADR-0021/0026). |
+| **Home** | The **current-period cockpit** (not a stats readout): period switcher *(built)* — `‹ Month YYYY ›` chevrons + Active/Planning/Past status chip + snap-back-to-Current, multiple open periods (ADR-0023), always reopens on the active period; a browsed **future** period is planning-only (worklist is a read-only preview, one-off Add disabled); reactive **on-track strip** (projected vs. target, ADR-0007) with a `details ▾` expand into **per-category budget bars** (ADR-0025); the **worklist**; add-flow FAB; entry to **Close** (ADR-0021/0026). |
 | **Activity** | The flows log (line-itemed actuals) across periods; add/edit/revert; filter/group by category. |
 | **Accounts** | Savings/cash accounts + balances; create/rename/archive; balance override; transfers (deferred, ADR-0009). Pinned **Rates** card in the desktop side rail. |
 | **Wishlist** | The browseable backlog (items + packages, ADR-0022); "plan into this month" feeds Home. **Grows a second lens — Inventory / Net worth — in Phase 3** as the Asset aggregate (ADR-0010) ships. |
@@ -297,7 +297,7 @@ There is no "Plan" page. Its contents redistribute: **recurring rules** edited i
 
 | Page | Holds |
 |---|---|
-| **Settings** | Locale (ADR-0001), theme, app-lock & passkey (ADR-0014), display currency & month-start (ADR-0013), **Categories** management incl. **colour** (ADR-0024 + Wallet ADR-0003), rates pinning (ADR-0015). |
+| **Settings** | Locale (ADR-0001), theme, app-lock & passkey (ADR-0014), display currency & month-start (ADR-0013), **Categories** management incl. **colour** (ADR-0024 + Wallet ADR-0003), rates pinning (ADR-0015). *(built: a searchable, grouped page — Appearance (theme System/Light/Dark + language), Money (display currency, month-start), Security (app-lock, native-only); passkey enrollment, Categories, and rates pinning still pending. Account name/opening balance are omitted — immutable server-side, no edit endpoint.)* |
 
 ### Non-page surfaces
 

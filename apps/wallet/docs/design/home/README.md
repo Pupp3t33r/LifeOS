@@ -4,6 +4,11 @@ Static HTML mockups from the Home functional/visual design pass (2026-06-29). Th
 
 These are **design references, not app code.** The real screens are built in Flutter against the Calm tokens (`lib/app/theme/calm_tokens.dart`) and the Money API (`MonthProjection`, ADR-0007). Where a mockup and the ADRs disagree, the ADRs win.
 
+> **Shipped since these mockups (deltas to fold in on the next design pass):**
+> - **Period switcher** is built as `‹ Month YYYY ›` chevrons + an **Active / Planning / Past** status chip + a snap-back-to-**Current** pill; the cockpit always reopens on the active period.
+> - **Future ("Planning") periods** render planning-only per ADR-0023: the worklist is a read-only **preview** and the one-off **Add** verb is disabled (a one-off is always a dated-today actual, so it can't file into a future period).
+> - **Onboarding** and the **Settings** page (searchable, grouped: Appearance / Money / Security) are shipped but have **no mockup here yet** — capture them when this folder is next refreshed.
+
 ## Viewing
 
 Each file is self-contained (Calm palette inline as CSS variables; Bricolage Grotesque + Spline Sans from Google Fonts). Open via any static server — `file://` is blocked by the fonts/CDN, so serve the folder:
