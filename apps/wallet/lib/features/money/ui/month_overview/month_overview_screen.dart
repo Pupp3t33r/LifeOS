@@ -7,13 +7,16 @@ import '../../application/period_flows_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../application/recurring_providers.dart' hide PeriodKey;
 import '../../application/selected_period_providers.dart';
+import '../../application/upcoming_providers.dart';
 import '../../domain/category.dart';
 import '../../domain/money.dart';
 import '../../domain/period_flows.dart';
+import '../../domain/planned_purchase.dart';
 import '../../domain/recurring/recurring_payment.dart';
 import '../recurring/create_menu.dart';
 import '../recurring/occurrence_actions.dart';
 import '../recurring/plan_occurrence_sheet.dart';
+import '../recurring/plan_purchase_actions.dart';
 import '../recurring/resolve_ongoing_sheet.dart';
 
 /// Home — the current-period cockpit (Wallet ADR-0002; nav branch 0).
@@ -50,7 +53,7 @@ class MonthOverviewScreen extends ConsumerWidget {
         .toList();
     final categories = ref.watch(categoriesProvider).value ?? const <Category>[];
     final nameById = {for (final c in categories) c.id: c.name};
-    final upcoming = ref.watch(upcomingOccurrencesProvider(key));
+    final upcomingItems = ref.watch(upcomingItemsProvider(key));
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -81,17 +84,18 @@ class MonthOverviewScreen extends ConsumerWidget {
                             ref.read(selectedPeriodProvider.notifier).jumpToActive(),
                       ),
                       const SizedBox(height: 24),
-                      if (upcoming.isNotEmpty) ...[
+                      if (upcomingItems.isNotEmpty) ...[
                         _UpcomingList(
-                          occurrences: upcoming,
+                          items: upcomingItems,
                           nameById: nameById,
                           status: status,
+                          periodKey: key,
                         ),
                         const SizedBox(height: 24),
                       ],
                       if (entries.isNotEmpty)
                         _Worklist(entries: entries, nameById: nameById)
-                      else if (upcoming.isEmpty)
+                      else if (upcomingItems.isEmpty)
                         _EmptyPeriod(monthLabel: period.monthLabel),
                     ],
                   ),
@@ -101,7 +105,12 @@ class MonthOverviewScreen extends ConsumerWidget {
             Positioned(
               right: wide ? 24 : 16,
               bottom: wide ? 24 : 16,
-              child: _Fab(extended: wide, allowOneOff: status == PeriodStatus.active),
+              child: _Fab(
+                extended: wide,
+                allowOneOff: status == PeriodStatus.active,
+                allowPlanned: status != PeriodStatus.past,
+                periodKey: key,
+              ),
             ),
           ],
         );
@@ -586,13 +595,25 @@ class _EmptyPeriod extends StatelessWidget {
 }
 
 class _Fab extends StatelessWidget {
-  const _Fab({required this.extended, required this.allowOneOff});
+  const _Fab({
+    required this.extended,
+    required this.allowOneOff,
+    required this.allowPlanned,
+    required this.periodKey,
+  });
 
   final bool extended;
 
   /// Whether the one-off "Add" verb is offered — only on the active period, since a
   /// one-off is always an actual that files into the current period (ADR-0023).
   final bool allowOneOff;
+
+  /// Whether the "Planned purchase" verb is offered — on the active or a future
+  /// (Planning) period, since planning files onto the viewed period (ADR-0018/0023).
+  final bool allowPlanned;
+
+  /// The viewed period a planned purchase files onto.
+  final PeriodKey periodKey;
 
   @override
   Widget build(BuildContext context) {
@@ -625,7 +646,13 @@ class _Fab extends StatelessWidget {
       shadowColor: theme.colorScheme.secondary.withValues(alpha: 0.5),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => showCreateMenu(context, allowOneOff: allowOneOff),
+        onTap: () => showCreateMenu(
+          context,
+          allowOneOff: allowOneOff,
+          allowPlanned: allowPlanned,
+          plannedYear: periodKey.year,
+          plannedMonth: periodKey.month,
+        ),
         child: SizedBox(
           height: extended ? 50 : 56,
           width: extended ? null : 56,
@@ -636,27 +663,30 @@ class _Fab extends StatelessWidget {
   }
 }
 
-/// The period's due-but-unresolved recurring occurrences (ADR-0017) — the "Upcoming"
-/// worklist. Each is a projected occurrence with a one-tap Mark paid; tapping the row
-/// body opens its resolve surface (an editable sheet for Ongoing, a read-only detail
-/// for a Payment plan).
+/// The period's not-yet-a-flow worklist (ADR-0002) — the "Upcoming" section. Two kinds
+/// of row intermixed: due-but-unresolved recurring occurrences (ADR-0017), each with a
+/// one-tap Mark paid, and planned purchases (ADR-0018), each with a Buy. Tapping a row
+/// body opens its resolve/detail surface. On a future (Planning) period the whole list
+/// is a read-only preview (ADR-0023).
 class _UpcomingList extends StatelessWidget {
   const _UpcomingList({
-    required this.occurrences,
+    required this.items,
     required this.nameById,
     required this.status,
+    required this.periodKey,
   });
 
-  final List<PeriodOccurrence> occurrences;
+  final List<UpcomingItem> items;
   final Map<String, String> nameById;
   final PeriodStatus status;
+  final PeriodKey periodKey;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
-    // A future period is planning-only (ADR-0023): its occurrences are a projection,
-    // not yet payable, so the worklist reads as a preview with no resolve actions.
+    // A future period is planning-only (ADR-0023): its items are a projection, not yet
+    // payable, so the worklist reads as a preview with no resolve actions.
     final preview = status == PeriodStatus.future;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -664,7 +694,7 @@ class _UpcomingList extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Text(
-            '${preview ? 'Planned' : 'Upcoming'} · ${occurrences.length}',
+            '${preview ? 'Planned' : 'Upcoming'} · ${items.length}',
             style: theme.textTheme.labelLarge?.copyWith(
               color: muted,
               fontWeight: FontWeight.w600,
@@ -681,13 +711,21 @@ class _UpcomingList extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
-              for (var i = 0; i < occurrences.length; i++) ...[
+              for (var i = 0; i < items.length; i++) ...[
                 if (i > 0) Divider(height: 1, color: theme.colorScheme.outline),
-                _OccurrenceTile(
-                  item: occurrences[i],
-                  nameById: nameById,
-                  preview: preview,
-                ),
+                switch (items[i]) {
+                  UpcomingOccurrenceItem(:final value) => _OccurrenceTile(
+                      item: value,
+                      nameById: nameById,
+                      preview: preview,
+                    ),
+                  UpcomingPlannedItem(:final value) => _PlannedTile(
+                      planned: value,
+                      nameById: nameById,
+                      status: status,
+                      periodKey: periodKey,
+                    ),
+                },
               ],
             ],
           ),
@@ -701,6 +739,115 @@ class _UpcomingList extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// A planned-purchase row (ADR-0018): a category dot, the item name, the planned
+/// amount, and — on the active period — a one-tap **Buy**. Tapping the row body opens
+/// its detail actions (buy / remove). On a non-active period it is a static preview.
+class _PlannedTile extends ConsumerWidget {
+  const _PlannedTile({
+    required this.planned,
+    required this.nameById,
+    required this.status,
+    required this.periodKey,
+  });
+
+  final PlannedPurchase planned;
+  final Map<String, String> nameById;
+  final PeriodStatus status;
+  final PeriodKey periodKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final tokens = CalmTokens.of(theme.brightness);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+
+    final canBuy = status == PeriodStatus.active;
+    // Buy (an actual) only on the active period; remove (planning) also on a future
+    // period; a past period is read-only.
+    final actionable = status == PeriodStatus.active || status == PeriodStatus.future;
+
+    final firstCategoryId = planned.lines
+        .map((x) => x.categoryId)
+        .firstWhere((x) => x != null, orElse: () => null);
+    final dotColor = firstCategoryId != null
+        ? CategoryPalette.forId(firstCategoryId).of(context)
+        : tokens.line;
+    final categoryName = firstCategoryId != null ? nameById[firstCategoryId] : null;
+    final title = planned.description ?? categoryName ?? 'Planned purchase';
+    final subtitle = categoryName != null ? 'Planned · $categoryName' : 'Planned';
+
+    Future<void> openActions() =>
+        showPlannedActions(context, ref, planned, periodKey.year, periodKey.month, canBuy: canBuy);
+
+    return InkWell(
+      onTap: actionable ? openActions : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(right: 13),
+              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              _signed(planned.total.amount, planned.total.currency),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontFamily: CalmTokens.fontDisplay,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            if (canBuy) ...[
+              const SizedBox(width: 10),
+              Material(
+                color: tokens.clay.withValues(alpha: 0.06),
+                shape: StadiumBorder(side: BorderSide(color: tokens.clay)),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => showBuyPlanned(context, ref, planned, periodKey.year, periodKey.month),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Text(
+                      'Buy',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: tokens.clay,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

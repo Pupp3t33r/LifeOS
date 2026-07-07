@@ -3,17 +3,29 @@ import '../../../../app/theme/calm_tokens.dart';
 import '../add_entry/add_entry_sheet.dart';
 import 'create_ongoing_sheet.dart';
 import 'create_payment_plan_sheet.dart';
+import 'create_planned_purchase_sheet.dart';
 
-/// The FAB's create menu: three separate verbs (design/recurring) — **Add** (a
-/// one-off expense/income), **Ongoing** (a Live recurring), **Payment plan** (a
-/// Materialized plan). No chooser umbrella; each opens its own dedicated sheet.
+/// The FAB's create menu: four separate verbs (design/recurring) — **Add** (a
+/// one-off expense/income), **Planned purchase** (an intention to buy this month,
+/// ADR-0018), **Ongoing** (a Live recurring), **Payment plan** (a Materialized plan).
+/// No chooser umbrella; each opens its own dedicated sheet.
 ///
 /// [allowOneOff] gates the one-off **Add**: a one-off is always a *actual* dated
 /// today-or-earlier (ADR-0016) and so lands in the active period regardless of what
 /// the user is browsing. While the cockpit shows a non-active period, Add is disabled
 /// so an actual can't be filed somewhere the user isn't looking (ADR-0023); the
 /// period-agnostic recurring verbs stay available.
-Future<void> showCreateMenu(BuildContext context, {bool allowOneOff = true}) async {
+///
+/// [allowPlanned] gates **Planned purchase**: planning is within-month and files onto
+/// the viewed period ([plannedYear]/[plannedMonth]) — allowed on the active period and
+/// on a future (Planning) one, disabled on a past period (ADR-0023).
+Future<void> showCreateMenu(
+  BuildContext context, {
+  bool allowOneOff = true,
+  bool allowPlanned = true,
+  required int plannedYear,
+  required int plannedMonth,
+}) async {
   final choice = await showModalBottomSheet<_Create>(
     context: context,
     backgroundColor: Theme.of(context).colorScheme.surface,
@@ -36,6 +48,18 @@ Future<void> showCreateMenu(BuildContext context, {bool allowOneOff = true}) asy
                   : 'Switch to the current period to add',
               enabled: allowOneOff,
               onTap: allowOneOff ? () => Navigator.of(context).pop(_Create.add) : null,
+            ),
+            _MenuItem(
+              icon: Icons.shopping_bag_outlined,
+              color: tokens.clay,
+              title: 'Planned purchase',
+              subtitle: allowPlanned
+                  ? 'Something you plan to buy this month'
+                  : 'Switch to a current or future period to plan',
+              enabled: allowPlanned,
+              onTap: allowPlanned
+                  ? () => Navigator.of(context).pop(_Create.plannedPurchase)
+                  : null,
             ),
             _MenuItem(
               icon: Icons.autorenew,
@@ -62,6 +86,8 @@ Future<void> showCreateMenu(BuildContext context, {bool allowOneOff = true}) asy
   switch (choice) {
     case _Create.add:
       await showAddEntry(context);
+    case _Create.plannedPurchase:
+      await showCreatePlannedPurchase(context, year: plannedYear, month: plannedMonth);
     case _Create.ongoing:
       await showCreateOngoing(context);
     case _Create.paymentPlan:
@@ -69,7 +95,7 @@ Future<void> showCreateMenu(BuildContext context, {bool allowOneOff = true}) asy
   }
 }
 
-enum _Create { add, ongoing, paymentPlan }
+enum _Create { add, plannedPurchase, ongoing, paymentPlan }
 
 class _MenuItem extends StatelessWidget {
   const _MenuItem({
