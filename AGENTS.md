@@ -26,7 +26,7 @@
 | 1 | **Gateway / BFF** | .NET | — | Thin | Routing, auth proxy, mobile composition | [Gateway AGENTS.md](services/gateway/AGENTS.md) |
 | 2 | **Money** | .NET | PostgreSQL + Marten | **Very Deep** | Savings accounts, AccountingPeriod (lifecycle + flow ledger + planned purchases), recurring (Live + Materialized), wishlist (docs + derived status), budgets, FX rates, assets (Phase 3) | [Money AGENTS.md](services/money/AGENTS.md) |
 | 3 | **Books** | .NET | PostgreSQL | Medium | Hardcover sync, reading progress, preorders | TBD |
-| 4 | **Board Games** | .NET | PostgreSQL | Deep | Collection, BGG sync, expansions, accessories, sleeve inventory, preorders | TBD |
+| 4 | **Board Games** | .NET | PostgreSQL | Deep | Catalog (external sync) + Collection (ownership/lifecycle) + accessories + sleeve inventory + plays; full DDD over EF Core | [Board Games AGENTS.md](services/board-games/AGENTS.md) |
 | 5 | **Steam** | Rust | PostgreSQL | Shallow | Library sync, playtime hours | TBD |
 | 6 | **Media** | Node / .NET | PostgreSQL | Shallow | Watchlist, TMDB/AniList sync, runtime | TBD |
 | 7 | **Planner** | .NET | PostgreSQL | Medium | Evening planning read model (`remainingMinutes` only) | TBD |
@@ -55,12 +55,12 @@
 | Auth | Keycloak (self-hosted OIDC) |
 | Broker | Kafka API (Redpanda local, Kafka if clustered) |
 | Gateway | YARP |
-| Frontend | Flutter (Wallet app — Android, Web, Windows, Linux; see [Wallet PLAN](apps/wallet/PLAN.md)). Other web apps (Angular/React/Vue/Blazor) deferred until a forcing function arrives. |
-| Mobile | Flutter (Wallet; Android is the primary mobile target) |
+| Frontend | **Polyglot by experiment.** Flutter (Wallet app — Android, Web, Windows, Linux; see [Wallet PLAN](apps/wallet/PLAN.md)) **and** Blazor Hybrid / .NET MAUI (Table app — Android + Web; see [Table PLAN](apps/table/PLAN.md)). Each app picks its stack; there is no single frontend framework. Other web apps (Angular/React/Vue) deferred until a forcing function arrives. |
+| Mobile | Flutter (Wallet; Android is the primary mobile target) and .NET MAUI (Table; Android) |
 | Observability | OpenTelemetry → Collector → Grafana (Prometheus + Loki + Tempo) |
 | Dev Orchestration | .NET Aspire |
 | CI/CD | GitHub Actions → GHCR |
-| Theming | [`design/`](design/README.md) shared theme registry — per-theme `tokens.json` + platform bindings (`tokens.css` live; Flutter `tokens.dart` next). Style Dictionary deferred until a theme needs >1 generated binding. |
+| Theming | [`design/`](design/README.md) shared theme registry — per-theme `tokens.json` + platform bindings (`tokens.css` live; Flutter `tokens.dart` next). **Calm** (Wallet) is the first theme; a board-games-specific theme for Table is pending. Style Dictionary deferred until a theme needs >1 generated binding. |
 
 ---
 
@@ -150,7 +150,7 @@ services/
 - **No `Controllers/` folder.** Use Minimal API route registration in `Program.cs` or extension methods.
 - **No generic `Services/` or `Repositories/` folders.** Use feature folders (`Features/Transactions/`).
 - **Tests mirror feature structure.** `Features/Transactions/RecordExpenseTests.cs`.
-- **Domain folder only in Money.** Other services do not need `Domain/` — `Entities/` or `Data/` is fine.
+- **Domain folder only where DDD is adopted.** Money (event-sourced) and Board Games (full DDD over EF Core — see [Board Games ADR-0001](services/board-games/docs/adr/0001-full-ddd-and-domain-folder.md)) use a `Domain/` folder organised by bounded context. Other services do not need `Domain/` — `Entities/` or `Data/` is fine. "Deep" services may opt into full DDD; shallower services stay anemic.
 
 > **Service-specific conventions:** See each service's `AGENTS.md` for details.
 
@@ -180,6 +180,28 @@ apps/
 - **Feature modules, not per-feature apps.** Wallet's `features/money/` is the only module in Phase 1; later domains slot in as additional `features/` folders.
 - **Cross-feature communication goes through the shell.** Feature modules do not call each other directly.
 - **No client-side event sourcing.** Server is the single source of truth; the client caches read models and queues mutations in an outbox (see [Wallet AGENTS.md](apps/wallet/AGENTS.md)).
+
+> **App-specific conventions:** See each app's `AGENTS.md` for details.
+
+### Client App Template (Blazor Hybrid)
+
+```
+apps/
+  <AppName>/                      (e.g., table)
+    AGENTS.md                     (app identity, stack, conventions)
+    PLAN.md                       (phased vision, scope, deferred work)
+    LifeOS.<App>.App.RazorLib/    (RCL: ALL UI — pages, components, ViewModels, services)
+    LifeOS.<App>.App.Maui/        (MAUI Blazor Hybrid host — Android/Windows native)
+    LifeOS.<App>.App.Web/         (Blazor Web App host — web)
+    docs/adr/
+```
+
+**Rules:**
+
+- **RCL holds everything; hosts are thin.** Components are render-mode-agnostic; the Web host assigns a render mode per page, the MAUI host runs everything natively in the `BlazorWebView`.
+- **No hardcoded render modes or host-specific calls in the RCL.** Host differences (JS interop, HTTP base URL) sit behind interfaces resolved per host.
+- **One app per consumer surface**, same as Flutter apps. Table is one app for Android + Web.
+- **Offline is optional per app.** Wallet is offline-first; Table is online-only in Phase 1. Decide per app; don't assume.
 
 > **App-specific conventions:** See each app's `AGENTS.md` for details.
 
@@ -256,12 +278,12 @@ An agent MUST pause and ask the user when:
 Use this to calibrate implementation effort:
 
 - **Very Deep (Money):** Event sourcing, aggregates, projections, outbox, payment schedules, wishlist. Take time. Get it right.
-- **Deep (Board Games):** Relational model, expansion trees, sleeve MRP, shipment tracking. Real domain logic. EF Core + migrations.
+- **Deep (Board Games):** Full DDD over EF Core — aggregates, value objects, bounded contexts (Catalog, Collection, Accessories, Sleeves, Plays). Relational model, expansion trees, accessory binding, sleeve MRP. Real domain logic. See [Board Games ADR-0001](services/board-games/docs/adr/0001-full-ddd-and-domain-folder.md).
 - **Medium (Books, Planner):** Standard CRUD with external API sync. Some complexity but no ES.
 - **Shallow (Steam, Media, Document Processing):** HTTP client + DB insert + Kafka emit. Get it working fast. This is where polyglot lives.
 
 ---
 
-*Last updated: 2026-06-27*
+*Last updated: 2026-07-07*
 *Maintained by: System Architect*  
 *Next expected update: After Money service event model is finalized.*
