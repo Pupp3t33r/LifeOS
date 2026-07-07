@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/data/outbox_repository.dart';
 import '../../../../app/sync/outbox_drainer.dart';
+import '../../domain/recurring/plan_item.dart';
 import '../../domain/recurring/recurrence_rule.dart';
 import '../../domain/recurring/recurring_line.dart';
 import '../../domain/recurring/schedule_line.dart';
@@ -52,14 +53,15 @@ class RecurringOutbox {
     return _enqueue(recurringId, 'create_recurring', 'POST', '/recurring', payload, now);
   }
 
-  /// Create a **Payment plan** (Materialized) recurring: items + bare-money payments.
+  /// Create a **Payment plan** (Materialized) recurring: priceless items + bare-money
+  /// payments (their sum is the plan total; ADR-0029).
   Future<void> createPaymentPlan({
     required String recurringId,
     required String name,
     required bool isIncome,
     required String currency,
     String? categoryId,
-    required List<RecurringLineDraft> items,
+    required List<PlanItemDraft> items,
     required List<ScheduleLineDraft> scheduleLines,
     DateTime? now,
   }) {
@@ -81,7 +83,8 @@ class RecurringOutbox {
 
   /// Confirm an occurrence as paid. [entryId] is the client-assigned id of the
   /// resulting flow (idempotency). Omit [lines] to record the occurrence's expected
-  /// breakdown; a Live occurrence may override it (a plan payment may not — ADR-0028).
+  /// breakdown; a Live occurrence may override it fully, a plan payment may carry a
+  /// single line as an amount-only adjustment of what was actually paid (ADR-0029).
   Future<void> confirm({
     required String recurringId,
     required String occurrenceRef,

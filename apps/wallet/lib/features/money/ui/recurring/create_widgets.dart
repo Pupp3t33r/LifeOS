@@ -137,18 +137,21 @@ class MoneyAmountField extends StatelessWidget {
   }
 }
 
-/// A single-line text field styled like the sheet's other fields.
+/// A single-line text field styled like the sheet's other fields. [onChanged] lets a
+/// composer rebuild on each keystroke (e.g. to re-evaluate a save button's enabled state).
 class SheetTextField extends StatelessWidget {
-  const SheetTextField({super.key, required this.controller, required this.hint});
+  const SheetTextField({super.key, required this.controller, required this.hint, this.onChanged});
 
   final TextEditingController controller;
   final String hint;
+  final VoidCallback? onChanged;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return TextField(
       controller: controller,
+      onChanged: onChanged == null ? null : (_) => onChanged!(),
       style: theme.textTheme.bodyMedium,
       decoration: InputDecoration(
         hintText: hint,

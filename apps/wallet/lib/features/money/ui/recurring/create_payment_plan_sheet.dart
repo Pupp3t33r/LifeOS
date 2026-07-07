@@ -7,21 +7,22 @@ import '../../application/categories_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../data/outbox/recurring_outbox.dart';
 import '../../domain/category.dart';
-import '../../domain/recurring/recurring_line.dart';
+import '../../domain/recurring/plan_item.dart';
 import '../../domain/recurring/schedule_line.dart';
 import 'create_widgets.dart';
 import 'recurring_shared.dart';
 import 'sheet_container.dart';
 
-/// Opens the **Payment plan** (Materialized) create sheet — one financed purchase: an
-/// item list (what you bought, real categories) plus bare `{date, amount}` payments,
-/// with the one rule that payments must sum to items (ADR-0028). Queued via the outbox.
+/// Opens the **Payment plan** (Materialized) create sheet — one financed purchase: a
+/// priceless item list (what you bought, real categories, optional MSRP) plus bare
+/// `{date, amount}` payments. The plan total is simply the sum of the payments; items
+/// carry no cost and needn't balance anything (ADR-0029). Queued via the outbox.
 Future<void> showCreatePaymentPlan(BuildContext context) =>
     showMoneySheet(context, (bottomSheet) => CreatePaymentPlanSheet(bottomSheet: bottomSheet));
 
 class _ItemDraft {
-  _ItemDraft({required this.amount, this.categoryId, this.categoryName, this.description});
-  double amount;
+  _ItemDraft({this.referenceValue, this.categoryId, this.categoryName, this.description});
+  double? referenceValue;
   String? categoryId;
   String? categoryName;
   String? description;
@@ -66,16 +67,16 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
   String _effectiveCurrency() =>
       _currency ?? ref.read(preferencesProvider).value?.displayCurrency ?? 'USD';
 
-  double get _itemsTotal => _items.fold(0, (sum, x) => sum + x.amount);
   double get _paymentsTotal => _payments.fold(0, (sum, x) => sum + x.amount);
-  int get _remainingCents => (_itemsTotal * 100).round() - (_paymentsTotal * 100).round();
-  bool get _balanced => _remainingCents == 0 && _items.isNotEmpty && _payments.isNotEmpty;
 
   bool get _canSave =>
-      _nameCtrl.text.trim().isNotEmpty && _balanced && !_submitting;
+      _nameCtrl.text.trim().isNotEmpty &&
+      _items.isNotEmpty &&
+      _payments.isNotEmpty &&
+      !_submitting;
 
   Future<void> _save() async {
-    if (!_balanced) return;
+    if (!_canSave) return;
     setState(() => _submitting = true);
 
     await ref.read(recurringOutboxProvider).createPaymentPlan(
@@ -85,8 +86,11 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
           currency: _effectiveCurrency(),
           items: [
             for (final item in _items)
-              RecurringLineDraft(
-                amount: item.amount, categoryId: item.categoryId, description: item.description),
+              PlanItemDraft(
+                description: item.description,
+                referenceValue: item.referenceValue,
+                categoryId: item.categoryId,
+              ),
           ],
           scheduleLines: [
             for (final payment in _payments)
@@ -104,7 +108,7 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
 
   Future<void> _addItem() async {
     final categories = ref.read(categoriesProvider).value ?? const <Category>[];
-    final draft = await _showItemComposer(context, categories);
+    final draft = await _showItemComposer(context, _effectiveCurrency(), _isIncome, categories);
     if (draft != null) setState(() => _items.add(draft));
   }
 
@@ -112,8 +116,8 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
     final lastDate = _payments.isEmpty
         ? DateTime.now()
         : DateTime(_payments.last.dueDate.year, _payments.last.dueDate.month + 1, _payments.last.dueDate.day);
-    final remaining = _remainingCents > 0 ? _remainingCents / 100 : (_payments.isEmpty ? 0.0 : _payments.last.amount);
-    final draft = await _showPaymentComposer(context, _effectiveCurrency(), _isIncome, lastDate, remaining);
+    final seed = _payments.isEmpty ? 0.0 : _payments.last.amount;
+    final draft = await _showPaymentComposer(context, _effectiveCurrency(), _isIncome, lastDate, seed);
     if (draft != null) setState(() => _payments.add(draft));
   }
 
@@ -130,18 +134,26 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
           DirectionToggle(isIncome: _isIncome, onChanged: (v) => setState(() => _isIncome = v)),
           const SizedBox(height: 16),
           SheetTextField(controller: _nameCtrl, hint: 'What is it?  e.g. Gloomhaven pledge'),
+          const SizedBox(height: 12),
+          PickerButton(
+            label: 'Currency',
+            value: currency,
+            onTap: () async {
+              final picked = await pickCurrency(context, selected: currency);
+              if (picked != null && mounted) setState(() => _currency = picked);
+            },
+          ),
           const SizedBox(height: 18),
 
           _SectionHeader(
             title: 'Items',
             subtitle: 'what you bought',
-            total: formatSigned(_isIncome ? _itemsTotal : -_itemsTotal, currency),
+            trailing: _items.isEmpty ? null : '${_items.length}',
           ),
           const SizedBox(height: 8),
           for (var i = 0; i < _items.length; i++)
             _ItemRow(
               item: _items[i],
-              isIncome: _isIncome,
               currency: currency,
               onDelete: () => setState(() => _items.removeAt(i)),
             ),
@@ -151,7 +163,7 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
           _SectionHeader(
             title: 'Payments',
             subtitle: 'how you pay it',
-            total: formatSigned(_isIncome ? _paymentsTotal : -_paymentsTotal, currency),
+            trailing: formatSigned(_isIncome ? _paymentsTotal : -_paymentsTotal, currency),
           ),
           const SizedBox(height: 8),
           for (var i = 0; i < _payments.length; i++)
@@ -165,7 +177,11 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
           _AddRow(label: 'Add payment', accent: true, onTap: _addPayment),
           const SizedBox(height: 16),
 
-          _BalanceBanner(remainingCents: _remainingCents, balanced: _balanced, currency: currency),
+          _PlanTotalBanner(
+            total: _isIncome ? _paymentsTotal : -_paymentsTotal,
+            count: _payments.length,
+            currency: currency,
+          ),
           const SizedBox(height: 16),
           PrimarySaveButton(label: 'Save', enabled: _canSave, loading: _submitting, onTap: _save),
         ],
@@ -175,11 +191,11 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.subtitle, required this.total});
+  const _SectionHeader({required this.title, required this.subtitle, this.trailing});
 
   final String title;
   final String subtitle;
-  final String total;
+  final String? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -190,22 +206,22 @@ class _SectionHeader extends StatelessWidget {
         Text(title, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(width: 8),
         Expanded(child: Text(subtitle, style: theme.textTheme.labelSmall?.copyWith(color: muted))),
-        Text(
-          total,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontFamily: CalmTokens.fontDisplay, fontWeight: FontWeight.w700,
+        if (trailing != null)
+          Text(
+            trailing!,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontFamily: CalmTokens.fontDisplay, fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
       ],
     );
   }
 }
 
 class _ItemRow extends StatelessWidget {
-  const _ItemRow({required this.item, required this.isIncome, required this.currency, required this.onDelete});
+  const _ItemRow({required this.item, required this.currency, required this.onDelete});
 
   final _ItemDraft item;
-  final bool isIncome;
   final String currency;
   final VoidCallback onDelete;
 
@@ -213,7 +229,7 @@ class _ItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
-    final magnitude = isIncome ? item.amount : -item.amount;
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.55);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -236,19 +252,16 @@ class _ItemRow extends StatelessWidget {
                     style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
                 if (item.categoryName != null)
                   Text(item.categoryName!,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.55))),
+                      style: theme.textTheme.labelSmall?.copyWith(color: muted)),
               ],
             ),
           ),
-          Text(
-            formatSigned(magnitude, currency),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontFamily: CalmTokens.fontDisplay,
-              fontWeight: FontWeight.w600,
-              color: isIncome ? tokens.sageDeep : tokens.clay,
+          // The optional reference value (MSRP) reads as a muted annotation, never a cost.
+          if (item.referenceValue != null)
+            Text(
+              'MSRP ${formatMagnitude(item.referenceValue!, currency)}',
+              style: theme.textTheme.labelSmall?.copyWith(color: muted),
             ),
-          ),
           IconButton(
             icon: const Icon(Icons.close, size: 16),
             visualDensity: VisualDensity.compact,
@@ -296,7 +309,7 @@ class _PaymentRow extends StatelessWidget {
           ),
           const SizedBox(width: 11),
           Expanded(
-            child: Text(_monthYear(payment.dueDate), style: theme.textTheme.bodyMedium),
+            child: Text(_fullDate(payment.dueDate), style: theme.textTheme.bodyMedium),
           ),
           Text(
             formatSigned(magnitude, currency),
@@ -346,49 +359,42 @@ class _AddRow extends StatelessWidget {
   }
 }
 
-class _BalanceBanner extends StatelessWidget {
-  const _BalanceBanner({required this.remainingCents, required this.balanced, required this.currency});
+/// The plan total — simply the sum of the payments (ADR-0029). Replaces the old
+/// items↔payments balance banner; there is nothing to reconcile.
+class _PlanTotalBanner extends StatelessWidget {
+  const _PlanTotalBanner({required this.total, required this.count, required this.currency});
 
-  final int remainingCents;
-  final bool balanced;
+  final double total;
+  final int count;
   final String currency;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
-    // Nothing to balance yet (empty, or one side still empty at zero) reads as a
-    // neutral prompt, not an error.
-    final neutral = !balanced && remainingCents == 0;
-    final color = balanced
-        ? tokens.sage
-        : neutral
-            ? theme.colorScheme.onSurface.withValues(alpha: 0.55)
-            : tokens.clay;
-    final icon = balanced
-        ? Icons.check_circle_outline
-        : neutral
-            ? Icons.info_outline
-            : Icons.error_outline;
-    final text = balanced
-        ? 'Balanced — ${formatMagnitude(0, currency)} left'
-        : neutral
-            ? 'Add items and payments that balance'
-            : remainingCents > 0
-                ? '${formatMagnitude(remainingCents / 100, currency)} still to schedule'
-                : '${formatMagnitude(remainingCents / 100, currency)} over — remove a payment';
+    final label = count == 0
+        ? 'Add the payments that make up the plan'
+        : 'Plan total · $count payment${count == 1 ? '' : 's'}';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: tokens.sage.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(CalmTokens.radiusSm),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: tokens.sage.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 9),
-          Expanded(child: Text(text, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface))),
+          Expanded(
+            child: Text(label,
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface)),
+          ),
+          if (count > 0)
+            Text(
+              formatSigned(total, currency),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontFamily: CalmTokens.fontDisplay, fontWeight: FontWeight.w700,
+              ),
+            ),
         ],
       ),
     );
@@ -397,8 +403,13 @@ class _BalanceBanner extends StatelessWidget {
 
 // ---- add-item / add-payment composers ----
 
-Future<_ItemDraft?> _showItemComposer(BuildContext context, List<Category> categories) {
-  final amountCtrl = TextEditingController();
+Future<_ItemDraft?> _showItemComposer(
+  BuildContext context,
+  String currency,
+  bool isIncome,
+  List<Category> categories,
+) {
+  final refCtrl = TextEditingController();
   final descCtrl = TextEditingController();
   String? categoryId;
   String? categoryName;
@@ -409,17 +420,29 @@ Future<_ItemDraft?> _showItemComposer(BuildContext context, List<Category> categ
     backgroundColor: Colors.transparent,
     builder: (context) => StatefulBuilder(
       builder: (context, setSheet) {
-        final amount = double.tryParse(amountCtrl.text.trim());
-        final valid = amount != null && amount > 0;
+        final name = descCtrl.text.trim();
+        final reference = double.tryParse(refCtrl.text.trim());
+        final valid = name.isNotEmpty;
         return SheetContainer(
           bottomSheet: true,
           title: 'Add item',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _ComposerAmount(controller: amountCtrl, onChanged: () => setSheet(() {})),
+              SheetTextField(
+                controller: descCtrl,
+                hint: 'What is it?  e.g. Base game',
+                onChanged: () => setSheet(() {}),
+              ),
               const SizedBox(height: 12),
-              SheetTextField(controller: descCtrl, hint: 'What is it?  e.g. Base game'),
+              // Priceless — the only number is an optional reference (MSRP), never a cost.
+              _ComposerAmount(
+                controller: refCtrl,
+                label: 'MSRP',
+                hint: 'optional',
+                suffix: currency,
+                onChanged: () => setSheet(() {}),
+              ),
               const SizedBox(height: 12),
               PickerButton(
                 label: 'Category',
@@ -445,10 +468,10 @@ Future<_ItemDraft?> _showItemComposer(BuildContext context, List<Category> categ
                 label: 'Add item',
                 enabled: valid,
                 onTap: () => Navigator.of(context).pop(_ItemDraft(
-                  amount: amount!,
+                  referenceValue: reference != null && reference > 0 ? reference : null,
                   categoryId: categoryId,
                   categoryName: categoryName,
-                  description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                  description: name.isEmpty ? null : name,
                 )),
               ),
             ],
@@ -485,7 +508,7 @@ Future<_PaymentDraft?> _showPaymentComposer(
             children: [
               PickerButton(
                 label: 'Date',
-                value: _monthYear(date),
+                value: _fullDate(date),
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -497,7 +520,8 @@ Future<_PaymentDraft?> _showPaymentComposer(
                 },
               ),
               const SizedBox(height: 12),
-              _ComposerAmount(controller: amountCtrl, onChanged: () => setSheet(() {})),
+              _ComposerAmount(
+                controller: amountCtrl, suffix: currency, onChanged: () => setSheet(() {})),
               const SizedBox(height: 18),
               PrimarySaveButton(
                 label: 'Add payment',
@@ -516,13 +540,23 @@ Future<_PaymentDraft?> _showPaymentComposer(
   );
 }
 
-/// A plain numeric field for the composers (no sign/currency chrome — the parent
-/// section already states direction and currency).
+/// A numeric field for the composers with a persistent caption. [label] always shows
+/// ("Amount" for a payment, "MSRP" for an item's optional reference) so the field reads
+/// as what it is even when empty; [suffix] shows the currency unit.
 class _ComposerAmount extends StatelessWidget {
-  const _ComposerAmount({required this.controller, required this.onChanged});
+  const _ComposerAmount({
+    required this.controller,
+    required this.onChanged,
+    this.label = 'Amount',
+    this.hint = '0.00',
+    this.suffix,
+  });
 
   final TextEditingController controller;
   final VoidCallback onChanged;
+  final String label;
+  final String hint;
+  final String? suffix;
 
   @override
   Widget build(BuildContext context) {
@@ -536,17 +570,19 @@ class _ComposerAmount extends StatelessWidget {
         fontFamily: CalmTokens.fontDisplay, fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
-        prefixText: 'Amount  ',
-        hintText: '0.00',
+        labelText: label,
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        hintText: hint,
+        suffixText: suffix,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(CalmTokens.radiusSm)),
       ),
     );
   }
 }
 
-String _monthYear(DateTime date) {
+String _fullDate(DateTime date) {
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
   ];
-  return '${months[date.month - 1]} ${date.year}';
+  return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }

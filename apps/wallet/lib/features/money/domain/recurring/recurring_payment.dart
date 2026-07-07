@@ -1,4 +1,5 @@
 import '../money.dart';
+import 'plan_item.dart';
 import 'recurrence_rule.dart';
 import 'recurring_line.dart';
 import 'schedule_line.dart';
@@ -15,8 +16,8 @@ enum ScheduleMode {
 /// Dart mirror of the Money service's `RecurringResponse` (ADR-0017/0028). Holds the
 /// definition + lifecycle only; per-occurrence status is computed by the occurrences
 /// endpoint. For [ScheduleMode.live], [rule] + [estimateLines] + [estimatedAmount]
-/// are set; for [ScheduleMode.materialized], [items] (the plan's contents) +
-/// [scheduleLines] (bare-money payments) are set instead.
+/// are set; for [ScheduleMode.materialized], [items] (the plan's priceless contents) +
+/// [scheduleLines] (bare-money payments; their sum is the plan total) are set instead.
 class RecurringPayment {
   const RecurringPayment({
     required this.id,
@@ -47,8 +48,9 @@ class RecurringPayment {
   final List<RecurringLine> estimateLines;
   final Money? estimatedAmount;
 
-  /// Materialized only — the plan's line-item contents and its bare-money payments.
-  final List<RecurringLine> items;
+  /// Materialized only — the plan's priceless line-item contents and its bare-money
+  /// payments (the payments' sum is the plan total; items carry no cost).
+  final List<PlanItem> items;
   final List<ScheduleLine> scheduleLines;
 
   final bool isActive;
@@ -72,7 +74,10 @@ class RecurringPayment {
       estimatedAmount: estimated == null
           ? null
           : Money(amount: estimated['amount'] as num, currency: estimated['currency'] as String),
-      items: lines('items'),
+      items: [
+        for (final x in (json['items'] as List<dynamic>? ?? const []))
+          PlanItem.fromJson(x as Map<String, dynamic>),
+      ],
       scheduleLines: [
         for (final x in (json['scheduleLines'] as List<dynamic>? ?? const []))
           ScheduleLine.fromJson(x as Map<String, dynamic>),
