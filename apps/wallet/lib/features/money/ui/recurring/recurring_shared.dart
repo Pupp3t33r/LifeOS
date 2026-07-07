@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../domain/category.dart';
-
-/// Currency codes offered in the recurring sheets (mirrors the add-entry set).
-const List<String> kRecurringCurrencies = ['USD', 'EUR', 'GBP', 'PLN', 'JPY', 'CAD'];
+import '../../domain/currencies.dart';
 
 /// Sentinel returned by [pickCategory] to mean "clear the category" (vs a null
 /// result, which means the picker was dismissed).
@@ -11,6 +9,7 @@ const Category kNoCategory = Category(id: '', name: 'None', isSystem: false);
 
 const Map<String, String> _symbols = {
   'USD': '\$', 'CAD': '\$', 'EUR': '€', 'GBP': '£', 'JPY': '¥',
+  'RUB': '₽', 'KZT': '₸', 'BYN': 'Br',
 };
 
 /// Display magnitude of [amount] in [currency] (no sign). Display-only until the
@@ -116,9 +115,10 @@ Future<String?> pickCurrency(BuildContext context, {required String selected}) {
         shrinkWrap: true,
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          for (final code in kRecurringCurrencies)
+          for (final code in kCurrencyPool)
             ListTile(
               title: Text(code),
+              subtitle: kCurrencyNames[code] == null ? null : Text(kCurrencyNames[code]!),
               trailing: code == selected ? const Icon(Icons.check) : null,
               onTap: () => Navigator.of(context).pop(code),
             ),

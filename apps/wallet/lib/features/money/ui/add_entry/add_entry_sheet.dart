@@ -6,9 +6,10 @@ import '../../application/categories_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../data/outbox/record_flow.dart';
 import '../../domain/category.dart';
+import '../../domain/currencies.dart';
 
-/// Currency codes offered in the entry sheet (mirrors onboarding's set).
-const List<String> _currencies = ['USD', 'EUR', 'GBP', 'PLN', 'JPY', 'CAD'];
+/// Currency codes offered in the entry sheet (the shared pool).
+const List<String> _currencies = kCurrencyPool;
 
 /// Opens the add-entry surface: a bottom sheet on phones, a centred dialog on wide
 /// screens. The sheet records an ad-hoc expense or income as a flow on the active

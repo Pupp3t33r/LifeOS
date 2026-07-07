@@ -138,9 +138,13 @@ class _PeriodHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // The month title fills the left; the period-nav cluster (‹ › + status/jump)
+        // is pinned to the right in a fixed-width slot so the chevrons and the pill
+        // don't shift as the month name or status label changes, and the pill's right
+        // edge lines up with the cards below.
         Row(
           children: [
-            Flexible(
+            Expanded(
               child: Text(
                 period.monthLabel,
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -151,14 +155,19 @@ class _PeriodHeader extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
             _NavArrow(icon: Icons.chevron_left, tooltip: 'Previous period', onTap: onPrevious),
             _NavArrow(icon: Icons.chevron_right, tooltip: 'Next period', onTap: onNext),
-            const Spacer(),
-            if (status != PeriodStatus.active)
-              _JumpToActiveButton(onTap: onJumpToActive)
-            else
-              _StatusBadge(status: status),
+            const SizedBox(width: 6),
+            SizedBox(
+              width: 104,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: status != PeriodStatus.active
+                    ? _JumpToActiveButton(onTap: onJumpToActive)
+                    : _StatusBadge(status: status),
+              ),
+            ),
           ],
         ),
         if (status != PeriodStatus.active) ...[

@@ -5,15 +5,17 @@ import '../../../../app/theme/calm_tokens.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/wordmark.dart';
 import '../../../security/application/security_providers.dart';
+import '../../domain/currencies.dart';
 import 'onboarding_controller.dart';
 import 'onboarding_state.dart';
 
 /// Currency codes offered at onboarding. The chosen one opens the first account
-/// and defaults the display currency (ADR-0013). Display labels are localized —
-/// see [_currencyLabel].
-const List<String> _currencyCodes = ['USD', 'EUR', 'GBP', 'PLN', 'JPY', 'CAD'];
+/// and defaults the display currency (ADR-0013). The shared pool; display labels are
+/// localized where a string exists, otherwise the shared English name — see [_currencyLabel].
+const List<String> _currencyCodes = kCurrencyPool;
 
-/// The localized `name — code` label for a currency code.
+/// The `name — code` label for a currency code — localized for the original set,
+/// else the shared English name (e.g. "Belarusian Ruble — BYN").
 String _currencyLabel(AppLocalizations l10n, String code) => switch (code) {
       'USD' => l10n.currencyUsd,
       'EUR' => l10n.currencyEur,
@@ -21,7 +23,7 @@ String _currencyLabel(AppLocalizations l10n, String code) => switch (code) {
       'PLN' => l10n.currencyPln,
       'JPY' => l10n.currencyJpy,
       'CAD' => l10n.currencyCad,
-      _ => code,
+      _ => '${kCurrencyNames[code] ?? code} — $code',
     };
 
 /// First-run onboarding — "Set up your first month" (Money ADR-0013). Collects
