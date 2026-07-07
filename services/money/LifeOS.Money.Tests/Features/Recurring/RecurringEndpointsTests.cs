@@ -20,10 +20,10 @@ public class RecurringEndpointsTests : IClassFixture<MoneyApiFactory>
         null,
         null);
 
-    // A balanced plan: one item worth 200×N, financed by N monthly $200 payments.
+    // A plan: one priceless item, paid off in N monthly $200 payments (Σ payments = total).
     private static CreateRecurringRequest MaterializedInstallments(Guid id, params Guid[] lineIds) => new(
         id, "Laptop", "out", "USD", null, null, "materialized", null, null,
-        [new RecurringLineRequest(200m * lineIds.Length, null, "Laptop")],
+        [new PlanItemRequest("Laptop", null, null, null)],
         lineIds.Select((lineId, i) => new ScheduleLineRequest(
             lineId, new DateOnly(2026, 2 + i, 1), 200m)).ToList());
 
@@ -55,26 +55,30 @@ public class RecurringEndpointsTests : IClassFixture<MoneyApiFactory>
         var body = await response.Content.ReadFromJsonAsync<RecurringResponse>();
         Assert.Equal("materialized", body!.Mode);
         Assert.Null(body.Rule);
-        Assert.Equal(-400m, Assert.Single(body.Items).Amount.Amount);   // 200 × 2 payments
+        Assert.Equal("Laptop", Assert.Single(body.Items).Description);   // priceless contents
         Assert.Equal(2, body.ScheduleLines.Count);
         Assert.All(body.ScheduleLines, x => Assert.Equal(-200m, x.Amount.Amount));
     }
 
     [Fact]
-    public async Task CreateMaterialized_Unbalanced_Returns400()
+    public async Task CreateMaterialized_ItemsNeedNotBalancePayments_Ok()
     {
         var client = _factory.CreateClientFor(TestUsers.Alice);
 
-        // One $500 item, but the payments only sum to $400 → invalid.
-        var bad = new CreateRecurringRequest(
-            Guid.NewGuid(), "Laptop", "out", "USD", null, null, "materialized", null, null,
-            [new RecurringLineRequest(500m, null, "Laptop")],
-            [new ScheduleLineRequest(Guid.NewGuid(), new DateOnly(2026, 2, 1), 200m),
-             new ScheduleLineRequest(Guid.NewGuid(), new DateOnly(2026, 3, 1), 200m)]);
+        // Two priceless items (reference values only), one $170 payment — no balance
+        // requirement (ADR-0029); the plan total is the payments.
+        var request = new CreateRecurringRequest(
+            Guid.NewGuid(), "Pre-order", "out", "USD", null, null, "materialized", null, null,
+            [new PlanItemRequest("Base game", 90m, null, null),
+             new PlanItemRequest("Addon", 81m, null, null)],
+            [new ScheduleLineRequest(Guid.NewGuid(), new DateOnly(2026, 2, 1), 170m)]);
 
-        var response = await client.PostAsJsonAsync("/api/recurring", bad);
+        var response = await client.PostAsJsonAsync("/api/recurring", request);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<RecurringResponse>();
+        Assert.Equal(2, body!.Items.Count);
+        Assert.Equal(-170m, Assert.Single(body.ScheduleLines).Amount.Amount);
     }
 
     [Fact]
@@ -159,8 +163,8 @@ public class RecurringEndpointsTests : IClassFixture<MoneyApiFactory>
         Assert.Equal(l1.ToString(), only.OccurrenceRef);
         Assert.Equal(new DateOnly(2026, 2, 1), only.DueDate);
         Assert.Equal(-200m, only.ExpectedAmount.Amount);
-        // Its slice of the single $400 item = the $200 this payment covers.
-        Assert.Equal(-200m, only.Lines.Sum(x => x.Amount.Amount));
+        // Its single reference line = the $200 this payment schedules (ADR-0029).
+        Assert.Equal(-200m, Assert.Single(only.Lines).Amount.Amount);
     }
 
     [Fact]

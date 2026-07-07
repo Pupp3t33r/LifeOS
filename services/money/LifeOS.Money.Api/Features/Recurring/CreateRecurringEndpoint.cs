@@ -9,11 +9,11 @@ namespace LifeOS.Money.Api.Features.Recurring;
 
 public static class CreateRecurringEndpoint
 {
-    // Create a recurring payment/income (ADR-0017; contents-at-root per ADR-0028).
-    // Idempotent on the client-assigned RecurringId (ADR-0003): a repeat id is a 409,
-    // which the client treats as already-applied. Live requires a rule + estimate;
-    // Materialized requires balanced Items + schedule payments, authored once here (a
-    // plan is immutable except cancel).
+    // Create a recurring payment/income (ADR-0017; contents-at-root per ADR-0028,
+    // priceless plan items per ADR-0029). Idempotent on the client-assigned RecurringId
+    // (ADR-0003): a repeat id is a 409, which the client treats as already-applied. Live
+    // requires a rule + estimate; Materialized requires priceless Items + bare-money
+    // payments, authored once here (a plan is immutable except cancel; no balance).
     [WolverinePost("/recurring")]
     public static async Task<RecurringResponse> Handle(
         CreateRecurringRequest request,
@@ -34,7 +34,7 @@ public static class CreateRecurringEndpoint
         RecurringPaymentCreated created;
         if (request.Mode == "materialized")
         {
-            var items = RecurringMapping.ToLines(request.Items ?? [], direction, request.Currency);
+            var items = RecurringMapping.ToPlanItems(request.Items ?? [], request.Currency);
             var scheduleLines = (request.ScheduleLines ?? [])
                 .Select(x => RecurringMapping.ToScheduleLine(x, direction, request.Currency))
                 .ToList();

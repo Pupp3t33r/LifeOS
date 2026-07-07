@@ -1,5 +1,6 @@
 using LifeOS.Money.Api.Auth;
 using LifeOS.Money.Api.Domain;
+using LifeOS.Money.Api.Domain.Events;
 using LifeOS.Money.Api.Domain.Recurring;
 using LifeOS.Money.Api.Http;
 using Marten;
@@ -38,17 +39,37 @@ public static class ConfirmOccurrenceEndpoint
                 $"Occurrence '{request.OccurrenceRef}' was not found on recurring payment '{id}'.");
         }
 
-        // A payment plan (Materialized) records its scheduled proportional slice exactly —
-        // no override (ADR-0028 §4). Override remains a Live affordance (variable actuals).
-        if (recurring.Mode == ScheduleMode.Materialized && request.Lines is { Count: > 0 })
+        // A payment plan (Materialized) records a single reference line under the plan's
+        // category (ADR-0029). The actual amount is adjustable (default = scheduled), but
+        // it is never itemised — an override carrying more than one line is rejected.
+        List<Line> lines;
+        if (recurring.Mode == ScheduleMode.Materialized)
         {
-            throw new BadRequestException(
-                "A payment-plan payment records its scheduled slice; overriding the amount/lines is not supported (ADR-0028).");
+            if (request.Lines is { Count: > 1 })
+            {
+                throw new BadRequestException(
+                    "A payment-plan payment records a single reference line; itemising it is not supported (ADR-0029).");
+            }
+
+            if (request.Lines is { Count: 1 })
+            {
+                // Amount-only adjustment: take the paid amount, force the plan's category.
+                var sign = recurring.Direction == FlowDirection.Out ? -1m : 1m;
+                var paid = new CurrencyAmount(sign * request.Lines[0].Amount, recurring.Currency);
+                lines = [new Line(null, paid, recurring.CategoryId)];
+            }
+            else
+            {
+                lines = expectedLines.ToList();
+            }
+        }
+        else
+        {
+            lines = request.Lines is { Count: > 0 }
+                ? RecurringMapping.ToLines(request.Lines, recurring.Direction, recurring.Currency)
+                : expectedLines.ToList();
         }
 
-        var lines = request.Lines is { Count: > 0 }
-            ? RecurringMapping.ToLines(request.Lines, recurring.Direction, recurring.Currency)
-            : expectedLines.ToList();
         if (lines.Count == 0)
         {
             throw new BadRequestException("The occurrence has no line items to confirm; provide lines.");

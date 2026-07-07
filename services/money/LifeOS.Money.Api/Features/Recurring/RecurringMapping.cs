@@ -30,6 +30,20 @@ internal static class RecurringMapping
             .ToList();
     }
 
+    // Priceless plan contents (ADR-0029). ReferenceValue is an optional informational
+    // magnitude stored in the plan currency; it is never signed, summed, or validated.
+    public static List<PlanItem> ToPlanItems(
+        IReadOnlyList<PlanItemRequest> items, string currency)
+    {
+        return items
+            .Select(x => new PlanItem(
+                x.Description,
+                x.ReferenceValue is { } v ? new CurrencyAmount(v, currency) : null,
+                x.CategoryId,
+                x.WishlistItemId))
+            .ToList();
+    }
+
     public static ScheduleLine ToScheduleLine(
         ScheduleLineRequest request, FlowDirection direction, string currency)
     {
