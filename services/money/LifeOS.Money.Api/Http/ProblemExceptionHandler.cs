@@ -24,6 +24,9 @@ public sealed class ProblemExceptionHandler : IExceptionHandler
             DuplicateMovementException => (StatusCodes.Status409Conflict, "Conflict"),
             DuplicateFlowException => (StatusCodes.Status409Conflict, "Conflict"),
             DuplicateOccurrenceException => (StatusCodes.Status409Conflict, "Conflict"),
+            DuplicatePlannedPurchaseException => (StatusCodes.Status409Conflict, "Conflict"),
+            PlannedPurchaseConflictException => (StatusCodes.Status409Conflict, "Conflict"),
+            PlannedPurchaseNotFoundException => (StatusCodes.Status404NotFound, "Not Found"),
             _ => (0, string.Empty)
         };
 

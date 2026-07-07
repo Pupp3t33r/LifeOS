@@ -23,7 +23,8 @@ public sealed partial class FlowEntryRecordProjection : EventProjection
             OccurredAt = @event.OccurredAt,
             RecordedAt = @event.RecordedAt,
             Description = @event.Description,
-            Recurring = @event.Recurring
+            Recurring = @event.Recurring,
+            PlannedEntryId = @event.PlannedEntryId
         };
     }
 }

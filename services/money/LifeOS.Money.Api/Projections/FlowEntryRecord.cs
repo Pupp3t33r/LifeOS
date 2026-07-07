@@ -24,4 +24,8 @@ public sealed class FlowEntryRecord
     /// Set when this entry confirmed a recurring occurrence (ADR-0017); the join key
     /// the occurrence-status read uses to mark that occurrence paid. Null for ad-hoc.
     public RecurringReference? Recurring { get; set; }
+
+    /// Set when this entry paid a planned purchase (ADR-0018); the join key the
+    /// planned-purchase read uses to mark that entry paid. Null for ad-hoc.
+    public Guid? PlannedEntryId { get; set; }
 }

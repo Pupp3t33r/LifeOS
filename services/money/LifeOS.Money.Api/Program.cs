@@ -76,6 +76,7 @@ public class Program
             options.Projections.Add<SavingsMovementRecordProjection>(ProjectionLifecycle.Inline);
             options.Projections.Add<FlowEntryRecordProjection>(ProjectionLifecycle.Inline);
             options.Projections.Add<SkippedOccurrenceRecordProjection>(ProjectionLifecycle.Inline);
+            options.Projections.Add<PlannedPurchaseRecordProjection>(ProjectionLifecycle.Inline);
 
             // UserPreferences (ADR-0013) is a plain document keyed by the owner's
             // Keycloak subject, not an event-sourced aggregate.

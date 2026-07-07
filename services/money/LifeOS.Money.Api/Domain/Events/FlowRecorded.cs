@@ -10,6 +10,11 @@ using LifeOS.Money.Api.Domain;
 /// <see cref="Recurring"/> is set only when this flow is the confirmation of a
 /// recurring occurrence (ADR-0017): it back-references the occurrence so the
 /// projection can mark it paid. Null for an ad-hoc flow.
+///
+/// <see cref="PlannedEntryId"/> is set only when this flow pays a planned purchase
+/// (ADR-0018): it back-references that period's <c>PlannedPurchaseAdded.EntryId</c> so
+/// the projection marks the planned purchase paid. Mutually exclusive with
+/// <see cref="Recurring"/>; null for an ad-hoc flow.
 public sealed record FlowRecorded(
     Guid PeriodId,
     string OwnerId,
@@ -21,4 +26,5 @@ public sealed record FlowRecorded(
     DateTimeOffset OccurredAt,
     DateTimeOffset RecordedAt,
     string? Description,
-    RecurringReference? Recurring = null);
+    RecurringReference? Recurring = null,
+    Guid? PlannedEntryId = null);
