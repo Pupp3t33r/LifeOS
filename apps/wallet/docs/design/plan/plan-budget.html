@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Plan — Budget view</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+    --c-sage:#6E8E78; --c-teal:#4F8A82; --c-denim:#6480A0; --c-plum:#9B6E8E; --c-rose:#BB7081;
+    --c-clay:#C2855A; --c-ochre:#B59A4E; --c-olive:#899050; --c-stone:#8C8275; --c-slate:#7C8696;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:56px 40px 90px}
+  .board{max-width:1520px;margin:0 auto}
+  :focus-visible{outline:2px solid #8FB39E;outline-offset:2px;border-radius:4px}
+
+  .masthead{color:#EDE7DC;margin-bottom:44px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 33px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:880px;color:#B9B1A3;font-size:15px;line-height:1.62}
+  .masthead p em{color:#D9966E;font-style:normal}
+  .note{margin-top:16px;max-width:880px;font-size:12.5px;line-height:1.62;color:#9C9384;border-left:2px solid #4E6B5A;padding-left:14px}
+  .note b{color:#B9B1A3;font-weight:600}
+  .note code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#C7BFB1}
+
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+  .stage{display:flex;gap:34px;align-items:flex-start}
+  .desktop{flex:1;min-width:0}.phone{flex:0 0 332px}
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative}
+  .phone .screen{border-radius:32px}
+
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:15px 22px 13px;border-bottom:1px solid var(--line)}
+  .wm{font:700 19px/1 var(--disp);letter-spacing:-.02em}.wm i{color:var(--clay);font-style:normal}
+  .gear{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:14px}
+  .body{display:flex}
+  .rail{flex:0 0 128px;border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+  .rail .nav{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:12px;font-size:12.5px;color:var(--muted)}
+  .rail .nav svg{width:17px;height:17px;flex:0 0 17px}
+  .rail .nav.on{background:rgba(94,126,107,.12);color:var(--sageDeep);font-weight:600}
+  .content{flex:1;padding:22px 26px 26px;min-width:0}
+
+  .phd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:16px}
+  .phd .h1{font:600 25px/1.05 var(--disp);letter-spacing:-.01em}
+  .seg{display:inline-flex;background:rgba(44,42,38,.06);border-radius:999px;padding:3px}
+  .seg span{font:600 11.5px/1 var(--body);padding:7px 13px;border-radius:999px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+  .seg span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .bud-sub{font-size:12.5px;color:var(--muted);margin:0 0 20px}
+
+  .bud-wrap{display:flex;gap:22px;align-items:flex-start}
+  .bud-left{flex:1;min-width:0}.bud-right{flex:0 0 252px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:16px}
+  .card .h{font:600 11px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .card .h .sm{letter-spacing:0;text-transform:none;font-weight:500;font-size:11px;color:var(--muted)}
+  .brow{display:grid;grid-template-columns:126px 1fr 84px 26px;align-items:center;gap:12px;padding:11px 0}
+  .brow + .brow{border-top:1px solid var(--line)}
+  .brow .bn{font-size:12.5px;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .brow .bn .cd{width:9px;height:9px;border-radius:999px;flex:0 0 auto}
+  .slider{height:8px;border-radius:999px;background:rgba(44,42,38,.09);position:relative}
+  .slider .sf{position:absolute;inset:0 auto 0 0;border-radius:999px}
+  .slider .knob{position:absolute;top:50%;width:16px;height:16px;border-radius:999px;background:#fff;border:2px solid var(--sageDeep);transform:translate(-50%,-50%);box-shadow:0 2px 5px rgba(0,0,0,.15)}
+  .bval{text-align:right}
+  .bval .v{font:600 13.5px/1 var(--disp);color:var(--ink)}
+  .brm{width:26px;height:26px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);display:grid;place-items:center;font-size:11px;flex:0 0 auto}
+  .addcat{display:flex;align-items:center;gap:10px;margin-top:8px;padding-top:13px;border-top:1px dashed var(--line);color:var(--sageDeep);font:600 12.5px/1 var(--body)}
+  .addcat .plus{width:22px;height:22px;border-radius:999px;border:1.5px solid var(--sage);display:grid;place-items:center;font:400 15px/1 var(--disp)}
+  .addcat .avail{margin-left:auto;font-weight:500;font-size:11px;color:var(--muted)}
+  .other{display:flex;align-items:center;gap:11px;margin-top:12px;padding:12px 13px;border:1px dashed var(--line);border-radius:12px;background:rgba(44,42,38,.02)}
+  .other .od{width:9px;height:9px;border-radius:999px;background:var(--muted);flex:0 0 auto}
+  .other .on{flex:1;min-width:0}
+  .other .on b{font-size:12.5px;color:var(--ink);font-weight:600}
+  .other .on small{display:block;font-size:10.5px;color:var(--muted);margin-top:3px}
+  .other .oa{font:600 12.5px/1 var(--disp);color:var(--muted);white-space:nowrap}
+  .target{display:flex;align-items:center;gap:13px;background:var(--bone);border:1.5px solid var(--sage);border-radius:14px;padding:14px 15px}
+  .target .ic{width:36px;height:36px;border-radius:10px;background:rgba(94,126,107,.14);display:grid;place-items:center;color:var(--sageDeep);flex:0 0 auto}
+  .target .tk{flex:1;font-size:11.5px;color:var(--muted)}.target .tk b{display:block;color:var(--ink);font-size:13.5px;font-weight:600;margin-bottom:2px}
+  .target .tv{font:700 22px/1 var(--disp);color:var(--sageDeep);letter-spacing:-.02em}
+
+  .sumcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:15px 17px;margin-bottom:14px}
+  .sumcard .h{font:600 11px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .sline{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:12.5px;color:var(--muted);border-bottom:1px dashed var(--line)}
+  .sline .val{font:600 13px/1 var(--disp);color:var(--ink)}
+  .sline .val.pos{color:var(--sageDeep)}.sline .val.neg{color:var(--clay)}
+  .sline.free{border-bottom:0;padding-top:13px;margin-top:2px;border-top:1px solid var(--line)}
+  .sline.free .lbl{color:var(--ink);font-weight:600}
+  .sline.free .val{font:700 19px/1 var(--disp);color:var(--sageDeep);letter-spacing:-.01em}
+  .homehint{font-size:11px;color:var(--muted);line-height:1.55;padding:2px 2px 0}
+  .homehint b{color:var(--sageDeep);font-weight:600}
+
+  .cat-Housing{background:var(--c-clay)} .cat-Food{background:var(--c-stone)} .cat-Transport{background:var(--c-slate)}
+  .cat-Fitness{background:var(--c-olive)} .cat-Subs{background:var(--c-teal)} .cat-Fun{background:var(--c-plum)}
+
+  /* phone */
+  .pbody{padding:18px 16px 84px}
+  .bnav{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;border-top:1px solid var(--line);background:var(--surface);padding:9px 4px 12px}
+  .bnav .nav{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;color:var(--muted)}
+  .bnav .nav svg{width:19px;height:19px}
+  .bnav .nav.on{color:var(--sageDeep);font-weight:600}
+  .phone .phd{margin-bottom:10px}.phone .phd .h1{font-size:21px}
+  .phone .seg span{padding:7px 11px}
+  .phone .brow{grid-template-columns:74px 1fr 56px 24px;gap:9px}
+  .fab{position:absolute;right:16px;bottom:74px;height:48px;width:48px;border-radius:999px;background:var(--clay);color:#fff;font:400 22px/48px var(--disp);text-align:center;box-shadow:0 12px 24px -8px rgba(192,122,82,.6)}
+
+  @media(max-width:1160px){.stage{flex-direction:column}.phone{align-self:center}}
+  @media(max-width:640px){.bud-wrap{flex-direction:column}.bud-right{flex-basis:auto;width:100%}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-plan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M6 4h11.5l-2.4 4 2.4 4H6"/></symbol>
+  <symbol id="i-act" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+  <symbol id="i-acct" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><path d="M16 14.5h2"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-board" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.4"/><rect x="10" y="4" width="5" height="11" rx="1.4"/><rect x="17" y="4" width="4" height="14" rx="1.4"/></symbol>
+  <symbol id="i-tune" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.4" fill="var(--bone)"/><circle cx="15" cy="16" r="2.4" fill="var(--bone)"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.6"/></symbol>
+</svg>
+
+<div class="board">
+
+  <div class="masthead">
+    <div class="kicker">wallet · Plan · Budget view — spending limits &amp; savings target</div>
+    <h1>Set the shape — <b>limits and a target</b></h1>
+    <p>The third view of Plan, alongside <em>List</em> and <em>Board</em>. Here you set a <em>spending limit</em> per category and a
+      <em>savings target</em> — the levers that define what a good month looks like. You set them once; <em>Home</em> tracks the actuals
+      against them, period by period. This is the destination Home's budget strip “Manage” link has been pointing at.</p>
+    <p class="note"><b>The list is a selection, not a creation.</b> You <b>add / remove which existing categories</b> are tracked for budget
+      compliance — you don't make new categories here (category management comes later). A category that's not on the list <b>isn't tracked</b>;
+      its spend pools into <b>Other</b> in budget stats — a residual bucket with no limit. So the limit list is opt-in per category.</p>
+    <p class="note"><b>Furthest from today's model — build last.</b> Limits and target are period-agnostic templates you set here; the live
+      <em>spent / limit</em> tracking belongs to <b>Home</b>, not this view. The right-hand <b>“Your month”</b> readout is plain arithmetic
+      on your own levers (expected income − limits − target = free), <em>not</em> the composed forecast: <code>MonthProjection / MonthlyReview</code>
+      (ADR-0007) is <b>Accepted but unbuilt</b>, and neither budgets nor a target exist in the money service yet. So of the three views this
+      is the largest backend lift.</p>
+  </div>
+
+  <div class="stage">
+
+    <!-- DESKTOP -->
+    <div class="desktop">
+      <div class="label">Desktop · web / windows</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+        <div class="body">
+          <div class="rail">
+            <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+            <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+          </div>
+          <div class="content">
+            <div class="phd">
+              <div class="h1">Plan</div>
+              <div class="seg">
+                <span><svg width="14" height="14"><use href="#i-list"/></svg>List</span>
+                <span><svg width="14" height="14"><use href="#i-board"/></svg>Board</span>
+                <span class="on"><svg width="14" height="14"><use href="#i-tune"/></svg>Budget</span>
+              </div>
+            </div>
+            <div class="bud-sub">Set a limit per category and a monthly savings target — Home reports the actuals against them.</div>
+
+            <div class="bud-wrap">
+              <div class="bud-left">
+                <div class="card">
+                  <div class="h"><span>Spending limits</span></div>
+                  <div class="brow"><div class="bn"><span class="cd cat-Housing"></span>Housing</div><div class="slider"><div class="sf cat-Housing" style="width:88%"></div><div class="knob" style="left:88%"></div></div><div class="bval"><span class="v">$1,050</span></div><span class="brm" title="Stop tracking Housing">✕</span></div>
+                  <div class="brow"><div class="bn"><span class="cd cat-Food"></span>Food</div><div class="slider"><div class="sf cat-Food" style="width:60%"></div><div class="knob" style="left:60%"></div></div><div class="bval"><span class="v">$300</span></div><span class="brm" title="Stop tracking Food">✕</span></div>
+                  <div class="brow"><div class="bn"><span class="cd cat-Transport"></span>Transport</div><div class="slider"><div class="sf cat-Transport" style="width:45%"></div><div class="knob" style="left:45%"></div></div><div class="bval"><span class="v">$200</span></div><span class="brm" title="Stop tracking Transport">✕</span></div>
+                  <div class="brow"><div class="bn"><span class="cd cat-Fitness"></span>Fitness</div><div class="slider"><div class="sf cat-Fitness" style="width:34%"></div><div class="knob" style="left:34%"></div></div><div class="bval"><span class="v">$150</span></div><span class="brm" title="Stop tracking Fitness">✕</span></div>
+                  <div class="brow"><div class="bn"><span class="cd cat-Subs"></span>Subscriptions</div><div class="slider"><div class="sf cat-Subs" style="width:22%"></div><div class="knob" style="left:22%"></div></div><div class="bval"><span class="v">$60</span></div><span class="brm" title="Stop tracking Subscriptions">✕</span></div>
+                  <div class="brow"><div class="bn"><span class="cd cat-Fun"></span>Fun</div><div class="slider"><div class="sf cat-Fun" style="width:34%"></div><div class="knob" style="left:34%"></div></div><div class="bval"><span class="v">$150</span></div><span class="brm" title="Stop tracking Fun">✕</span></div>
+                  <div class="addcat"><span class="plus">+</span>Add a category to track<span class="avail">5 not tracked</span></div>
+                  <div class="other"><span class="od"></span><div class="on"><b>Other</b><small>Everything not tracked above — Health, Travel, Gifts… · no limit, pooled in budget stats</small></div></div>
+                </div>
+                <div class="card" style="margin-bottom:0">
+                  <div class="h"><span>Savings target</span></div>
+                  <div class="target">
+                    <div class="ic"><svg width="19" height="19"><use href="#i-target"/></svg></div>
+                    <div class="tk"><b>Set aside each month</b>Banked when you close the month · drag to change</div>
+                    <div class="tv">$1,000</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bud-right">
+                <div class="sumcard">
+                  <div class="h">Your month</div>
+                  <div class="sline"><span class="lbl">Expected income</span><span class="val pos">+$4,200</span></div>
+                  <div class="sline"><span class="lbl">Spending limits</span><span class="val neg">−$1,910</span></div>
+                  <div class="sline"><span class="lbl">Savings target</span><span class="val neg">−$1,000</span></div>
+                  <div class="sline free"><span class="lbl">Free to keep</span><span class="val">+$1,290</span></div>
+                </div>
+                <div class="homehint">These are your <b>limits</b>, not your spend. <b>Home</b> fills the bars in as the month runs and flags anything over.</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHONE -->
+    <div class="phone">
+      <div class="label">Phone</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+        <div class="pbody">
+          <div class="phd">
+            <div class="h1">Plan</div>
+            <div class="seg">
+              <span><svg width="12" height="12"><use href="#i-list"/></svg>List</span>
+              <span><svg width="12" height="12"><use href="#i-board"/></svg>Board</span>
+              <span class="on"><svg width="12" height="12"><use href="#i-tune"/></svg>Budget</span>
+            </div>
+          </div>
+          <div class="bud-sub">Limits &amp; savings target</div>
+
+          <div class="sumcard">
+            <div class="h">Your month</div>
+            <div class="sline"><span class="lbl">Expected income</span><span class="val pos">+$4,200</span></div>
+            <div class="sline"><span class="lbl">Spending limits</span><span class="val neg">−$1,910</span></div>
+            <div class="sline"><span class="lbl">Savings target</span><span class="val neg">−$1,000</span></div>
+            <div class="sline free"><span class="lbl">Free to keep</span><span class="val">+$1,290</span></div>
+          </div>
+
+          <div class="card">
+            <div class="h"><span>Spending limits</span></div>
+            <div class="brow"><div class="bn"><span class="cd cat-Housing"></span>Housing</div><div class="slider"><div class="sf cat-Housing" style="width:88%"></div><div class="knob" style="left:88%"></div></div><div class="bval"><span class="v">$1,050</span></div><span class="brm" title="Stop tracking">✕</span></div>
+            <div class="brow"><div class="bn"><span class="cd cat-Food"></span>Food</div><div class="slider"><div class="sf cat-Food" style="width:60%"></div><div class="knob" style="left:60%"></div></div><div class="bval"><span class="v">$300</span></div><span class="brm" title="Stop tracking">✕</span></div>
+            <div class="brow"><div class="bn"><span class="cd cat-Fun"></span>Fun</div><div class="slider"><div class="sf cat-Fun" style="width:34%"></div><div class="knob" style="left:34%"></div></div><div class="bval"><span class="v">$150</span></div><span class="brm" title="Stop tracking">✕</span></div>
+            <div class="addcat"><span class="plus">+</span>Add a category<span class="avail">5 left</span></div>
+            <div class="other"><span class="od"></span><div class="on"><b>Other</b><small>Untracked spend · no limit</small></div></div>
+          </div>
+
+          <div class="card" style="margin-bottom:0">
+            <div class="h"><span>Savings target</span></div>
+            <div class="target">
+              <div class="ic"><svg width="18" height="18"><use href="#i-target"/></svg></div>
+              <div class="tk"><b>Set aside each month</b>Banked at close</div>
+              <div class="tv">$1,000</div>
+            </div>
+          </div>
+        </div>
+        <div class="fab">+</div>
+        <div class="bnav">
+          <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+          <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+          <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

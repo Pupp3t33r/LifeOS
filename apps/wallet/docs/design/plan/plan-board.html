@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Plan — the try-on board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+    --c-sage:#6E8E78; --c-teal:#4F8A82; --c-denim:#6480A0; --c-plum:#9B6E8E; --c-rose:#BB7081;
+    --c-clay:#C2855A; --c-ochre:#B59A4E; --c-olive:#899050; --c-stone:#8C8275; --c-slate:#7C8696;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:56px 40px 90px}
+  .board{max-width:1520px;margin:0 auto}
+  :focus-visible{outline:2px solid #8FB39E;outline-offset:2px;border-radius:4px}
+
+  .masthead{color:#EDE7DC;margin-bottom:44px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 33px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:880px;color:#B9B1A3;font-size:15px;line-height:1.62}
+  .masthead p em{color:#D9966E;font-style:normal}
+  .note{margin-top:16px;max-width:880px;font-size:12.5px;line-height:1.62;color:#9C9384;border-left:2px solid #4E6B5A;padding-left:14px}
+  .note b{color:#B9B1A3;font-weight:600}
+  .note code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#C7BFB1}
+
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+  .stage{display:flex;gap:34px;align-items:flex-start}
+  .desktop{flex:1;min-width:0}.phone{flex:0 0 332px}
+  .phonestack{flex:0 0 332px;display:flex;flex-direction:column;gap:30px}
+  .phonestack .phone{flex:0 0 auto;width:100%}
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative}
+  .phone .screen{border-radius:32px}
+
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:15px 22px 13px;border-bottom:1px solid var(--line)}
+  .wm{font:700 19px/1 var(--disp);letter-spacing:-.02em}.wm i{color:var(--clay);font-style:normal}
+  .gear{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:14px}
+  .body{display:flex}
+  .rail{flex:0 0 128px;border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+  .rail .nav{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:12px;font-size:12.5px;color:var(--muted)}
+  .rail .nav svg{width:17px;height:17px;flex:0 0 17px}
+  .rail .nav.on{background:rgba(94,126,107,.12);color:var(--sageDeep);font-weight:600}
+  .content{flex:1;padding:22px 26px 26px;min-width:0}
+
+  .phd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:16px}
+  .phd .h1{font:600 25px/1.05 var(--disp);letter-spacing:-.01em}
+  .seg{display:inline-flex;background:rgba(44,42,38,.06);border-radius:999px;padding:3px}
+  .seg span{font:600 11.5px/1 var(--body);padding:7px 15px;border-radius:999px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+  .seg span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .bd-help{font-size:12.5px;color:var(--muted);margin-bottom:18px}
+  .bd-help b{color:var(--ink);font-weight:600}
+
+  /* wishlist tray */
+  .bd-tray{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 15px 14px;margin-bottom:16px}
+  .bd-tray .th{font:600 10.5px/1 var(--body);letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:9px}
+  .bd-tray .th .hint{letter-spacing:0;text-transform:none;font-weight:500;font-size:11px;color:var(--muted)}
+  .bd-tray .th .hint b{color:var(--sageDeep);font-weight:600}
+  .bd-wants{display:flex;gap:10px;flex-wrap:wrap}
+  .bd-want{display:flex;align-items:center;gap:9px;background:var(--bone);border:1px solid var(--line);border-radius:12px;padding:8px 12px 8px 10px}
+  .grip{color:#c3bcac;font-size:13px;letter-spacing:-2px}
+  .bd-want .cd{width:9px;height:9px;border-radius:999px;flex:0 0 auto}
+  .bd-want .nmw{font-size:12.5px;color:var(--ink)}
+  .bd-want .pr{font:600 12.5px/1 var(--disp);color:var(--clay)}
+  .bd-want.dragging{opacity:.45;border-style:dashed;background:transparent;box-shadow:none}
+  .bd-want.dragging .nmw,.bd-want.dragging .pr{opacity:.6}
+
+  /* tray filters — category + title search */
+  .bd-filt{display:flex;align-items:center;gap:10px;margin:12px 0 14px;flex-wrap:wrap}
+  .bd-search{display:flex;align-items:center;gap:8px;background:var(--bone);border:1px solid var(--line);border-radius:10px;padding:8px 11px;min-width:190px;flex:0 0 auto}
+  .bd-search svg{width:14px;height:14px;color:var(--muted);flex:0 0 auto}
+  .bd-search input{border:0;background:transparent;outline:none;font:400 12.5px/1 var(--body);color:var(--ink);width:150px}
+  .bd-search input::placeholder{color:var(--muted)}
+  .bd-catchips{display:flex;gap:7px;flex-wrap:wrap}
+  .bd-chip{display:inline-flex;align-items:center;gap:6px;font:600 11.5px/1 var(--body);padding:7px 11px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+  .bd-chip .cd{width:8px;height:8px;border-radius:999px}
+  .bd-chip.on{border-color:var(--sage);color:var(--sageDeep);background:rgba(94,126,107,.08)}
+
+  /* month navigation — year filter + window paging */
+  .bd-monthbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+  .yr{display:inline-flex;align-items:center;gap:10px}
+  .yr .lbl{font:600 10px/1 var(--body);letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+  .yr .arw{width:28px;height:28px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink);font-size:14px}
+  .yr .y{font:600 15px/1 var(--disp);letter-spacing:-.01em}
+  .yr .win{font-size:11.5px;color:var(--muted)}
+
+  /* month columns */
+  .bd-cols{display:flex;gap:12px;align-items:flex-start;overflow-x:auto;padding-bottom:6px}
+  .bd-col{flex:1 0 156px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 12px 14px;display:flex;flex-direction:column;gap:9px;min-height:224px}
+  .bd-col.drop{border:1.5px dashed var(--sage);background:rgba(94,126,107,.05)}
+  .bd-hd{padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .bd-hd .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .bd-hd .mo{font:600 15px/1 var(--disp);letter-spacing:-.01em}
+  .bd-hd .nowb{font:600 9.5px/1 var(--body);letter-spacing:.4px;text-transform:uppercase;color:var(--sageDeep);background:rgba(94,126,107,.12);padding:4px 7px;border-radius:999px}
+  .bd-tot{font:700 20px/1 var(--disp);letter-spacing:-.02em}
+  .bd-tot.heavy{color:var(--clay)}
+  .bd-brk{font-size:10.5px;color:var(--muted);margin-top:4px}
+  .bd-brk .want{color:var(--clay);font-weight:600}
+  .bd-card{display:flex;align-items:center;gap:8px;background:var(--bone);border:1px solid var(--line);border-radius:11px;padding:8px 9px}
+  .bd-card .cd{width:9px;height:9px;border-radius:999px;flex:0 0 auto}
+  .bd-card .cn{flex:1;min-width:0;font-size:12.5px;color:var(--ink)}
+  .bd-card .cp{font:600 12px/1 var(--disp);color:var(--clay)}
+  .bd-card.ghost{transform:rotate(-2.2deg);box-shadow:0 14px 26px -10px rgba(32,30,26,.5);border:1.5px solid var(--sage);background:#fff}
+  .bd-empty{border:1.5px dashed var(--line);border-radius:11px;padding:20px 10px;text-align:center;font-size:11px;color:var(--muted);line-height:1.5}
+  .bd-col.drop .bd-empty{display:none}
+
+  .cat-Auto{background:var(--c-slate)} .cat-Home{background:var(--c-clay)} .cat-Electronics{background:var(--c-denim)}
+  .cat-Travel{background:var(--c-teal)} .cat-Photography{background:var(--c-ochre)} .cat-Fitness{background:var(--c-olive)}
+  .cat-Food{background:var(--c-stone)}
+  .bd-tag{font:600 9px/1 var(--body);letter-spacing:.4px;text-transform:uppercase;padding:3px 6px;border-radius:999px;flex:0 0 auto}
+  .bd-tag.once{color:var(--muted);background:rgba(44,42,38,.06)}
+  .bd-tag.rep{color:var(--sageDeep);background:rgba(94,126,107,.12)}
+  .bd-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;font-size:11px;color:var(--muted);line-height:1.5}
+  .bd-legend b{color:var(--ink);font-weight:600}
+
+  /* phone */
+  .pbody{padding:18px 16px 84px}
+  .bnav{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;border-top:1px solid var(--line);background:var(--surface);padding:9px 4px 12px}
+  .bnav .nav{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;color:var(--muted)}
+  .bnav .nav svg{width:19px;height:19px}
+  .bnav .nav.on{color:var(--sageDeep);font-weight:600}
+  .phone .phd{margin-bottom:12px}.phone .phd .h1{font-size:21px}
+  .p-trayrow{display:flex;gap:8px;overflow:hidden;margin-bottom:6px}
+  .p-want{flex:0 0 auto;display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}
+  .p-want .cd{width:8px;height:8px;border-radius:999px}
+  /* collapsed drag state */
+  .pc-cancel{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed var(--clay);color:var(--clay);background:rgba(192,122,82,.05);border-radius:12px;padding:12px;font:600 12px/1 var(--body);margin-bottom:13px}
+  .pc-hint{font-size:12px;color:var(--muted);margin-bottom:12px;text-align:center}
+  .pc-hint b{color:var(--ink);font-weight:600}
+  .pc-mrow{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+  .pc-mrow .mo{font:600 13.5px/1 var(--disp);color:var(--ink)}
+  .pc-mrow .meta{font-size:10.5px;color:var(--muted);margin-top:3px}
+  .pc-mrow .meta .want{color:var(--clay);font-weight:600}
+  .pc-mrow .tot{font:700 16px/1 var(--disp);color:var(--ink);letter-spacing:-.01em;white-space:nowrap}
+  .pc-mrow .tot.heavy{color:var(--clay)}
+  .pc-mrow.drop{border:1.5px dashed var(--sage);background:rgba(94,126,107,.06)}
+  .p-msec{margin-bottom:16px}
+  .p-mhd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px;padding:0 2px}
+  .p-mhd .mo{font:600 15px/1 var(--disp)} .p-mhd .mt{font:700 15px/1 var(--disp);color:var(--clay)}
+  .p-mhd .fx{font-size:10.5px;color:var(--muted);font-weight:500;margin-left:7px}
+  .fab{position:absolute;right:16px;bottom:74px;height:48px;width:48px;border-radius:999px;background:var(--clay);color:#fff;font:400 22px/48px var(--disp);text-align:center;box-shadow:0 12px 24px -8px rgba(192,122,82,.6)}
+
+  @media(max-width:1160px){.stage{flex-direction:column}.phone{align-self:center}.phonestack{align-self:center}}
+  @media(max-width:720px){.bd-cols{flex-wrap:wrap}.bd-col{flex:1 1 46%}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-plan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M6 4h11.5l-2.4 4 2.4 4H6"/></symbol>
+  <symbol id="i-act" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+  <symbol id="i-acct" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><path d="M16 14.5h2"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-board" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.4"/><rect x="10" y="4" width="5" height="11" rx="1.4"/><rect x="17" y="4" width="4" height="14" rx="1.4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-tune" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.4" fill="var(--bone)"/><circle cx="15" cy="16" r="2.4" fill="var(--bone)"/></symbol>
+</svg>
+
+<div class="board">
+
+  <div class="masthead">
+    <div class="kicker">wallet · Plan · Board view — the try-on board</div>
+    <h1>Plan by <b>dragging wants into months</b></h1>
+    <p>The other side of the <em>List</em> (direction A). Your wishlist sits in a tray; the months ahead are columns.
+      <em>Drag a want onto a month</em> to try it on — the month's total shifts so you feel the weight before you commit.
+      Drag it to another month to reschedule, or back to the tray to drop the idea. <em>The drop is the commit</em> — no dialog,
+      no confirm. One gesture, one page.</p>
+    <p class="note"><b>Same tab, second view.</b> Board is a <code>List ⇄ Board</code> toggle on Plan, not a separate destination —
+      planning stays one place. A drop files a <b>planned purchase</b> on that period (<code>ADR-0018</code>, which already allows
+      planning onto future months); dragging between months re-files it; the tray is your <b>Wishlist</b> (<code>ADR-0022</code> items).
+      Each column shows the month's <b>committed</b> base (Ongoing + plan payments) so the wants you're trying on read as weight
+      <em>on top</em> of what's already fixed.</p>
+    <p class="note"><b>Phone drags for real.</b> On drag-start the months <b>collapse to header rows</b> (name + balance) and the wishlist
+      collapses to a single <b>cancel bar</b> — so every month in the window becomes a visible drop target and there's a clear "drop
+      to cancel." On drop, everything expands back to the shortened resting view. No picker panel, no dialog. Two phone frames below
+      show <b>resting</b> and <b>mid-drag</b>.</p>
+    <p class="note"><b>Model, pinned down.</b> <b>Months</b> run from this month forward — all twelve for a future year; pick the year with
+      <code>‹ 2026 ›</code>, no window pager, columns scroll when long. <b>Wants</b> are <b>once</b> (fridge, tires — leaves the wishlist
+      when planned, returns if removed; a move relocates the one instance, never duplicates) or <b>↻ reusable</b> (coffee, tea — stays,
+      plan any month). A want <b>financed by a payment plan</b> isn't a draggable card — it's already committed, so it shows only as each
+      month's <b>fixed weight</b>. A planned single buy has <b>no day</b>: the month <em>is</em> its schedule (target period).</p>
+  </div>
+
+  <div class="stage">
+
+    <!-- DESKTOP -->
+    <div class="desktop">
+      <div class="label">Desktop · web / windows — mid-drag: “Winter tires” lifting toward October</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+        <div class="body">
+          <div class="rail">
+            <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+            <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+          </div>
+          <div class="content">
+            <div class="phd">
+              <div class="h1">Plan</div>
+              <div class="seg"><span><svg width="14" height="14"><use href="#i-list"/></svg>List</span><span class="on"><svg width="14" height="14"><use href="#i-board"/></svg>Board</span><span><svg width="14" height="14"><use href="#i-tune"/></svg>Budget</span></div>
+            </div>
+            <div class="bd-help"><b>Drag a want into a month</b> to try it on — the drop is the commit. Drag between months to reschedule; back to the tray to drop it.</div>
+
+            <div class="bd-tray">
+              <div class="th">Wishlist <span class="hint">· <b>drag onto a month</b> to plan it — nothing here is committed yet</span></div>
+              <div class="bd-filt">
+                <label class="bd-search"><svg><use href="#i-search"/></svg><input type="text" placeholder="Search wants"></label>
+                <div class="bd-catchips">
+                  <span class="bd-chip on">All</span>
+                  <span class="bd-chip"><span class="cd cat-Electronics"></span>Electronics</span>
+                  <span class="bd-chip"><span class="cd cat-Auto"></span>Auto</span>
+                  <span class="bd-chip"><span class="cd cat-Travel"></span>Travel</span>
+                  <span class="bd-chip"><span class="cd cat-Home"></span>Home</span>
+                </div>
+              </div>
+              <div class="bd-wants">
+                <div class="bd-want dragging"><span class="grip">⠿</span><span class="cd cat-Auto"></span><span class="nmw">Winter tires</span><span class="pr">−$600</span><span class="bd-tag once">once</span></div>
+                <div class="bd-want"><span class="grip">⠿</span><span class="cd cat-Electronics"></span><span class="nmw">AirPods</span><span class="pr">−$180</span><span class="bd-tag once">once</span></div>
+                <div class="bd-want"><span class="grip">⠿</span><span class="cd cat-Food"></span><span class="nmw">Coffee beans</span><span class="pr">−$18</span><span class="bd-tag rep">↻ reusable</span></div>
+                <div class="bd-want"><span class="grip">⠿</span><span class="cd cat-Electronics"></span><span class="nmw">Monitor</span><span class="pr">−$300</span><span class="bd-tag once">once</span></div>
+              </div>
+            </div>
+
+            <div class="bd-monthbar">
+              <div class="yr"><span class="lbl">Year</span><span class="arw">‹</span><span class="y">2026</span><span class="arw">›</span></div>
+              <div class="yr"><span class="win">Jul – Dec · this month onward · scroll →</span></div>
+            </div>
+
+            <div class="bd-cols">
+
+              <div class="bd-col">
+                <div class="bd-hd">
+                  <div class="top"><span class="mo">July</span><span class="nowb">Now</span></div>
+                  <div class="bd-tot">−$2,030</div>
+                  <div class="bd-brk">−$1,610 fixed · <span class="want">−$420 wants</span></div>
+                </div>
+                <div class="bd-card"><span class="cd cat-Fitness"></span><span class="cn">Running shoes</span><span class="cp">−$120</span></div>
+                <div class="bd-card"><span class="cd cat-Photography"></span><span class="cn">Camera kit</span><span class="cp">−$300</span></div>
+              </div>
+
+              <div class="bd-col">
+                <div class="bd-hd">
+                  <div class="top"><span class="mo">August</span></div>
+                  <div class="bd-tot">−$1,610</div>
+                  <div class="bd-brk">−$1,610 fixed · no wants yet</div>
+                </div>
+                <div class="bd-empty">Drop a want here<br>to try August</div>
+              </div>
+
+              <div class="bd-col">
+                <div class="bd-hd">
+                  <div class="top"><span class="mo">September</span></div>
+                  <div class="bd-tot">−$2,060</div>
+                  <div class="bd-brk">−$1,610 fixed · <span class="want">−$450 wants</span></div>
+                </div>
+                <div class="bd-card"><span class="cd cat-Home"></span><span class="cn">Standing desk</span><span class="cp">−$450</span></div>
+              </div>
+
+              <div class="bd-col drop">
+                <div class="bd-hd">
+                  <div class="top"><span class="mo">October</span></div>
+                  <div class="bd-tot heavy">−$2,210</div>
+                  <div class="bd-brk">−$1,610 fixed · <span class="want">−$600 trying on…</span></div>
+                </div>
+                <div class="bd-card ghost"><span class="cd cat-Auto"></span><span class="cn">Winter tires</span><span class="cp">−$600</span></div>
+                <div class="bd-empty">Release to plan for October</div>
+              </div>
+
+              <div class="bd-col">
+                <div class="bd-hd">
+                  <div class="top"><span class="mo">November</span></div>
+                  <div class="bd-tot">−$1,410</div>
+                  <div class="bd-brk">−$1,410 fixed · no wants yet</div>
+                </div>
+                <div class="bd-empty">Drop a want here<br>to try November</div>
+              </div>
+
+              <div class="bd-col">
+                <div class="bd-hd">
+                  <div class="top"><span class="mo">December</span></div>
+                  <div class="bd-tot">−$1,410</div>
+                  <div class="bd-brk">−$1,410 fixed · no wants yet</div>
+                </div>
+                <div class="bd-empty">Drop a want here<br>to try December</div>
+              </div>
+
+            </div>
+
+            <div class="bd-legend">
+              <span><b>once</b> — one-time buy; leaves the wishlist when planned, returns if you remove it</span>
+              <span><b>↻ reusable</b> — stays in the wishlist; plan it as many months as you like</span>
+              <span>Plan-financed buys show as <b>fixed weight</b>, not as draggable wants</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHONES — resting + mid-drag collapse -->
+    <div class="phonestack">
+
+      <!-- resting / expanded -->
+      <div class="phone">
+        <div class="label">Phone · resting — wishlist &amp; months expanded (shortened)</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pbody">
+            <div class="phd"><div class="h1">Plan</div><div class="seg"><span><svg width="13" height="13"><use href="#i-list"/></svg>List</span><span class="on"><svg width="13" height="13"><use href="#i-board"/></svg>Board</span><span><svg width="13" height="13"><use href="#i-tune"/></svg>Budget</span></div></div>
+            <div class="bd-monthbar" style="margin-bottom:13px">
+              <div class="yr"><span class="lbl">Year</span><span class="arw">‹</span><span class="y">2026</span><span class="arw">›</span></div>
+              <div class="yr"><span class="win">Jul–Dec</span></div>
+            </div>
+            <div class="th" style="font:600 10.5px/1 var(--body);letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Wishlist <span style="letter-spacing:0;text-transform:none;font-weight:500;color:var(--muted)">· drag onto a month</span></div>
+            <label class="bd-search" style="width:100%;min-width:0;margin-bottom:9px"><svg><use href="#i-search"/></svg><input type="text" placeholder="Search wants" style="flex:1;width:auto"></label>
+            <div class="bd-catchips" style="margin-bottom:11px">
+              <span class="bd-chip on">All</span>
+              <span class="bd-chip"><span class="cd cat-Auto"></span>Auto</span>
+              <span class="bd-chip"><span class="cd cat-Electronics"></span>Electronics</span>
+            </div>
+            <div class="p-trayrow" style="flex-wrap:wrap;margin-bottom:18px">
+              <div class="p-want"><span class="grip">⠿</span><span class="cd cat-Auto"></span>Winter tires −$600 <span class="bd-tag once">once</span></div>
+              <div class="p-want"><span class="grip">⠿</span><span class="cd cat-Food"></span>Coffee beans −$18 <span class="bd-tag rep">↻</span></div>
+              <div class="p-want"><span class="grip">⠿</span><span class="cd cat-Electronics"></span>AirPods −$180 <span class="bd-tag once">once</span></div>
+              <div class="p-want"><span class="grip">⠿</span><span class="cd cat-Electronics"></span>Monitor −$300 <span class="bd-tag once">once</span></div>
+            </div>
+            <div class="p-msec">
+              <div class="p-mhd"><span class="mo">July <span class="fx">−$1,610 fixed</span></span><span class="mt">−$2,030</span></div>
+              <div class="bd-card" style="margin-bottom:8px"><span class="cd cat-Fitness"></span><span class="cn">Running shoes</span><span class="cp">−$120</span></div>
+              <div class="bd-card"><span class="cd cat-Photography"></span><span class="cn">Camera kit</span><span class="cp">−$300</span></div>
+            </div>
+            <div class="p-msec">
+              <div class="p-mhd"><span class="mo">September <span class="fx">−$1,610 fixed</span></span><span class="mt">−$2,060</span></div>
+              <div class="bd-card"><span class="cd cat-Home"></span><span class="cn">Standing desk</span><span class="cp">−$450</span></div>
+            </div>
+          </div>
+          <div class="fab">+</div>
+          <div class="bnav">
+            <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+            <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+            <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- mid-drag / collapsed -->
+      <div class="phone">
+        <div class="label">Phone · dragging — months collapse to headers, wishlist to a cancel bar</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pbody">
+            <div class="phd"><div class="h1">Plan</div><div class="seg"><span><svg width="13" height="13"><use href="#i-list"/></svg>List</span><span class="on"><svg width="13" height="13"><use href="#i-board"/></svg>Board</span><span><svg width="13" height="13"><use href="#i-tune"/></svg>Budget</span></div></div>
+            <div class="pc-cancel">↩ Drop here to cancel</div>
+            <div class="pc-hint">Dragging <b>Winter tires −$600</b> — release on a month</div>
+            <div class="pc-mrow"><div><div class="mo">July</div><div class="meta"><span class="want">+$420</span> wants · $1,610 fixed</div></div><div class="tot">−$2,030</div></div>
+            <div class="pc-mrow"><div><div class="mo">August</div><div class="meta">no wants · $1,610 fixed</div></div><div class="tot">−$1,610</div></div>
+            <div class="pc-mrow"><div><div class="mo">September</div><div class="meta"><span class="want">+$450</span> wants · $1,610 fixed</div></div><div class="tot">−$2,060</div></div>
+            <div class="bd-card ghost" style="margin:2px 0 2px 20px"><span class="cd cat-Auto"></span><span class="cn">Winter tires</span><span class="cp">−$600</span></div>
+            <div class="pc-mrow drop"><div><div class="mo">October</div><div class="meta"><span class="want">+$600 trying on…</span> · $1,610 fixed</div></div><div class="tot heavy">−$2,210</div></div>
+            <div class="pc-mrow"><div><div class="mo">November</div><div class="meta">no wants · $1,410 fixed</div></div><div class="tot">−$1,410</div></div>
+          </div>
+          <div class="bnav">
+            <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+            <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+            <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

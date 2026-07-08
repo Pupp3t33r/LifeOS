@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Plan tab — directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+    --c-sage:#6E8E78; --c-teal:#4F8A82; --c-denim:#6480A0; --c-plum:#9B6E8E; --c-rose:#BB7081;
+    --c-clay:#C2855A; --c-ochre:#B59A4E; --c-olive:#899050; --c-stone:#8C8275; --c-slate:#7C8696;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:56px 40px 90px}
+  .board{max-width:1520px;margin:0 auto}
+  a{color:inherit}
+  :focus-visible{outline:2px solid #8FB39E;outline-offset:2px;border-radius:4px}
+
+  .masthead{color:#EDE7DC;margin-bottom:46px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 33px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:880px;color:#B9B1A3;font-size:15px;line-height:1.62}
+  .masthead p em{color:#D9966E;font-style:normal}
+  .note{margin-top:16px;max-width:880px;font-size:12.5px;line-height:1.62;color:#9C9384;border-left:2px solid #4E6B5A;padding-left:14px}
+  .note b{color:#B9B1A3;font-weight:600}
+  .note code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#C7BFB1}
+
+  .row{display:flex;gap:40px;align-items:flex-start;margin-bottom:64px}
+  .meta{flex:0 0 236px;position:sticky;top:24px;color:#EDE7DC}
+  .meta .tag{display:inline-block;font:600 11px/1 var(--body);letter-spacing:1.8px;text-transform:uppercase;color:#15120e;background:#8FB39E;padding:6px 11px;border-radius:999px;margin-bottom:16px}
+  .meta .tag.b{background:#D9966E}
+  .meta .tag.c{background:#B9B1A3}
+  .meta h2{font:600 22px/1.12 var(--disp);margin-bottom:6px;letter-spacing:-.01em}
+  .meta .ans{font:500 12.5px/1.5 var(--body);color:#8FB39E;margin-bottom:13px}
+  .meta .thesis{font-size:13.5px;line-height:1.66;color:#C7BFB1;margin-bottom:14px}
+  .meta .thesis em{color:#D9966E;font-style:normal}
+  .meta .why{font-size:12.5px;line-height:1.6;color:#9C9384;border-left:2px solid #4E6B5A;padding-left:13px;margin-bottom:12px}
+  .meta .why b{color:#B9B1A3;font-weight:600}
+  .mocks{flex:1;min-width:0;display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+
+  .desktop{flex:1;min-width:540px}.phone{flex:0 0 320px}
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative}
+  .phone .screen{border-radius:30px}
+
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:15px 22px 13px;border-bottom:1px solid var(--line)}
+  .wm{font:700 19px/1 var(--disp);letter-spacing:-.02em}.wm i{color:var(--clay);font-style:normal}
+  .gear{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:14px}
+  .body{display:flex}
+  .rail{flex:0 0 128px;border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+  .rail .nav{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:12px;font-size:12.5px;color:var(--muted)}
+  .rail .nav svg{width:17px;height:17px;flex:0 0 17px}
+  .rail .nav.on{background:rgba(94,126,107,.12);color:var(--sageDeep);font-weight:600}
+  .content{flex:1;padding:22px 26px 26px;min-width:0}
+
+  /* plan header — a period-agnostic destination, so no switcher; a horizon summary instead */
+  .phd{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;gap:16px}
+  .phd .h1{font:600 25px/1.05 var(--disp);letter-spacing:-.01em}
+  .phd .sub{font-size:12.5px;color:var(--muted);margin-top:5px}
+  .phd .sub b{color:var(--ink);font-weight:600}
+  .newbtn{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;font:600 12.5px/1 var(--body);color:#fff;background:var(--clay);padding:10px 15px;border-radius:999px;box-shadow:0 10px 20px -10px rgba(192,122,82,.7)}
+  .newbtn b{font-size:16px;font-weight:400;line-height:1}
+
+  .sec{margin-bottom:22px}
+  .sechd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px}
+  .sechd .t{font:600 12px/1 var(--body);letter-spacing:.3px;text-transform:uppercase;color:var(--muted);display:flex;align-items:baseline;gap:8px}
+  .sechd .t b{color:var(--ink);font-weight:600;text-transform:none;letter-spacing:0;font-size:13.5px}
+  .sechd .t .ct{color:var(--muted);font-weight:500;font-size:11.5px}
+  .sechd .a{font:600 12px/1 var(--body);color:var(--sageDeep);display:inline-flex;align-items:center;gap:5px}
+  .sechd .a b{font-size:14px;font-weight:400}
+  .list{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+
+  .item{display:flex;align-items:center;gap:13px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:0}
+  .dot{width:10px;height:10px;border-radius:999px;flex:0 0 auto}
+  .glyph{width:30px;height:30px;border-radius:9px;flex:0 0 auto;display:grid;place-items:center;font-size:15px;color:#fff}
+  .nm{flex:1;min-width:0}
+  .nm .n{font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .nm .n .rep{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);font-weight:500}
+  .nm .sub{font-size:11.5px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .amt{font:600 14px/1 var(--disp);white-space:nowrap;color:var(--clay);text-align:right}
+  .amt.pos{color:var(--sageDeep)}
+  .amt .per{display:block;font:500 10px/1 var(--body);color:var(--muted);margin-top:4px}
+  .chev{color:#c3bcac;font-size:15px;flex:0 0 auto}
+  .act{flex:0 0 auto;font:600 11.5px/1 var(--body);color:var(--sageDeep);border:1px solid var(--sage);background:rgba(94,126,107,.06);padding:8px 13px;border-radius:999px;white-space:nowrap}
+  .act.ghost{color:var(--muted);border-color:var(--line);background:var(--surface)}
+
+  /* progress meter for a payment plan */
+  .prog{display:flex;align-items:center;gap:9px}
+  .ptrack{height:6px;width:120px;border-radius:999px;background:rgba(44,42,38,.09);position:relative;overflow:hidden;flex:0 0 auto}
+  .pfill{position:absolute;inset:0 auto 0 0;border-radius:999px;background:linear-gradient(90deg,var(--sage),var(--sageDeep))}
+  .pcnt{font-size:11px;color:var(--muted);font-weight:500}
+
+  .cat-Housing{background:var(--c-clay)} .cat-Income{background:var(--c-sage)} .cat-Utilities{background:var(--c-teal)}
+  .cat-Subscriptions{background:var(--c-teal)} .cat-Fitness{background:var(--c-olive)} .cat-Finance{background:var(--c-slate)}
+  .cat-Electronics{background:var(--c-denim)} .cat-Photography{background:var(--c-ochre)}
+
+  /* -------- A · library summary ribbon -------- */
+  .libsum{display:flex;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:22px}
+  .libsum .cell{flex:1;padding:14px 16px;border-right:1px solid var(--line)}
+  .libsum .cell:last-child{border-right:0}
+  .libsum .k{font:600 10px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .libsum .v{font:700 21px/1 var(--disp);letter-spacing:-.01em}
+  .libsum .v.neg{color:var(--clay)} .libsum .v.pos{color:var(--sageDeep)}
+  .libsum .cap{font-size:11px;color:var(--muted);margin-top:5px}
+
+  /* -------- B · horizon timeline -------- */
+  .horizon{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 18px 8px;margin-bottom:22px}
+  .horizon .hz-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+  .horizon .hz-hd .t{font:600 12px/1 var(--body);letter-spacing:.3px;text-transform:uppercase;color:var(--muted)}
+  .horizon .hz-hd .t b{color:var(--ink);text-transform:none;letter-spacing:0;font-size:13.5px;font-weight:600}
+  .horizon .hz-hd .lg{font-size:11px;color:var(--muted)}
+  .tl-track{display:flex;gap:12px;align-items:flex-end}
+  .tl-mo{flex:1;min-width:0;text-align:center;padding:10px 8px 12px;border-radius:14px;border:1px solid transparent;cursor:default}
+  .tl-mo.on{background:var(--bone);border-color:var(--line)}
+  .tl-bars{height:118px;display:flex;align-items:flex-end;justify-content:center;gap:3px;margin-bottom:10px}
+  .tl-bar{width:15px;border-radius:5px 5px 0 0}
+  .tl-mo .mo{font:600 12.5px/1 var(--disp);color:var(--ink)}
+  .tl-mo.on .mo{color:var(--sageDeep)}
+  .tl-mo .tot{font-size:11px;color:var(--muted);margin-top:5px}
+  .tl-mo .tot b{color:var(--ink);font-weight:600}
+  .tl-mo .spike{color:var(--clay);font-weight:600}
+  .tl-mo .flag{display:inline-block;margin-top:6px;font:600 9.5px/1 var(--body);letter-spacing:.4px;text-transform:uppercase;color:var(--clay);background:rgba(192,122,82,.12);padding:3px 6px;border-radius:999px}
+  .tl-mo .now{color:var(--sageDeep);background:rgba(94,126,107,.12)}
+
+  /* -------- C · dials / projection studio -------- */
+  .dial{display:flex;gap:22px;align-items:flex-start}
+  .dial-left{flex:1;min-width:0}
+  .dial-right{flex:0 0 240px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:16px}
+  .card .h{font:600 11px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between}
+  .drow{display:grid;grid-template-columns:112px 1fr 92px;align-items:center;gap:13px;padding:9px 0}
+  .drow .bn{font-size:12.5px;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .drow .bn .cd{width:9px;height:9px;border-radius:999px;flex:0 0 auto}
+  .slider{height:8px;border-radius:999px;background:rgba(44,42,38,.09);position:relative}
+  .slider .sf{position:absolute;inset:0 auto 0 0;border-radius:999px}
+  .slider .knob{position:absolute;top:50%;width:16px;height:16px;border-radius:999px;background:#fff;border:2px solid var(--sageDeep);transform:translate(-50%,-50%);box-shadow:0 2px 5px rgba(0,0,0,.15)}
+  .dval{font:600 12.5px/1 var(--disp);text-align:right;color:var(--ink)}
+  .dval small{color:var(--muted);font-weight:500}
+  .target{display:flex;align-items:center;justify-content:space-between;background:var(--bone);border:1.5px solid var(--sage);border-radius:14px;padding:13px 15px}
+  .target .tk{font-size:12px;color:var(--muted)}.target .tk b{display:block;color:var(--ink);font-size:13.5px;font-weight:600;margin-top:2px}
+  .target .tv{font:700 20px/1 var(--disp);color:var(--sageDeep)}
+  .preview{background:linear-gradient(135deg,#6f9080,var(--sageDeep));border-radius:18px;padding:18px;color:#fff;margin-bottom:14px}
+  .preview .k{font:600 10.5px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.72);margin-bottom:7px}
+  .preview .v{font:700 30px/1 var(--disp);letter-spacing:-.02em;margin-bottom:14px}
+  .preview .barwrap{position:relative;height:8px;border-radius:999px;background:rgba(255,255,255,.22);margin-bottom:8px}
+  .preview .fill{position:absolute;inset:0 22% 0 0;border-radius:999px;background:rgba(255,255,255,.9)}
+  .preview .tmark{position:absolute;top:-3px;bottom:-3px;left:78%;width:2px;background:#15120e}
+  .preview .leg{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.8)}
+  .preview .leg b{color:#fff;font-weight:600}
+  .feeds{font-size:11.5px;color:var(--muted);line-height:1.6}
+  .feeds .fr{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .feeds .fr:last-child{border-bottom:0}
+  .feeds .fr b{color:var(--ink);font-weight:600;font-family:var(--disp)}
+
+  /* phone */
+  .pbody{padding:18px 16px 84px}
+  .bnav{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;border-top:1px solid var(--line);background:var(--surface);padding:9px 4px 12px}
+  .bnav .nav{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;color:var(--muted)}
+  .bnav .nav svg{width:19px;height:19px}
+  .bnav .nav.on{color:var(--sageDeep);font-weight:600}
+  .fab{position:absolute;right:16px;bottom:74px;height:48px;width:48px;border-radius:999px;background:var(--clay);color:#fff;font:400 22px/48px var(--disp);text-align:center;box-shadow:0 12px 24px -8px rgba(192,122,82,.6)}
+  .phone .phd .h1{font-size:21px}
+  .phone .tl-track{flex-direction:column;align-items:stretch;gap:8px}
+  .phone .tl-mo{display:flex;align-items:center;gap:12px;text-align:left;padding:11px 12px;border:1px solid var(--line);background:var(--surface)}
+  .phone .tl-mo.on{background:var(--bone)}
+  .phone .tl-bars{height:auto;flex:0 0 46px;align-items:center}
+  .phone .tl-bar{width:100%;border-radius:999px;height:8px!important}
+  .phone .tl-mo .mo{flex:0 0 46px}
+  .phone .tl-meta{flex:1;display:flex;justify-content:space-between;align-items:center}
+  .phone .dial{flex-direction:column}.phone .dial-right{flex-basis:auto;width:100%}
+
+  @media(max-width:1180px){.row{flex-direction:column}.meta{position:static;flex-basis:auto}.desktop{min-width:0;width:100%}.phone{align-self:center}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-plan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M6 4h11.5l-2.4 4 2.4 4H6"/></symbol>
+  <symbol id="i-act" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+  <symbol id="i-acct" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><path d="M16 14.5h2"/></symbol>
+  <symbol id="i-rep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9a8 8 0 0 1 14-3l2 2"/><path d="M20 15a8 8 0 0 1-14 3l-2-2"/><path d="M18 4v4h-4"/><path d="M6 20v-4h4"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8h11l-1 11.5h-9L6.5 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></symbol>
+</svg>
+
+<div class="board">
+
+  <div class="masthead">
+    <div class="kicker">wallet · Plan tab — three directions · for discussion</div>
+    <h1>Plan — a home for what you've <b>committed to</b></h1>
+    <p>Home is the <em>current-period cockpit</em>: it deals in <em>instances</em> — this month's rows, which you log and mark paid.
+      What it has no room for is the <em>definitions</em> behind them: the Ongoing items, the Payment plans, the things you mean to buy.
+      Editing one today means hunting for its instance on the right month. <b style="color:#EDE7DC">Plan is where the definitions live</b> —
+      period-agnostic, editable, and forward-looking. Three ways it could work, on the same axis we keep circling: object · time · money.</p>
+    <p class="note"><b>Revisits a settled call.</b> The Home pass <b>dissolved</b> Plan as a destination (<code>home/README.md</code> §3) and gave the
+      slot to Wishlist. These directions fold the wishlist / planned-purchase idea <b>into</b> Plan instead, so one tab owns everything
+      forward-looking. <b>Model guardrails held throughout:</b> a Payment plan is immutable except <em>Cancel</em> (ADR-0028) — so its row
+      opens <b>Manage</b>, never a field edit; a planned purchase is <b>period-local</b> (ADR-0018), shown under the period it's filed on.
+      Nav shown as <code>Home · Plan · Activity · Accounts</code> to match the current app shell.</p>
+  </div>
+
+  <!-- ============================================================ A · LIBRARY -->
+  <div class="row">
+    <div class="meta">
+      <span class="tag">A · Object-first</span>
+      <h2>The library</h2>
+      <div class="ans">“What am I committed to?”</div>
+      <p class="thesis">A grouped shelf of your durable objects — <em>Ongoing</em>, <em>Payment plans</em>, <em>Planned purchases</em> —
+        each a row you open to manage. Every object carries its <em>footprint</em>: what's left, when it's next due. Create lives here too,
+        one <b>New</b> per shelf.</p>
+      <p class="why"><b>Why it fits:</b> it's the literal answer to the missing screen — the place a definition lives when it isn't
+        an instance on any one month. Closest to how the objects already model.</p>
+      <p class="why"><b>Watch:</b> it's a list of lists. Reads as “settings” unless the footprints earn their keep. A plan row is
+        <b>Manage</b> (progress + Cancel), not Edit — the model won't let you rewrite terms.</p>
+    </div>
+    <div class="mocks">
+
+      <!-- desktop -->
+      <div class="desktop">
+        <div class="label">Desktop · web / windows</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="body">
+            <div class="rail">
+              <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+              <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+              <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+              <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+            </div>
+            <div class="content">
+              <div class="phd">
+                <div><div class="h1">Plan</div><div class="sub">Everything you've set up to happen — edit it here, resolve it on Home.</div></div>
+              </div>
+
+              <div class="libsum">
+                <div class="cell"><div class="k">Committed · this month</div><div class="v neg">−$1,610</div><div class="cap">5 ongoing · 2 plans active</div></div>
+                <div class="cell"><div class="k">Expected in</div><div class="v pos">+$4,200</div><div class="cap">Salary · monthly</div></div>
+                <div class="cell"><div class="k">Plans remaining</div><div class="v">$5,520</div><div class="cap">across 18 payments</div></div>
+              </div>
+
+              <div class="sec">
+                <div class="sechd"><div class="t"><b>Ongoing</b> <span class="ct">· repeats until you stop it</span></div><div class="a"><b>+</b> New ongoing</div></div>
+                <div class="list">
+                  <div class="item"><span class="glyph cat-Income"><svg width="15" height="15"><use href="#i-rep"/></svg></span>
+                    <div class="nm"><div class="n">Salary <span class="rep"><svg width="12" height="12"><use href="#i-rep"/></svg> monthly</span></div><div class="sub">Income · next Jul 25</div></div>
+                    <div class="amt pos">+$4,200</div><span class="chev">›</span></div>
+                  <div class="item"><span class="glyph cat-Housing"></span>
+                    <div class="nm"><div class="n">Rent <span class="rep"><svg width="12" height="12"><use href="#i-rep"/></svg> monthly</span></div><div class="sub">Housing · next Jul 1</div></div>
+                    <div class="amt">−$1,000</div><span class="chev">›</span></div>
+                  <div class="item"><span class="glyph cat-Fitness"></span>
+                    <div class="nm"><div class="n">Gym <span class="rep"><svg width="12" height="12"><use href="#i-rep"/></svg> monthly</span></div><div class="sub">Fitness · next Jul 3</div></div>
+                    <div class="amt">−$45</div><span class="chev">›</span></div>
+                  <div class="item"><span class="glyph cat-Utilities"></span>
+                    <div class="nm"><div class="n">Phone plan <span class="rep"><svg width="12" height="12"><use href="#i-rep"/></svg> monthly</span></div><div class="sub">Utilities · next Jul 12</div></div>
+                    <div class="amt">−$30</div><span class="chev">›</span></div>
+                  <div class="item"><span class="glyph cat-Subscriptions"></span>
+                    <div class="nm"><div class="n">Netflix <span class="rep"><svg width="12" height="12"><use href="#i-rep"/></svg> monthly</span></div><div class="sub">Subscriptions · next Jul 18</div></div>
+                    <div class="amt">−$15</div><span class="chev">›</span></div>
+                </div>
+              </div>
+
+              <div class="sec">
+                <div class="sechd"><div class="t"><b>Payment plans</b> <span class="ct">· one purchase, paid over time</span></div><div class="a"><b>+</b> New plan</div></div>
+                <div class="list">
+                  <div class="item"><span class="glyph cat-Finance"></span>
+                    <div class="nm"><div class="n">Car loan</div><div class="sub"><span class="prog"><span class="ptrack"><span class="pfill" style="width:33%"></span></span><span class="pcnt">8 of 24 · next −$320 on Aug 3</span></span></div></div>
+                    <div class="amt">$5,120<span class="per">left</span></div><div class="act">Manage</div></div>
+                  <div class="item"><span class="glyph cat-Electronics"></span>
+                    <div class="nm"><div class="n">Laptop</div><div class="sub"><span class="prog"><span class="ptrack"><span class="pfill" style="width:66%"></span></span><span class="pcnt">4 of 6 · next −$250 on Jul 20</span></span></div></div>
+                    <div class="amt">$400<span class="per">left</span></div><div class="act">Manage</div></div>
+                </div>
+              </div>
+
+              <div class="sec">
+                <div class="sechd"><div class="t"><b>Planned purchases</b> <span class="ct">· on June · things you mean to buy</span></div><div class="a"><b>+</b> Plan a buy</div></div>
+                <div class="list">
+                  <div class="item"><span class="glyph cat-Photography"><svg width="15" height="15"><use href="#i-bag"/></svg></span>
+                    <div class="nm"><div class="n">Camera kit</div><div class="sub">Photography · 2 items · not bought yet</div></div>
+                    <div class="amt">−$300</div><span class="chev">›</span></div>
+                  <div class="item"><span class="glyph cat-Fitness"><svg width="15" height="15"><use href="#i-bag"/></svg></span>
+                    <div class="nm"><div class="n">Running shoes</div><div class="sub">Fitness · not bought yet</div></div>
+                    <div class="amt">−$120</div><span class="chev">›</span></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- phone -->
+      <div class="phone">
+        <div class="label">Phone</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pbody">
+            <div class="phd"><div><div class="h1">Plan</div><div class="sub">Edit here · resolve on Home</div></div></div>
+            <div class="libsum" style="margin-bottom:18px"><div class="cell"><div class="k">This month</div><div class="v neg">−$1,610</div></div><div class="cell"><div class="k">Plans left</div><div class="v">$5,520</div></div></div>
+            <div class="sec">
+              <div class="sechd"><div class="t"><b>Ongoing</b></div><div class="a"><b>+</b> New</div></div>
+              <div class="list">
+                <div class="item"><span class="glyph cat-Housing"></span><div class="nm"><div class="n">Rent</div><div class="sub">↻ monthly · Jul 1</div></div><div class="amt">−$1,000</div><span class="chev">›</span></div>
+                <div class="item"><span class="glyph cat-Income"></span><div class="nm"><div class="n">Salary</div><div class="sub">↻ monthly · Jul 25</div></div><div class="amt pos">+$4,200</div><span class="chev">›</span></div>
+              </div>
+            </div>
+            <div class="sec">
+              <div class="sechd"><div class="t"><b>Payment plans</b></div><div class="a"><b>+</b> New</div></div>
+              <div class="list">
+                <div class="item"><span class="glyph cat-Finance"></span><div class="nm"><div class="n">Car loan</div><div class="sub"><span class="prog"><span class="ptrack" style="width:70px"><span class="pfill" style="width:33%"></span></span><span class="pcnt">8/24 · next Aug 3</span></span></div></div><div class="amt">$5,120<span class="per">left</span></div><div class="act">Manage</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="fab">+</div>
+          <div class="bnav">
+            <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+            <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+            <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ B · HORIZON -->
+  <div class="row">
+    <div class="meta">
+      <span class="tag b">B · Time-first</span>
+      <h2>The horizon</h2>
+      <div class="ans">“When does it hurt?”</div>
+      <p class="thesis">Plan as a <em>forward run of months</em> — the inverse of Home's single-period view. Each month shows its committed
+        outflow as a bar, so a heavy month <em>reads at a glance</em>. Pick a month to see what lands; tap any row to open its definition.</p>
+      <p class="why"><b>Why it fits:</b> definitions matter because of <em>when they bite</em>. A timeline turns “I have a car loan” into
+        “October is $2,210 — the tires land on top of everything.” Planned buys get a natural home: a future month.</p>
+      <p class="why"><b>Watch:</b> the boldest, least conventional. Editing is one hop deeper (month → row → definition). Needs the bar
+        to be honest, not decorative — it's the whole signature.</p>
+    </div>
+    <div class="mocks">
+
+      <!-- desktop -->
+      <div class="desktop">
+        <div class="label">Desktop · web / windows</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="body">
+            <div class="rail">
+              <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+              <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+              <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+              <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+            </div>
+            <div class="content">
+              <div class="phd">
+                <div><div class="h1">The next five months</div><div class="sub">What you're already committed to pay — <b>October runs heavy.</b></div></div>
+                <a class="newbtn"><b>+</b> New commitment</a>
+              </div>
+
+              <div class="horizon">
+                <div class="hz-hd"><div class="t"><b>Committed outflow</b> · Ongoing + plan installments + planned buys</div><div class="lg">bars to scale · tap a month</div></div>
+                <div class="tl-track">
+                  <div class="tl-mo on">
+                    <div class="tl-bars"><div class="tl-bar cat-Finance" style="height:73%"></div></div>
+                    <div class="mo">Jul</div><div class="tot"><b>$1,610</b></div><span class="flag now">This month</span></div>
+                  <div class="tl-mo">
+                    <div class="tl-bars"><div class="tl-bar cat-Finance" style="height:73%"></div></div>
+                    <div class="mo">Aug</div><div class="tot"><b>$1,610</b></div></div>
+                  <div class="tl-mo">
+                    <div class="tl-bars"><div class="tl-bar cat-Finance" style="height:73%"></div></div>
+                    <div class="mo">Sep</div><div class="tot"><b>$1,610</b></div><span class="flag">Laptop ends</span></div>
+                  <div class="tl-mo">
+                    <div class="tl-bars"><div class="tl-bar cat-Finance" style="height:100%"></div></div>
+                    <div class="mo">Oct</div><div class="tot spike"><b>$2,210</b></div><span class="flag">+ Winter tires</span></div>
+                  <div class="tl-mo">
+                    <div class="tl-bars"><div class="tl-bar cat-Finance" style="height:64%"></div></div>
+                    <div class="mo">Nov</div><div class="tot"><b>$1,410</b></div></div>
+                </div>
+              </div>
+
+              <div class="sec">
+                <div class="sechd"><div class="t"><b>July</b> <span class="ct">· 6 committed · −$1,610</span></div><div class="a">Open on Home ›</div></div>
+                <div class="list">
+                  <div class="item"><span class="dot cat-Housing"></span><div class="nm"><div class="n">Rent <span class="rep">↻ monthly</span></div><div class="sub">Jul 1 · Housing</div></div><div class="amt">−$1,000</div><span class="chev">›</span></div>
+                  <div class="item"><span class="dot cat-Finance"></span><div class="nm"><div class="n">Car loan <span class="rep">8 of 24</span></div><div class="sub">Jul 8 · Finance · plan</div></div><div class="amt">−$320</div><span class="chev">›</span></div>
+                  <div class="item"><span class="dot cat-Electronics"></span><div class="nm"><div class="n">Laptop <span class="rep">4 of 6</span></div><div class="sub">Jul 3 · Electronics · plan</div></div><div class="amt">−$200</div><span class="chev">›</span></div>
+                  <div class="item"><span class="dot cat-Fitness"></span><div class="nm"><div class="n">Gym <span class="rep">↻ monthly</span></div><div class="sub">Jul 3 · Fitness</div></div><div class="amt">−$45</div><span class="chev">›</span></div>
+                  <div class="item"><span class="dot cat-Utilities"></span><div class="nm"><div class="n">Phone plan <span class="rep">↻ monthly</span></div><div class="sub">Jul 12 · Utilities</div></div><div class="amt">−$30</div><span class="chev">›</span></div>
+                  <div class="item"><span class="dot cat-Subscriptions"></span><div class="nm"><div class="n">Netflix <span class="rep">↻ monthly</span></div><div class="sub">Jul 18 · Subscriptions</div></div><div class="amt">−$15</div><span class="chev">›</span></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- phone -->
+      <div class="phone">
+        <div class="label">Phone</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pbody">
+            <div class="phd"><div><div class="h1">Horizon</div><div class="sub">Committed outflow ahead</div></div></div>
+            <div class="tl-track" style="margin-bottom:20px">
+              <div class="tl-mo on"><div class="mo">Jul</div><div class="tl-bars"><div class="tl-bar cat-Finance" style="width:73%"></div></div><div class="tl-meta"><span class="tot"><b>$1,610</b></span><span class="flag now">Now</span></div></div>
+              <div class="tl-mo"><div class="mo">Sep</div><div class="tl-bars"><div class="tl-bar cat-Finance" style="width:73%"></div></div><div class="tl-meta"><span class="tot"><b>$1,610</b></span></div></div>
+              <div class="tl-mo"><div class="mo">Oct</div><div class="tl-bars"><div class="tl-bar cat-Finance" style="width:100%"></div></div><div class="tl-meta"><span class="tot spike"><b>$2,210</b></span><span class="flag">+ Tires</span></div></div>
+            </div>
+            <div class="sec">
+              <div class="sechd"><div class="t"><b>July</b> <span class="ct">· −$1,610</span></div></div>
+              <div class="list">
+                <div class="item"><span class="dot cat-Housing"></span><div class="nm"><div class="n">Rent</div><div class="sub">Jul 1 · Housing</div></div><div class="amt">−$1,000</div><span class="chev">›</span></div>
+                <div class="item"><span class="dot cat-Finance"></span><div class="nm"><div class="n">Car loan</div><div class="sub">Jul 8 · 8 of 24</div></div><div class="amt">−$320</div><span class="chev">›</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="fab">+</div>
+          <div class="bnav">
+            <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+            <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+            <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ C · DIALS -->
+  <div class="row">
+    <div class="meta">
+      <span class="tag c">C · Money-first</span>
+      <h2>The dials</h2>
+      <div class="ans">“What should this month add up to?”</div>
+      <p class="thesis">Plan as the <em>lever room</em> behind Home's on-track strip. Set a budget per category and a savings target;
+        a live <em>projected month</em> recomputes as you move a dial. The commitments that feed it sit underneath, read-only.</p>
+      <p class="why"><b>Why it fits:</b> Home's budget strip already links to a “Manage” that has nowhere to go. This <em>is</em> that
+        destination — the place you shape the month the cockpit then reports against.</p>
+      <p class="why"><b>Watch:</b> the least about editing objects (they're mostly read-only here) and the most net-new surface to
+        build — budgets and the projection engine (<code>MonthProjection</code>) aren't shipped yet. Furthest from today's model.</p>
+    </div>
+    <div class="mocks">
+
+      <!-- desktop -->
+      <div class="desktop">
+        <div class="label">Desktop · web / windows</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="body">
+            <div class="rail">
+              <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+              <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+              <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+              <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+            </div>
+            <div class="content">
+              <div class="phd"><div><div class="h1">Shape the month</div><div class="sub">Set your limits and target — Home reports against them.</div></div></div>
+
+              <div class="dial">
+                <div class="dial-left">
+                  <div class="card">
+                    <div class="h"><span>Budgets · per category</span><span>spent / limit</span></div>
+                    <div class="drow"><div class="bn"><span class="cd cat-Housing"></span>Housing</div><div class="slider"><div class="sf cat-Housing" style="width:95%"></div><div class="knob" style="left:95%"></div></div><div class="dval">$1,000<small> / 1,050</small></div></div>
+                    <div class="drow"><div class="bn"><span class="cd cat-Fitness"></span>Fitness</div><div class="slider"><div class="sf cat-Fitness" style="width:30%"></div><div class="knob" style="left:30%"></div></div><div class="dval">$45<small> / 150</small></div></div>
+                    <div class="drow"><div class="bn"><span class="cd cat-Subscriptions"></span>Subscriptions</div><div class="slider"><div class="sf cat-Subscriptions" style="width:38%"></div><div class="knob" style="left:38%"></div></div><div class="dval">$15<small> / 40</small></div></div>
+                    <div class="drow"><div class="bn"><span class="cd cat-Finance"></span>Finance</div><div class="slider"><div class="sf cat-Finance" style="width:100%"></div><div class="knob" style="left:100%"></div></div><div class="dval">$520<small> / 520</small></div></div>
+                    <div class="drow"><div class="bn"><span class="cd" style="background:var(--c-stone)"></span>Food</div><div class="slider"><div class="sf" style="width:29%;background:var(--c-stone)"></div><div class="knob" style="left:29%"></div></div><div class="dval">$86<small> / 300</small></div></div>
+                  </div>
+                  <div class="card" style="padding-bottom:6px">
+                    <div class="h"><span>Savings target</span></div>
+                    <div class="target"><div class="tk">Set aside this month<b>Drag to raise or lower</b></div><div class="tv">$1,000</div></div>
+                  </div>
+                </div>
+
+                <div class="dial-right">
+                  <div class="preview">
+                    <div class="k">Projected · on track by</div>
+                    <div class="v">+$250</div>
+                    <div class="barwrap"><div class="fill"></div><div class="tmark"></div></div>
+                    <div class="leg"><span>proj <b>$1,250</b></span><span>target <b>$1,000</b></span></div>
+                  </div>
+                  <div class="card" style="margin-bottom:0">
+                    <div class="h"><span>Feeding the projection</span></div>
+                    <div class="feeds">
+                      <div class="fr"><span>Ongoing · 5</span><b>−$1,090</b></div>
+                      <div class="fr"><span>Plan installments · 2</span><b>−$520</b></div>
+                      <div class="fr"><span>Planned buys · 2</span><b>−$420</b></div>
+                      <div class="fr"><span>Expected income</span><b style="color:var(--sageDeep)">+$4,200</b></div>
+                    </div>
+                    <div style="margin-top:11px;font-size:11px;color:var(--sageDeep);font-weight:600">Edit these in the library ›</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- phone -->
+      <div class="phone">
+        <div class="label">Phone</div>
+        <div class="screen">
+          <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+          <div class="pbody">
+            <div class="phd"><div><div class="h1">Shape the month</div><div class="sub">Limits &amp; target</div></div></div>
+            <div class="preview">
+              <div class="k">Projected · on track by</div><div class="v">+$250</div>
+              <div class="barwrap"><div class="fill"></div><div class="tmark"></div></div>
+              <div class="leg"><span>proj <b>$1,250</b></span><span>target <b>$1,000</b></span></div>
+            </div>
+            <div class="card">
+              <div class="h"><span>Budgets</span><span>spent / limit</span></div>
+              <div class="drow" style="grid-template-columns:88px 1fr 78px"><div class="bn"><span class="cd cat-Housing"></span>Housing</div><div class="slider"><div class="sf cat-Housing" style="width:95%"></div><div class="knob" style="left:95%"></div></div><div class="dval">$1k<small>/1.05k</small></div></div>
+              <div class="drow" style="grid-template-columns:88px 1fr 78px"><div class="bn"><span class="cd cat-Fitness"></span>Fitness</div><div class="slider"><div class="sf cat-Fitness" style="width:30%"></div><div class="knob" style="left:30%"></div></div><div class="dval">$45<small>/150</small></div></div>
+            </div>
+            <div class="card" style="margin-bottom:0"><div class="target"><div class="tk">Set aside<b>This month</b></div><div class="tv">$1,000</div></div></div>
+          </div>
+          <div class="fab">+</div>
+          <div class="bnav">
+            <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+            <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+            <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
