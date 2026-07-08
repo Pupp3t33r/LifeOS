@@ -9,10 +9,11 @@ Each ADR is a single markdown file following the [Nygard format](https://adr.git
 | # | Title | Date |
 |---|---|---|
 | [0001](./0001-app-localization.md) | In-app localization — `flutter_localizations` + `intl` (ARB), English + Russian, client-only device-local locale | 2026-06-29 |
-| [0002](./0002-navigation-and-information-architecture.md) | Navigation & information architecture — the current-period cockpit and a four-destination shell (Home · Activity · Accounts · Wishlist) _(Plan reinstated by 0005; wishlist slotting reopened)_ | 2026-06-29 |
+| [0002](./0002-navigation-and-information-architecture.md) | Navigation & information architecture — the current-period cockpit and a four-destination shell (Home · Activity · Accounts · Wishlist) _(Plan reinstated by 0005; shell revised by 0006 — Accounts folds into Home, Wishlist confirmed)_ | 2026-06-29 |
 | [0003](./0003-category-colour-system.md) | Category colour system — a curated 12-colour Calm palette, client-assigned, light/dark | 2026-06-29 |
 | [0004](./0004-offline-first-sync.md) | Offline-first sync — cached read models, a write outbox, idempotent replay; pending shown & counted via overlay but never cached | 2026-06-30 |
 | [0005](./0005-plan-destination-and-planning-views.md) | The Plan destination — a three-view planning home (List · Board · Budget); reinstates Plan, assigns wishlist items; backlog management & nav slotting left open | 2026-07-08 |
+| [0006](./0006-acquisition-flow-placement-and-nav-shell-revision.md) | Acquisition-to-ownership flow placement + revised nav shell — orders on Home (period-decoupled arriving strip), Accounts folds into Home, Wishlist its own tab, collection → domain apps, net worth → future Stats (amends 0002, relates 0005 + Money 0030/0031/0032) | 2026-07-08 |
 
 ## Related decisions housed elsewhere
 
