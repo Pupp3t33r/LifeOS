@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
 import '../../application/categories_providers.dart';
+import '../../application/category_colors_provider.dart';
 import '../../application/period_flows_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../application/recurring_providers.dart' hide PeriodKey;
@@ -52,6 +53,9 @@ class MonthOverviewScreen extends ConsumerWidget {
         .where((x) => x.amount != 0)
         .toList();
     final categories = ref.watch(categoriesProvider).value ?? const <Category>[];
+    // Load the device-local colour overrides at startup (this is the always-first
+    // surface) and repaint when a recolour lands (Wallet ADR-0003/0008).
+    ref.watch(categoryColorsProvider);
     final nameById = {for (final c in categories) c.id: c.name};
     final upcomingItems = ref.watch(upcomingItemsProvider(key));
 
@@ -453,7 +457,7 @@ class _EntryTile extends StatelessWidget {
         .map((x) => x.categoryId)
         .firstWhere((x) => x != null, orElse: () => null);
     final dotColor = firstCategoryId != null
-        ? CategoryPalette.forId(firstCategoryId).of(context)
+        ? CategoryColors.slotFor(firstCategoryId).of(context)
         : tokens.line;
 
     return Padding(
@@ -774,7 +778,7 @@ class _PlannedTile extends ConsumerWidget {
         .map((x) => x.categoryId)
         .firstWhere((x) => x != null, orElse: () => null);
     final dotColor = firstCategoryId != null
-        ? CategoryPalette.forId(firstCategoryId).of(context)
+        ? CategoryColors.slotFor(firstCategoryId).of(context)
         : tokens.line;
     final categoryName = firstCategoryId != null ? nameById[firstCategoryId] : null;
     final title = planned.description ?? categoryName ?? 'Planned purchase';
@@ -873,7 +877,7 @@ class _OccurrenceTile extends ConsumerWidget {
     final firstCategoryId =
         occ.lines.map((x) => x.categoryId).firstWhere((x) => x != null, orElse: () => null);
     final dotColor =
-        firstCategoryId != null ? CategoryPalette.forId(firstCategoryId).of(context) : tokens.line;
+        firstCategoryId != null ? CategoryColors.slotFor(firstCategoryId).of(context) : tokens.line;
     final currency = occ.expectedAmount.currency;
     final categoryName = occ.lines.length == 1 && firstCategoryId != null ? nameById[firstCategoryId] : null;
     final due = 'due ${_shortMonths[occ.dueDate.month - 1]} ${occ.dueDate.day}';

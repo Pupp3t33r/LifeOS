@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../features/money/application/preferences_providers.dart';
 import '../../features/money/data/preferences_repository.dart';
 import '../../features/security/application/security_providers.dart';
@@ -254,6 +255,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onChanged: _setMonthStartDay,
           ),
         ),
+        _Item(
+          title: 'Categories',
+          subtitle: 'Create, recolour, and archive your categories.',
+          keywords: const ['category', 'categories', 'colour', 'color', 'archive', 'tag'],
+          onTap: () => context.push('/settings/categories'),
+          control: const Icon(Icons.chevron_right),
+        ),
       ],
     );
 
@@ -296,11 +304,16 @@ class _Item {
     required this.control,
     this.stacked = false,
     this.keywords = const <String>[],
+    this.onTap,
   });
 
   final String title;
   final String subtitle;
   final Widget control;
+
+  /// When set, the whole row is tappable and navigates (rather than hosting an
+  /// inline control) — e.g. the Categories row → `/settings/categories`.
+  final VoidCallback? onTap;
 
   /// True for wide controls (e.g. the theme segments) that read better on their own
   /// line under the label than squeezed into a trailing slot.
@@ -513,7 +526,7 @@ class _SettingRow extends StatelessWidget {
       ],
     );
 
-    return Padding(
+    final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: item.stacked
           ? Column(
@@ -528,6 +541,9 @@ class _SettingRow extends StatelessWidget {
               ],
             ),
     );
+
+    if (item.onTap == null) return content;
+    return InkWell(onTap: item.onTap, child: content);
   }
 }
 

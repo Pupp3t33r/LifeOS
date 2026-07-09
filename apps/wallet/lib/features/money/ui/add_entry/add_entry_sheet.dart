@@ -449,7 +449,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
     final editing = _editingIndex == index;
     final dotColor = line.categoryId == null
         ? null
-        : CategoryPalette.forId(line.categoryId!).resolve(theme.brightness);
+        : CategoryColors.slotFor(line.categoryId!).resolve(theme.brightness);
     return Container(
       color: editing ? CalmTokens.of(theme.brightness).sageDeep.withValues(alpha: 0.08) : null,
       padding: const EdgeInsets.fromLTRB(14, 11, 8, 11),
@@ -657,7 +657,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
                 height: 11,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: CategoryPalette.forId(_categoryId!).resolve(theme.brightness),
+                  color: CategoryColors.slotFor(_categoryId!).resolve(theme.brightness),
                 ),
               ),
               const SizedBox(width: 7),
@@ -733,7 +733,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
               Container(
                 width: 10,
                 height: 10,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: CategoryPalette.forId(_categoryId!).resolve(theme.brightness)),
+                decoration: BoxDecoration(shape: BoxShape.circle, color: CategoryColors.slotFor(_categoryId!).resolve(theme.brightness)),
               ),
               const SizedBox(width: 7),
             ],
@@ -919,7 +919,7 @@ class _CategoryPicker extends ConsumerWidget {
       leading: Container(
         width: 12,
         height: 12,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: CategoryPalette.forId(category.id).resolve(theme.brightness)),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: CategoryColors.slotFor(category.id).resolve(theme.brightness)),
       ),
       title: Text(category.name, style: theme.textTheme.bodyMedium),
       trailing: category.isSystem

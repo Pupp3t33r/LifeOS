@@ -115,7 +115,7 @@ class _CreateOngoingSheetState extends ConsumerState<CreateOngoingSheet> {
             label: 'Category',
             value: _categoryName ?? 'Category',
             muted: _categoryName == null,
-            dotColor: _categoryId != null ? CategoryPalette.forId(_categoryId!).of(context) : null,
+            dotColor: _categoryId != null ? CategoryColors.slotFor(_categoryId!).of(context) : null,
             onTap: () async {
               final picked = await pickCategory(context, categories, selectedId: _categoryId);
               if (picked == null) return;

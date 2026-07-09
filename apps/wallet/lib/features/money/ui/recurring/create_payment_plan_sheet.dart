@@ -239,7 +239,7 @@ class _ItemRow extends StatelessWidget {
             margin: const EdgeInsets.only(right: 10),
             decoration: BoxDecoration(
               color: item.categoryId != null
-                  ? CategoryPalette.forId(item.categoryId!).of(context)
+                  ? CategoryColors.slotFor(item.categoryId!).of(context)
                   : tokens.line,
               shape: BoxShape.circle,
             ),
@@ -448,7 +448,7 @@ Future<_ItemDraft?> _showItemComposer(
                 label: 'Category',
                 value: categoryName ?? 'Category',
                 muted: categoryName == null,
-                dotColor: categoryId != null ? CategoryPalette.forId(categoryId!).of(context) : null,
+                dotColor: categoryId != null ? CategoryColors.slotFor(categoryId!).of(context) : null,
                 onTap: () async {
                   final picked = await pickCategory(context, categories, selectedId: categoryId);
                   if (picked == null) return;

@@ -44,4 +44,52 @@ enum CategoryPalette {
   /// devices until the user overrides it.
   static CategoryPalette forId(String categoryId) =>
       values[categoryId.hashCode.abs() % values.length];
+
+  /// The slot for a stored override name (e.g. `'clay'`), or null if the name
+  /// doesn't match a slot (defensive against stale/corrupt storage).
+  static CategoryPalette? byName(String name) {
+    for (final slot in values) {
+      if (slot.name == name) return slot;
+    }
+    return null;
+  }
+}
+
+/// The app-wide resolver for a category's colour (Wallet ADR-0003): a device-local
+/// user override if one exists, else the deterministic default from the id.
+///
+/// Overrides live in `flutter_secure_storage` (see `CategoryColorStore`); this
+/// in-memory copy is what widgets read synchronously in `build`. It is kept in
+/// sync by `categoryColorsProvider`, which loads it at startup and updates it on
+/// every recolour. Consumers that want to rebuild the moment a colour changes also
+/// `ref.watch(categoryColorsProvider)`; the value they render still comes through
+/// [slotFor].
+class CategoryColors {
+  const CategoryColors._();
+
+  static final Map<String, CategoryPalette> _overrides = {};
+
+  /// The resolved slot for [categoryId]: the user override if set, else the
+  /// deterministic default.
+  static CategoryPalette slotFor(String categoryId) =>
+      _overrides[categoryId] ?? CategoryPalette.forId(categoryId);
+
+  /// The raw override for [categoryId], or null when it falls back to the default.
+  static CategoryPalette? overrideFor(String categoryId) => _overrides[categoryId];
+
+  /// Replace the whole override map (called when the store loads).
+  static void setAll(Map<String, CategoryPalette> overrides) {
+    _overrides
+      ..clear()
+      ..addAll(overrides);
+  }
+
+  /// Set or clear a single category's override (called on recolour).
+  static void setOne(String categoryId, CategoryPalette? slot) {
+    if (slot == null) {
+      _overrides.remove(categoryId);
+    } else {
+      _overrides[categoryId] = slot;
+    }
+  }
 }

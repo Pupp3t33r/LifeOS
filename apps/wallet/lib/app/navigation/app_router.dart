@@ -5,6 +5,7 @@ import '../auth/auth_controller.dart';
 import '../auth/sign_in_screen.dart';
 import '../settings/settings_screen.dart';
 import '../../features/money/application/preferences_providers.dart';
+import '../../features/money/ui/categories/categories_screen.dart';
 import '../../features/money/ui/onboarding/onboarding_screen.dart';
 import '../../features/money/ui/month_overview/month_overview_screen.dart';
 import '../../features/money/ui/plan/plan_screen.dart';
@@ -61,6 +62,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      // Categories management (Wallet ADR-0008) — a leaf above the shell, reached
+      // from a navigation row on Settings.
+      GoRoute(
+        path: '/settings/categories',
+        builder: (context, state) => const CategoriesScreen(),
       ),
       // The authenticated shell: persistent navigation chrome wrapping the four
       // primary destinations. Branch order must match AppShell's destination

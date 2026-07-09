@@ -293,7 +293,7 @@ class _ContentRow extends StatelessWidget {
             width: 8, height: 8,
             margin: const EdgeInsets.only(right: 10),
             decoration: BoxDecoration(
-              color: categoryId != null ? CategoryPalette.forId(categoryId!).of(context) : tokens.line,
+              color: categoryId != null ? CategoryColors.slotFor(categoryId!).of(context) : tokens.line,
               shape: BoxShape.circle,
             ),
           ),

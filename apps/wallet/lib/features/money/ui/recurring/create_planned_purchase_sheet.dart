@@ -139,7 +139,7 @@ class _CreatePlannedPurchaseSheetState extends ConsumerState<CreatePlannedPurcha
             value: _categoryName ?? 'Category',
             muted: _categoryName == null,
             dotColor: _categoryId != null
-                ? CategoryPalette.forId(_categoryId!).of(context)
+                ? CategoryColors.slotFor(_categoryId!).of(context)
                 : null,
             onTap: () async {
               final picked = await pickCategory(context, categories, selectedId: _categoryId);
