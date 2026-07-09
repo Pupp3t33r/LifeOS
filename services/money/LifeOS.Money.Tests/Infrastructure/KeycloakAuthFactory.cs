@@ -78,8 +78,11 @@ public sealed class KeycloakAuthFactory : WebApplicationFactory<Program>, IAsync
 
     public new async Task DisposeAsync()
     {
+        // Host first, then the containers: the host still holds live Marten/Wolverine
+        // connections, so disposing Postgres before it makes shutdown throw
+        // NpgsqlException during cleanup (see MoneyApiFactory).
+        await base.DisposeAsync();
         await _keycloak.DisposeAsync();
         await _postgres.DisposeAsync();
-        await base.DisposeAsync();
     }
 }

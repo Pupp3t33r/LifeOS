@@ -72,7 +72,11 @@ public sealed class MoneyApiFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public new async Task DisposeAsync()
     {
-        await _postgres.DisposeAsync();
+        // Dispose the host before the database container: the host still owns live
+        // Marten/Wolverine connections (pools, the durability agent), so tearing
+        // down Postgres first makes their shutdown throw NpgsqlException during
+        // cleanup. Draining the host while the DB is still up avoids it.
         await base.DisposeAsync();
+        await _postgres.DisposeAsync();
     }
 }
