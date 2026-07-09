@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Settings → Categories management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif;
+    --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+    /* category palette — light renderings (category_colors.dart) */
+    --c-sage:#6E8E78; --c-teal:#4F8A82; --c-denim:#6480A0; --c-indigo:#76739E;
+    --c-plum:#9B6E8E; --c-rose:#BB7081; --c-rust:#B0654A; --c-clay:#C2855A;
+    --c-ochre:#B59A4E; --c-olive:#899050; --c-stone:#8C8275; --c-slate:#7C8696;
+  }
+  .frame.dark{
+    --bone:#15120E; --surface:#211C16; --ink:#EDE7DC; --muted:#9C9384; --line:#332D24;
+    --sage:#8FB39E; --sageDeep:#A7C6B6; --clay:#D9966E;
+    /* category palette — dark renderings (lifted luminance) */
+    --c-sage:#8FB39E; --c-teal:#79B3AA; --c-denim:#8BA6C4; --c-indigo:#A19CC2;
+    --c-plum:#C193B2; --c-rose:#DA98A6; --c-rust:#D08C73; --c-clay:#DBA877;
+    --c-ochre:#D6BB72; --c-olive:#AEB477; --c-stone:#ADA293; --c-slate:#9FA9B8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#1a1712;color:#EDE7DC;font-family:var(--body);-webkit-font-smoothing:antialiased;padding:48px 40px 70px}
+  .board{max-width:1120px;margin:0 auto}
+  h1{font:700 28px/1.1 var(--disp);margin-bottom:8px}
+  .lede{color:#B9B1A3;font-size:14px;max-width:840px;line-height:1.6;margin-bottom:34px}
+  .lede b{color:#D9C2A8;font-weight:600}
+  .seclabel{font:600 11px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8FB39E;margin:0 0 18px;display:flex;align-items:center;gap:8px}
+  .seclabel::after{content:"";flex:1;height:1px;background:#3a342b}
+
+  .stage{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}
+  .col{flex:1;min-width:340px}
+  .col.narrow{flex:0 1 372px}
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+
+  /* phone frame */
+  .frame{background:var(--bone);border-radius:34px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;color:var(--ink)}
+
+  .appbar{display:flex;align-items:center;gap:12px;padding:20px 18px 10px}
+  .back{width:34px;height:34px;border-radius:999px;display:grid;place-items:center;color:var(--ink);font-size:22px}
+  .appbar .t{font:700 22px/1 var(--disp);letter-spacing:-.01em}
+
+  .scroll{padding:2px 16px 22px}
+
+  /* search — mirrors settings_screen.dart search field */
+  .search{display:flex;align-items:center;gap:10px;margin:6px 2px 4px;padding:11px 13px;
+    background:var(--bone);border:1px solid var(--line);border-radius:14px;font-size:14px}
+  .frame.dark .search{background:color-mix(in srgb,var(--ink) 5%,var(--bone))}
+  .search svg{width:18px;height:18px;flex:none;color:var(--muted);stroke-width:2}
+  .search .ph{color:var(--muted)}
+  .search .q{color:var(--ink)}
+  .search .clear{margin-left:auto;color:var(--muted);font-size:16px;line-height:1}
+
+  .intro{color:var(--muted);font-size:13px;line-height:1.5;margin:12px 4px 8px;max-width:44ch}
+  .resultnote{color:var(--muted);font-size:12px;margin:14px 6px 4px;font-style:italic}
+
+  .eyebrow{display:flex;align-items:baseline;gap:8px;margin:20px 4px 10px}
+  .eyebrow .lbl{font:700 11px/1 var(--disp);letter-spacing:1.7px;text-transform:uppercase;color:var(--muted)}
+  .eyebrow .sub{font-size:11px;letter-spacing:.4px;color:var(--muted);opacity:.85}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:26px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:14px;padding:14px 16px}
+  .row + .row,.expand + .row,.row + .expand{border-top:1px solid var(--line)}
+  .row.active{background:color-mix(in srgb,var(--sage) 9%,transparent)}
+  .swatch{width:30px;height:30px;border-radius:10px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.09)}
+  .frame.dark .swatch{box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .row .name{flex:1;font-size:15.5px;font-weight:500;color:var(--ink)}
+  .chev{color:var(--muted);font-size:18px;opacity:.85}
+
+  /* archived rows — retired, dimmed, restorable */
+  .row.arch .swatch{opacity:.45}
+  .row.arch .name{color:var(--muted);font-weight:400}
+
+  .lock{display:inline-flex;align-items:center;gap:5px;font-size:11px;letter-spacing:.3px;color:var(--muted);
+    padding:4px 10px 4px 8px;border-radius:999px;background:color-mix(in srgb,var(--muted) 13%,transparent)}
+  .lock svg{width:12px;height:12px}
+
+  /* signature — inline named palette */
+  .expand{background:color-mix(in srgb,var(--sage) 6%,var(--surface));border-top:1px solid var(--line);padding:14px 16px 16px}
+  .expand .head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+  .expand .ttl{font:700 11px/1 var(--disp);letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+  .expand .picked{font:700 14px/1 var(--disp);color:var(--ink)}
+  .palette{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}
+  .chip{aspect-ratio:1;border-radius:9px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.10)}
+  .frame.dark .chip{box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .chip.sel{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+  .expand .actions{display:flex;gap:22px;margin-top:16px}
+  .link{font:600 13.5px/1 var(--disp);color:var(--sageDeep)}
+  .link.danger{color:var(--clay)}
+
+  .ghost{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;
+    border:1px dashed color-mix(in srgb,var(--sage) 55%,var(--line));border-radius:18px;
+    color:var(--sageDeep);font:600 14.5px/1 var(--disp)}
+
+  .note{margin-top:20px;color:#9C9384;font-size:13px;line-height:1.65;max-width:900px}
+  .note b{color:#D9C2A8}
+  .note a{color:#8FB39E}
+  .note code{font-size:12px;color:#C7BCA9}
+  .note h3{font:600 12px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;color:#8FB39E;margin:22px 0 10px}
+  .note ul{margin:0 0 0 18px}
+  .note li{margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="board">
+  <h1>Categories — management (Settings → Categories)</h1>
+  <p class="lede">The dedicated surface where you shape the category list: <b>search, rename and recolour your own, recolour the built-ins, archive and restore.</b> Colour is a category&rsquo;s identity everywhere else in the app — Activity rows, split bars, budgets — so recolouring is a pick from the <b>12-slot Calm palette</b>, a finite named set, not a colour wheel. Palette board + light/dark renderings live in <a href="../home/categories.html">home/categories.html</a>; this file specifies the management screen itself.</p>
+
+  <!-- ============ REST STATE ============ -->
+  <div class="seclabel">The screen · light + dark</div>
+  <div class="stage">
+
+    <!-- ========== LIGHT ========== -->
+    <div class="col">
+      <div class="label">Light</div>
+      <div class="frame">
+        <div class="appbar"><div class="back">&#8249;</div><div class="t">Categories</div></div>
+        <div class="scroll">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+            <span class="ph">Search categories</span>
+          </div>
+          <p class="intro">Colour is how a category shows up everywhere &mdash; Activity, split bars, budgets. Rename and recolour your own; recolour the built-ins.</p>
+
+          <div class="eyebrow"><span class="lbl">Yours</span></div>
+          <div class="card">
+            <div class="row"><span class="swatch" style="background:var(--c-olive)"></span><span class="name">Groceries</span><span class="chev">&#8250;</span></div>
+
+            <div class="row active"><span class="swatch" style="background:var(--c-clay)"></span><span class="name">Eating out</span><span class="chev">&#8250;</span></div>
+            <div class="expand">
+              <div class="head"><span class="ttl">Colour</span><span class="picked">Clay</span></div>
+              <div class="palette">
+                <div class="chip" style="background:var(--c-sage)"></div><div class="chip" style="background:var(--c-teal)"></div>
+                <div class="chip" style="background:var(--c-denim)"></div><div class="chip" style="background:var(--c-indigo)"></div>
+                <div class="chip" style="background:var(--c-plum)"></div><div class="chip" style="background:var(--c-rose)"></div>
+                <div class="chip" style="background:var(--c-rust)"></div><div class="chip sel" style="background:var(--c-clay)"></div>
+                <div class="chip" style="background:var(--c-ochre)"></div><div class="chip" style="background:var(--c-olive)"></div>
+                <div class="chip" style="background:var(--c-stone)"></div><div class="chip" style="background:var(--c-slate)"></div>
+              </div>
+              <div class="actions"><span class="link">Rename</span><span class="link danger">Archive</span></div>
+            </div>
+
+            <div class="row"><span class="swatch" style="background:var(--c-denim)"></span><span class="name">Transport</span><span class="chev">&#8250;</span></div>
+            <div class="row"><span class="swatch" style="background:var(--c-stone)"></span><span class="name">Rent</span><span class="chev">&#8250;</span></div>
+          </div>
+
+          <div class="ghost"><span>&#65291;</span> New category</div>
+
+          <div class="eyebrow"><span class="lbl">System</span><span class="sub">names locked &middot; colour yours</span></div>
+          <div class="card">
+            <div class="row"><span class="swatch" style="background:var(--c-rust)"></span><span class="name">Books</span><span class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>system</span></div>
+            <div class="row"><span class="swatch" style="background:var(--c-indigo)"></span><span class="name">Board Games</span><span class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>system</span></div>
+            <div class="row"><span class="swatch" style="background:var(--c-teal)"></span><span class="name">Video Games</span><span class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>system</span></div>
+          </div>
+
+          <div class="eyebrow"><span class="lbl">Archived</span><span class="sub">2 &middot; kept for history &middot; tap to rename or restore</span></div>
+          <div class="card">
+            <div class="row arch"><span class="swatch" style="background:var(--c-stone)"></span><span class="name">Holiday fund</span><span class="chev">&#8250;</span></div>
+            <div class="row arch"><span class="swatch" style="background:var(--c-rose)"></span><span class="name">Gaming gear</span><span class="chev">&#8250;</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== DARK ========== -->
+    <div class="col">
+      <div class="label">Dark</div>
+      <div class="frame dark">
+        <div class="appbar"><div class="back">&#8249;</div><div class="t">Categories</div></div>
+        <div class="scroll">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+            <span class="ph">Search categories</span>
+          </div>
+          <p class="intro">Colour is how a category shows up everywhere &mdash; Activity, split bars, budgets. Rename and recolour your own; recolour the built-ins.</p>
+
+          <div class="eyebrow"><span class="lbl">Yours</span></div>
+          <div class="card">
+            <div class="row"><span class="swatch" style="background:var(--c-olive)"></span><span class="name">Groceries</span><span class="chev">&#8250;</span></div>
+
+            <div class="row active"><span class="swatch" style="background:var(--c-clay)"></span><span class="name">Eating out</span><span class="chev">&#8250;</span></div>
+            <div class="expand">
+              <div class="head"><span class="ttl">Colour</span><span class="picked">Clay</span></div>
+              <div class="palette">
+                <div class="chip" style="background:var(--c-sage)"></div><div class="chip" style="background:var(--c-teal)"></div>
+                <div class="chip" style="background:var(--c-denim)"></div><div class="chip" style="background:var(--c-indigo)"></div>
+                <div class="chip" style="background:var(--c-plum)"></div><div class="chip" style="background:var(--c-rose)"></div>
+                <div class="chip" style="background:var(--c-rust)"></div><div class="chip sel" style="background:var(--c-clay)"></div>
+                <div class="chip" style="background:var(--c-ochre)"></div><div class="chip" style="background:var(--c-olive)"></div>
+                <div class="chip" style="background:var(--c-stone)"></div><div class="chip" style="background:var(--c-slate)"></div>
+              </div>
+              <div class="actions"><span class="link">Rename</span><span class="link danger">Archive</span></div>
+            </div>
+
+            <div class="row"><span class="swatch" style="background:var(--c-denim)"></span><span class="name">Transport</span><span class="chev">&#8250;</span></div>
+            <div class="row"><span class="swatch" style="background:var(--c-stone)"></span><span class="name">Rent</span><span class="chev">&#8250;</span></div>
+          </div>
+
+          <div class="ghost"><span>&#65291;</span> New category</div>
+
+          <div class="eyebrow"><span class="lbl">System</span><span class="sub">names locked &middot; colour yours</span></div>
+          <div class="card">
+            <div class="row"><span class="swatch" style="background:var(--c-rust)"></span><span class="name">Books</span><span class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>system</span></div>
+            <div class="row"><span class="swatch" style="background:var(--c-indigo)"></span><span class="name">Board Games</span><span class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>system</span></div>
+            <div class="row"><span class="swatch" style="background:var(--c-teal)"></span><span class="name">Video Games</span><span class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>system</span></div>
+          </div>
+
+          <div class="eyebrow"><span class="lbl">Archived</span><span class="sub">2 &middot; kept for history &middot; tap to rename or restore</span></div>
+          <div class="card">
+            <div class="row arch"><span class="swatch" style="background:var(--c-stone)"></span><span class="name">Holiday fund</span><span class="chev">&#8250;</span></div>
+            <div class="row arch"><span class="swatch" style="background:var(--c-rose)"></span><span class="name">Gaming gear</span><span class="chev">&#8250;</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ SUPPORTING STATES ============ -->
+  <div class="seclabel">Supporting states &middot; search + editing an archived category</div>
+  <div class="stage">
+
+    <!-- SEARCH -->
+    <div class="col narrow">
+      <div class="label">Query: &ldquo;game&rdquo;</div>
+      <div class="frame">
+        <div class="appbar"><div class="back">&#8249;</div><div class="t">Categories</div></div>
+        <div class="scroll">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+            <span class="q">game</span>
+            <span class="clear">&times;</span>
+          </div>
+          <p class="resultnote">3 categories &mdash; empty groups hidden while searching.</p>
+
+          <div class="eyebrow"><span class="lbl">System</span></div>
+          <div class="card">
+            <div class="row"><span class="swatch" style="background:var(--c-indigo)"></span><span class="name">Board Games</span><span class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>system</span></div>
+            <div class="row"><span class="swatch" style="background:var(--c-teal)"></span><span class="name">Video Games</span><span class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>system</span></div>
+          </div>
+
+          <div class="eyebrow"><span class="lbl">Archived</span><span class="sub">in results</span></div>
+          <div class="card">
+            <div class="row arch"><span class="swatch" style="background:var(--c-rose)"></span><span class="name">Gaming gear</span><span class="chev">&#8250;</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARCHIVED, OPENED TO EDIT -->
+    <div class="col narrow">
+      <div class="label">Archived &middot; opened to edit</div>
+      <div class="frame">
+        <div class="appbar"><div class="back">&#8249;</div><div class="t">Categories</div></div>
+        <div class="scroll">
+          <div class="eyebrow"><span class="lbl">Archived</span><span class="sub">2 &middot; kept for history</span></div>
+          <div class="card">
+            <div class="row arch"><span class="swatch" style="background:var(--c-stone)"></span><span class="name">Holiday fund</span><span class="chev">&#8250;</span></div>
+            <div class="row arch active"><span class="swatch" style="background:var(--c-rose)"></span><span class="name">Gaming gear</span><span class="chev">&#8250;</span></div>
+            <div class="expand">
+              <div class="head"><span class="ttl">Colour</span><span class="picked">Rose</span></div>
+              <div class="palette">
+                <div class="chip" style="background:var(--c-sage)"></div><div class="chip" style="background:var(--c-teal)"></div>
+                <div class="chip" style="background:var(--c-denim)"></div><div class="chip" style="background:var(--c-indigo)"></div>
+                <div class="chip" style="background:var(--c-plum)"></div><div class="chip sel" style="background:var(--c-rose)"></div>
+                <div class="chip" style="background:var(--c-rust)"></div><div class="chip" style="background:var(--c-clay)"></div>
+                <div class="chip" style="background:var(--c-ochre)"></div><div class="chip" style="background:var(--c-olive)"></div>
+                <div class="chip" style="background:var(--c-stone)"></div><div class="chip" style="background:var(--c-slate)"></div>
+              </div>
+              <div class="actions"><span class="link">Rename</span><span class="link">Unarchive</span></div>
+            </div>
+          </div>
+          <p class="resultnote">Rename to free a name &mdash; e.g. &ldquo;Books&rdquo; &rarr; &ldquo;Books_old&rdquo; &mdash; before reintroducing it fresh and narrower.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note" style="margin-top:8px">
+    <h3>Search</h3>
+    <ul>
+      <li>A field pinned at the top filters <b>Yours + System + Archived</b> by name (case-insensitive substring), mirroring the search on <a href="settings.html">settings.html</a>. Empty groups collapse out of the results.</li>
+      <li><b>Archived is always in scope</b> — that&rsquo;s the point: a retired category is easiest to find by typing its name. Matches surface even while the Archived section is otherwise collapsed; open a result to rename or restore it.</li>
+    </ul>
+
+    <h3>Archive &harr; Unarchive</h3>
+    <ul>
+      <li><b>Archive</b> (clay, from a live category&rsquo;s opened row) retires it: gone from the picker and the active groups, kept under <b>Archived</b>. Historical lines and budgets still resolve by id — nothing is deleted (soft-archive, ADR-0024).</li>
+      <li><b>Archived rows stay editable.</b> Open one to recolour, <b>Rename</b>, or <b>Unarchive</b> (sage, the inverse of Archive). Only the Archive action drops — it&rsquo;s already archived — and system categories can&rsquo;t be archived at all.</li>
+      <li><b>Archived defaults collapsed</b> (a count in the eyebrow); tap to expand, or let search reveal a match. The row stays dimmed to read as retired even while its editor is open.</li>
+    </ul>
+
+    <h3>Naming, identity &amp; uniqueness (decided)</h3>
+    <ul>
+      <li><b>Keyed by <code>Guid Id</code></b> — client-assigned for user categories (ADR-0003), fixed constants for the three system ones. The id is what a spending line references; the name is display only. Backend has no <code>Schema.For&lt;Category&gt;()</code> yet, so identity would default to <code>Id</code> with no name constraint — this rule adds it.</li>
+      <li><b>Names are unique per owner, case-insensitive and trim-normalised</b> (&ldquo;Food&rdquo; = &ldquo;food&nbsp;&rdquo;). The check spans <b>every</b> user category — active <i>and</i> archived — plus the three system names, so there&rsquo;s no user &ldquo;Books&rdquo; shadowing the system one and no two &ldquo;Food&rdquo;s.</li>
+      <li><b>Archived names stay reserved</b> so <b>Unarchive can never collide</b>. To reintroduce a name, first open the archived holder and rename it (&ldquo;Books&rdquo; &rarr; &ldquo;Books_old&rdquo;) — that frees &ldquo;Books&rdquo; for a fresh, narrower category (e.g. splitting Books from Comics).</li>
+      <li>Enforced <b>server-side</b> — a create/rename validator plus a partial unique index <code>(owner_id, lower(name)) where owner_id is not null</code> (covers active + archived; system rows aren&rsquo;t in the table) — and mirrored <b>client-side</b> for an inline error before the outbox round-trips. The server stays source of truth since offline creates can race.</li>
+    </ul>
+  </div>
+
+  <p class="note">
+    <b>Reached from</b> a single navigation row on <a href="settings.html">settings.html</a> (&ldquo;Categories &middot; Manage your categories&rdquo;) → route <code>/settings/categories</code>, a full screen above the shell with a back affordance (same level as <code>/settings</code>). It&rsquo;s a CRUD list with its own affordances, not an inline control, and ADR-0003 names &ldquo;Settings &rarr; Categories&rdquo; as its home.
+
+    <h3>Signature — the inline named palette</h3>
+    <ul>
+      <li>Tapping a category&rsquo;s <b>swatch</b> (enlarged from the app&rsquo;s 11&nbsp;px dot to a 30&nbsp;px identity tile) slides the 12 Calm slots open <b>in place</b>; the selected slot is ringed and <b>named</b> (&ldquo;Clay&rdquo;). Recolouring is a pick from a finite, curated set — the same twelve colours that identify categories in Activity and budgets.</li>
+      <li><b>Evolves</b> the earlier Settings&rarr;Categories sketch in <a href="../home/categories.html">home/categories.html</a>, which used a floating <i>popover</i> colour picker. The inline strip reads better on a phone and puts Rename &amp; Archive in the same opened context.</li>
+    </ul>
+
+    <h3>Decisions baked in (ADR-0024 / ADR-0003)</h3>
+    <ul>
+      <li><b>Yours</b> = user categories, full lifecycle: create (ghost row), rename, recolour, archive.</li>
+      <li><b>System</b> = Books / Board Games / Video Games. Swatch stays (recolourable, ADR-0003); the row carries a <b>system</b> lock chip and drops Rename &amp; Archive (names locked, ADR-0024).</li>
+      <li>Colour never travels to the Money domain — it&rsquo;s a device-local display override, deterministic default from <code>CategoryId</code>. New categories get the next-free slot, editable.</li>
+      <li><b>Cut from the earlier sketch:</b> per-category entry counts and the &ldquo;how they read on the canvas&rdquo; preview strip — spend is a lens in Budgets/Activity, so this screen stays purely about identity (name + colour + lifecycle).</li>
+    </ul>
+
+    <h3>Specified in — ADRs</h3>
+    <ul>
+      <li><b>Money ADR-0033</b> — the write path: client-assigned id + Marten registration, the name-uniqueness invariant (validator + partial unique index), reversible <code>archive</code>/<code>unarchive</code>, archived-but-editable, and the <code>?includeArchived</code> management read (amends ADR-0024).</li>
+      <li><b>Wallet ADR-0008</b> — this screen + the device-local colour-override store (realizes ADR-0003): placement at <code>/settings/categories</code>, search-incl-archived, the inline named palette, CRUD via the offline outbox, client-mirrored uniqueness.</li>
+    </ul>
+
+    <h3>Not buildable yet — needs backend + client work</h3>
+    <ul>
+      <li><b>Money API:</b> only <code>GET /categories</code> exists today. Create / rename / archive / unarchive per ADR-0033 are unbuilt.</li>
+      <li><b>Wallet client:</b> no device-local colour-override store yet (ADR-0003/0008). Recolour + search are the pieces buildable first (search filters whatever the overlay already returns); create/rename/archive/unarchive wait on the API.</li>
+    </ul>
+  </p>
+</div>
+</body>
+</html>

@@ -15,6 +15,7 @@ Each ADR is a single markdown file following the [Nygard format](https://adr.git
 | [0005](./0005-plan-destination-and-planning-views.md) | The Plan destination — a three-view planning home (List · Board · Budget); reinstates Plan, assigns wishlist items; backlog management & nav slotting left open | 2026-07-08 |
 | [0006](./0006-acquisition-flow-placement-and-nav-shell-revision.md) | Acquisition-to-ownership flow placement + revised nav shell — orders on Home (period-decoupled arriving strip), Accounts folds into Home, Wishlist its own tab, collection → domain apps, net worth → future Stats (amends 0002, relates 0005 + Money 0030/0031/0032) | 2026-07-08 |
 | [0007](./0007-calm-typeface-manrope.md) | Calm typeface — Manrope (single variable super-family, Latin + Cyrillic) replaces Bricolage Grotesque + Spline Sans; closes the Spline Sans Cyrillic gap exposed by ADR-0001 (amends `design/themes/calm/tokens.json` + bindings) | 2026-07-08 |
+| [0008](./0008-categories-management-screen-and-colour-store.md) | Categories management screen (`/settings/categories`) + the device-local colour-override store — realizes ADR-0003's deferred store and picker; search-incl-archived, inline named palette, CRUD via outbox (relates Money 0024/0033) | 2026-07-09 |
 
 ## Related decisions housed elsewhere
 
