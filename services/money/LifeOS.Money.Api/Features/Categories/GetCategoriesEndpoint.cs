@@ -9,25 +9,24 @@ public static class GetCategoriesEndpoint {
     [WolverineGet("/categories")]
     public static async Task<IReadOnlyList<CategoryResponse>> Handle(
         HttpContext context,
-        IQuerySession session) {
+        IQuerySession session,
+        bool includeArchived = false) {
         var userId = context.GetUserId();
 
         // The ADR-0024 overlay: system categories (code constants) ∪ the owner's
-        // user categories (Marten documents, archived excluded from the picker).
-        // User categories have no writer yet, so today this resolves to the system
-        // set only — the query simply returns empty.
-        var userCategories = await session.Query<Category>()
-            .Where(x => x.OwnerId == userId && !x.Archived)
-            .ToListAsync();
+        // user categories (Marten documents). The picker asks for active only
+        // (default); the management screen (Wallet ADR-0008) passes
+        // includeArchived=true to also get the owner's archived categories.
+        IQueryable<Category> query = session.Query<Category>().Where(x => x.OwnerId == userId);
+        if (!includeArchived) {
+            query = query.Where(x => !x.Archived);
+        }
+        var userCategories = await query.ToListAsync();
 
         return
         [
-            ..SystemCategories.All.Select(ToResponse),
-            ..userCategories.Select(ToResponse),
+            ..SystemCategories.All.Select(CategoryResponse.From),
+            ..userCategories.Select(CategoryResponse.From),
         ];
-    }
-
-    private static CategoryResponse ToResponse(Category category) {
-        return new CategoryResponse(category.Id, category.Name, category.System, category.ServiceTypes);
     }
 }

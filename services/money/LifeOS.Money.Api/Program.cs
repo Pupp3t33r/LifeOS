@@ -9,6 +9,7 @@ using LifeOS.Money.Api.Fx;
 using LifeOS.Money.Api.Http;
 using LifeOS.Money.Api.Projections;
 using Marten;
+using Marten.Schema;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Weasel.Core;
@@ -90,6 +91,21 @@ public class Program
                 .Identity(x => x.Id)
                 .Duplicate(x => x.Base)
                 .Duplicate(x => x.Quote);
+
+            // Category (ADR-0024/0033): user categories are per-owner documents
+            // (system categories are code constants, never stored). Name is unique
+            // per owner, case-insensitive (ADR-0033) — a computed unique index on
+            // (OwnerId, lower(Name)). Every stored row has a non-null OwnerId, so no
+            // partial predicate is needed. The endpoint validator is the primary
+            // guard; this index is the backstop under the offline create race
+            // (Wallet ADR-0004).
+            options.Schema.For<Category>()
+                .Identity(x => x.Id)
+                .Index(x => new { x.OwnerId, x.Name }, x =>
+                {
+                    x.IsUnique = true;
+                    x.Casing = ComputedIndex.Casings.Lower;
+                });
         }).IntegrateWithWolverine();
 
         // FX rate service (ADR-0015): hourly BackgroundService fetching Belarusbank
