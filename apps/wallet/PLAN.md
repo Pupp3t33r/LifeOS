@@ -58,8 +58,8 @@ Both styles work without the app shaming either. Transactions are **frequency-up
 
 1. **Planner, not tracker.** Home is the savings canvas. Transactions are demoted to optional actuals that refine projections.
 2. **Multi-currency from day one.** Money (the value object) is `Money { Amount, Currency }`. The user has multiple savings accounts in different currencies. The canvas aggregates to a display currency; line items render as "original + converted inline" (€80 (~\$86)).
-3. **Honesty valves everywhere.** Target savings, actual savings override, savings account balance override, asset estimated value — user-truth beats computed-truth wherever a real number matters.
-4. **No false precision.** Don't display a balance the user can't verify. Don't imply the app knows what it doesn't. The actual-override is the explicit acknowledgment of this.
+3. **Honesty valves everywhere.** Target savings, the actual-savings gap entry (`UnaccountedFlowRecorded`, ADR-0026), savings account balance override, asset estimated value — user-truth beats computed-truth wherever a real number matters.
+4. **No false precision.** Don't display a balance the user can't verify. Don't imply the app knows what it doesn't. The actual-savings gap entry is the explicit acknowledgment of this.
 5. **Solo-first, family-aware.** v1 is single-user. The data model carries `OwnerId` everywhere so adding family UX later is a UI concern, not a migration.
 
 ---
@@ -72,19 +72,21 @@ Android, Web, Windows, Linux. (macOS/iOS technically free; not prioritized.)
 
 ### Screens
 
+> *The "Backend (Money)" column below reflects the **current** aggregate map (the 2026-06/07 ADR waves). Earlier drafts named now-dead shapes — `MonthlyReview`, `InstallmentPlan`, `PurchaseOrder`, `TransactionRecorded`, `Budget (ADR-0006)` — all superseded; see §12 for the trail.*
+
 | Screen | Job | Backend (Money) |
 |---|---|---|
-| **Month overview (Home)** | Savings canvas: target / projected / actual; planned purchases summary; recent activity preview | `MonthProjection` (ADR-0007) |
-| **Recurring editor** | Engine of projections: known income, bills, subscriptions, installments | `RecurringPayment`, `InstallmentPlan` (ADR-0005) |
-| **Wishlist + planned purchases** | What you want vs. what fits this month; convert-to-PO action | `WishlistItem`, `PurchaseOrder` (ADR-0005) |
-| **Transactions log** | Optional actuals — record what really happened, used to refine projections | `TransactionRecorded` (ADR-0005) |
-| **Light budgets** | Per-category spend targets; actuals plugged in when logged | `Budget` (ADR-0006) |
-| **Savings accounts** | List of accounts with balances (override-enabled); create/edit | `Account` (ADR-0005, ADR-0009) |
+| **Month overview (Home)** | Savings canvas: target / projected / actual; planned-purchase summary; recent activity preview | `AccountingPeriod` + `MonthProjection` (ADR-0016, ADR-0007) |
+| **Recurring editor** | Engine of projections: known income, bills, subscriptions, payment plans (installments collapsed in) | `RecurringPayment` — Live / Materialized (ADR-0017) |
+| **Wishlist + planned purchases** | What you want vs. what fits this month; plan-into-month action (no PO) | `WishlistItem` + period `PlannedPurchase*` (ADR-0022, ADR-0018) |
+| **Activity (flows) log** | Optional actuals — line-itemed flows that refine projections | `FlowRecorded` on `AccountingPeriod` (ADR-0016, ADR-0019) |
+| **Light budgets** | Per-category spend targets; actuals plugged in when logged | `Budget` document + `BudgetActuals` (ADR-0025) |
+| **Savings accounts** | List of accounts with balances (override-enabled); create/edit | `Account` + `SavingsMovementRecorded` (ADR-0009, ADR-0026) |
 
 ### Out-of-scope for v1
 
-- Domain-linked purchases (Phase 2: Books, Board Games deep-linking)
-- Inventory & net worth (Phase 3: Asset aggregate)
+- Domain-linked purchases — the want→order→own flow (Phase 2: Books, Board Games; Money ADR-0030/0031/0032)
+- Net worth & a Stats destination (Phase 3: Asset lifecycle + projections)
 - Family UX (Phase 4)
 - Long-term analytics, year review, reports (Phase 5)
 - Voice/photo receipt capture (depends on Document Processing service)
@@ -114,32 +116,27 @@ Auth is **dev-complete and verified** as of 2026-06-26. None of the below are bl
 
 ---
 
-## 5. Phase 2 — Domain-linked purchases
+## 5. Phase 2 — Domain-linked purchases (the want→order→own flow)
 
-When Books and Board Games services come online:
+When Books and Board Games services come online, Wallet gains the full **want → order → own** flow for domain-linked goods (board games first, via BGG; then books; `ServiceType`-agnostic). This is a **real flow**, not merely "richer" existing UI. Settled backend (Money ADR-0030/0031/0032, all Accepted 2026-07-08):
 
-- Wishlist and PO flows gain the `{ serviceType, externalId }` link to real domain objects.
-- Categories auto-populate from domains (`books`, `board-games`).
-- Wallet deep-links to the relevant domain app (or shows an inline preview via Gateway BFF composition).
-- No new Wallet feature modules per se — the existing wishlist/PO UI becomes "richer" when a domain is linked.
+- **External linking (ADR-0030)** — one `ExternalReference {ServiceType, ExternalId}` with two homes: `WishlistItem.ExternalRef` (desire) and `Line.ExternalRef` (transaction). Cross-service via **Kafka events** — Money publishes/consumes, **never calls out**; the client does the provider (BGG) lookup; `ExternalId` is minted by the domain app on save or pre-assigned by Wallet only to skip the round-trip. Categories auto-populate from domains (`books`, `board-games`). This is the **first cross-domain event** → forces the deferred Kafka envelope/outbox decisions.
+- **The Order aggregate (ADR-0031)** — event-sourced procurement on its own **cross-period** stream; typed ancillary costs (shipping/customs/handling) folded pro-rata into each asset's cost at receipt; fuzzy-or-precise ETA (month by default for intl post); a receipt confirmation window that pins per-item cost. Cancel reverts the wishlist; refund is separate.
+- **Placement (Wallet ADR-0006)** — orders live on **Home** (a period-decoupled "Arriving" strip + a FAB "Buy" verb; cancel / edit / Mark-received from there); **Wishlist** gets its own tab.
 
-The Phase 1 data model already supports this via `ExternalReference`; Phase 2 is UI work, not schema migration.
-
-> *Revised 2026-07-08 (Money ADR-0030/0031/0032, Wallet ADR-0006): Phase 2 is now a **real flow**, not merely "richer" existing UI — external linking via **Kafka events**, an **Order** aggregate (procurement + receipt), **orders on Home**, and a **Wishlist** tab. See §12 Landed 2026-07-08.*
+Wallet may still deep-link to the relevant domain app (or show an inline preview via Gateway BFF composition). The Phase 1 data model already carries `ExternalReference`; the new build work is the **Order aggregate + its UI**, not a schema migration.
 
 ---
 
-## 6. Phase 3 — Inventory & net worth
+## 6. Phase 3 — Net worth & Stats
 
-> *Revised 2026-07-08 (Money ADR-0032, Wallet ADR-0006): the Asset is **born at receipt** (no PurchaseOrder) and is a **financial-only** record. Owned **collection** (loan/condition) lives in the **domain apps** (net-worth-effect boundary), **not** a Wallet Inventory screen; **net worth** → a future **Stats** destination. The bullets below are the older framing.*
+> *Framing set 2026-07-08 (Money ADR-0032, Wallet ADR-0006).*
 
-- **Money Asset aggregate** (ADR-0010) ships. Two ingestion paths:
-  - *Tracked:* PO advances to Received → `AssetTracked` event.
-  - *Pre-existing import:* user adds directly with `AcquiredDate`, `AcquiredCost`, `CurrentEstimatedValue`. Bypasses MonthlyReview entirely.
-- New Wallet screen: **Inventory** — list of owned Assets with values; edit `CurrentEstimatedValue`; mark for sale; record sale.
-- New Wallet screen: **Net worth** — savings balances + asset values − outstanding installment balances, all in display currency.
-- Gateway BFF endpoint `GET /app/v1/inventory` enriches Asset rows with descriptive data from Books/Board Games (title, cover) for display. Math never depends on enrichment.
-- **Bought-for vs sold-for stat:** computed on sold Assets — `SoldFor − AcquiredCost`, both converted via ADR-0008.
+- **Asset lifecycle (Money ADR-0032)** — the Asset is a **financial-only**, event-sourced record, **born at receipt** (no PurchaseOrder), states `Owned → Sold | WrittenOff`. Net worth = Owned only. A second ingestion path (`AssetImported`) backfills pre-existing possessions (`AcquiredDate`, `AcquiredCost`); its UI is **parked behind demand**.
+- **The net-worth-effect boundary.** Possession states that move no money (loaned-to-a-friend, condition, played) are **not** Wallet's concern — they live in the owning **domain app** (Board Games, Books), **not** a Wallet "Inventory" screen. Wallet holds only value-moving events. (This kills ADR-0002's planned Wallet Inventory lens.)
+- **Net worth → a future Stats destination** — a derived readout (savings balances + asset values − outstanding installment balances, display currency), something you *see*, not *operate*. **Deferred:** it depends on unbuilt projection/asset data, and the primary user is not net-worth-driven.
+- **Bought-for vs sold-for stat** — computed on sold Assets, `SoldFor − AcquiredCost`, both FX-converted (ADR-0008).
+- Gateway BFF may enrich Asset/collection rows with descriptive data (title, cover) from Books/Board Games for display; math never depends on enrichment.
 
 ---
 
@@ -178,7 +175,9 @@ The Phase 1 data model already supports this via `ExternalReference`; Phase 2 is
 | Savings model | Three-layer: target / projected / actual (`Σ flows` incl. an `UnaccountedFlowRecorded` gap entry) | Money ADR-0007 + ADR-0026 |
 | Multi-currency | In v1 with FX service (Frankfurter) | Money ADR-0008 |
 | Accounts | Savings only; one currency per account | Money ADR-0009 |
-| Inventory architecture | Asset aggregate inside Money, financial fields only | Money ADR-0010 |
+| Inventory architecture | Asset = event-sourced **financial** record, born at receipt; possession states → domain apps (net-worth-effect boundary) | Money ADR-0032 (supersedes 0010) |
+| External-domain linking | One `ExternalReference` (wishlist + line homes); cross-service via **Kafka**, Money never calls out; client does the provider lookup | Money ADR-0030 |
+| Orders | Event-sourced Order aggregate on its own cross-period stream; typed ancillary costs folded into cost at receipt | Money ADR-0031 |
 | Income pattern | Stable + resale (later); planner accommodates variable | User decision |
 | Subscriptions | Modeled as a `RecurringPayment` (optionally given a user category); not a distinct concept | Money ADR-0017 |
 | Auth session & login UX | Per-platform token lifetimes; passkey-preferred + password fallback; native biometric app-lock; short web session | Money ADR-0014 |
@@ -280,30 +279,28 @@ This session **resolved flow-list item 4 (Budgets)** and the two big deferred to
 
 ## 13. Navigation & information architecture
 
-> **Status:** **Decided** in the functional-design pass (2026-06-29). Frozen in **[Wallet ADR-0002](./docs/adr/0002-navigation-and-information-architecture.md)** (nav + Home cockpit) and **[Wallet ADR-0003](./docs/adr/0003-category-colour-system.md)** (category colours). This section is the at-a-glance summary; the ADRs are authoritative.
+> **Status:** the near-term shell is **[Wallet ADR-0002](./docs/adr/0002-navigation-and-information-architecture.md)** (Home cockpit + IA) as revised by **[ADR-0005](./docs/adr/0005-plan-destination-and-planning-views.md)** (Plan reinstated) and **[ADR-0006](./docs/adr/0006-acquisition-flow-placement-and-nav-shell-revision.md)** (shell revision — Accounts folds into Home). Category colours: **[ADR-0003](./docs/adr/0003-category-colour-system.md)**. This section summarizes; the ADRs are authoritative. **Wishlist-as-a-tab and a future Stats destination are provisional**, pending an app-wide feature-map / IA review that owns the final nav.
 >
-> **⚠️ Revised (2026-07-08):** the shell + tables below are **superseded**. [ADR-0005](./docs/adr/0005-plan-destination-and-planning-views.md) reinstated **Plan**; [ADR-0006](./docs/adr/0006-acquisition-flow-placement-and-nav-shell-revision.md) revised the shell to **Home · Plan · Wishlist · Activity** — Accounts folds into Home, net worth → a future Stats tab, owned collection → domain apps. Read those ADRs for current nav; below is the 2026-06-29 snapshot.
->
-> **Designs:** visual mockups + screenshots of the Home cockpit, row spec, and category palette live in **[`docs/design/home/`](./docs/design/home/)** (illustrative references, not app code — the ADRs win where they disagree).
+> **Designs:** visual mockups of the Home cockpit, row spec, and category palette live in **[`docs/design/home/`](./docs/design/home/)**; the Plan views in **[`docs/design/plan/`](./docs/design/plan/)** (illustrative references, not app code — the ADRs win where they disagree).
 
 The app has **two conceptual axes**:
-- **Cash-flow** — money moving through a month (Home + Activity), with Accounts as the cash you hold.
-- **Possessions** — the lifecycle of *things*: `Wishlist → Planned purchase → Owned (Asset) → Resale value`. Net worth is the roll-up across both axes (`accounts + asset values − outstanding installments`, §6).
+- **Cash-flow** — money moving through a month (Home + Activity), with the savings pots as the cash you hold (folded into Home, ADR-0006).
+- **Possessions** — the lifecycle of *things*: `Wishlist → Order → Owned (Asset) → Resale value`. Owned collection lives in the **domain apps** (net-worth-effect boundary); net worth is the roll-up (`accounts + asset values − outstanding installments`, §6) on a future **Stats** destination.
 
 Not everything is a page. Surface types: **Page** (nav destination) · **Section** (region of a page) · **Sheet/Wizard** (modal, launched contextually) · **Inline** (tap-to-edit) · **Panel** (lightweight overlay/curtain).
 
 ### The shell — four destinations, adaptive chrome
 
-> **Home · Activity · Accounts · Wishlist**
+> **Home · Plan · Wishlist · Activity**
 
-Adaptive: bottom `NavigationBar` (phone-portrait `<720`) → `NavigationRail` (`720–1240`) → extended labelled sidebar (desktop/web-landscape `≥1240`). **Settings** is a full-screen route *above* the shell (app-bar gear), not a nav slot.
+Accounts is **not** a tab — it folds into Home (a pots glance + a "Manage" pushed surface, ADR-0006). **Stats** arrives later, when net worth + projections are real. Adaptive: bottom `NavigationBar` (phone-portrait `<720`) → `NavigationRail` (`720–1240`) → extended labelled sidebar (desktop/web-landscape `≥1240`). **Settings** is a full-screen route *above* the shell (app-bar gear), not a nav slot.
 
 | Page | Holds |
 |---|---|
-| **Home** | The **current-period cockpit** (not a stats readout): period switcher *(built)* — `‹ Month YYYY ›` chevrons + Active/Planning/Past status chip + snap-back-to-Current, multiple open periods (ADR-0023), always reopens on the active period; a browsed **future** period is planning-only (worklist is a read-only preview, one-off Add disabled); reactive **on-track strip** (projected vs. target, ADR-0007) with a `details ▾` expand into **per-category budget bars** (ADR-0025); the **worklist**; add-flow FAB; entry to **Close** (ADR-0021/0026). |
+| **Home** | The **current-standing cockpit** — this month's **flow** *plus* period-independent **stocks**. *Flow:* period switcher *(built)* — `‹ Month YYYY ›` chevrons + Active/Planning/Past status chip + snap-back-to-Current, multiple open periods (ADR-0023), browsed future period is planning-only; reactive **on-track strip** (projected vs. target, ADR-0007) with a `details ▾` expand into **per-category budget bars** (ADR-0025); the **worklist**; add-flow FAB (incl. **Buy / New order**); entry to **Close** (ADR-0021/0026). *Stocks:* a **savings-pots glance** → a "Manage" pushed surface (account list, create/rename/archive, deposit/withdraw, transfer, reconcile, history); an **"Arriving" orders strip** (rolling ~30-day window keyed on ETA — cancel / edit / Mark-received, ADR-0031). |
+| **Plan** | Three views (ADR-0005): **List** (definitions library) · **Board** (try-on scheduling of wishlist wants across months) · **Budget** (per-category spend limits + savings target). |
+| **Wishlist** | The browseable backlog (items + packages, ADR-0022); "order these wants" → an Order; "plan into this month" feeds Home. *(Provisional tab, pending the feature-map review.)* |
 | **Activity** | The flows log (line-itemed actuals) across periods; add/edit/revert; filter/group by category. |
-| **Accounts** | Savings/cash accounts + balances; create/rename/archive; balance override; transfers (deferred, ADR-0009). Pinned **Rates** card in the desktop side rail. |
-| **Wishlist** | The browseable backlog (items + packages, ADR-0022); "plan into this month" feeds Home. ~~Grows a second lens — Inventory / Net worth — in Phase 3~~ _(Revised by ADR-0006: owned collection → domain apps; net worth → a future Stats tab — not a Wishlist lens.)_ |
 
 ### Home worklist — grouping & rows
 
@@ -311,11 +308,9 @@ Adaptive: bottom `NavigationBar` (phone-portrait `<720`) → `NavigationRail` (`
 - *Rejected groupings:* "must-pay vs. maybe" (no such field — never invent one) and by-category (entries are containers; category is per-line, ADR-0019 — category is a lens in the budgets expand / Activity).
 - **Rows are containers:** `icon · name · [proportion bar + count] · amount`. Multi-line → chevron + split bar + "N items", expands to per-line rows. Multi-line/one-category → solid bar + "N items · Category", still expandable. Single-line → solid bar + category name, **no chevron**. Bar/dot colours per ADR-0003.
 
-### Plan dissolved
+### Plan (reinstated)
 
-> *Reversed by [ADR-0005](./docs/adr/0005-plan-destination-and-planning-views.md): Plan is **reinstated** as a three-view **List · Board · Budget** destination.*
-
-There is no "Plan" page. Its contents redistribute: **recurring rules** edited in-context from their Home row; **budget targets** in Home's budgets expand / Settings; **wishlist** is its own destination. (Resolves the former "Plan: merged vs. split" thread by deletion.)
+Plan is a **destination** again — a three-view planning home (**List · Board · Budget**), frozen in **[ADR-0005](./docs/adr/0005-plan-destination-and-planning-views.md)**. *(History: the 2026-06-29 pass had dissolved Plan — recurring rules edited in-context from their Home row, budget targets in Home's budgets expand — but ADR-0005 reversed that. Backlog *management* + final nav slotting remain open, owned by the feature-map review.)*
 
 ### Secondary (not a nav slot)
 
@@ -327,7 +322,7 @@ There is no "Plan" page. Its contents redistribute: **recurring rules** edited i
 
 | Surface | Type | Where |
 |---|---|---|
-| **Rates** (ADR-0015) | Panel/curtain + pinned card | Curtain pulled up where conversions appear; a pinned-rates card in the desktop Accounts/side rail. Behind the curtain on phone. Not a page. |
+| **Rates** (ADR-0015) | Panel/curtain + pinned card | Curtain pulled up where conversions appear; a pinned-rates card in the desktop side rail (Accounts is no longer a tab, ADR-0006). Behind the curtain on phone. Not a page. |
 | **Close month** (ADR-0021/0026) | Wizard | Launched from Home when the period is ready to close. |
 | **Add flow** | Quick-add sheet | Global (FAB), lands in Activity / Home's Logged. |
 
@@ -337,4 +332,4 @@ A curated **12-colour Calm palette** (Sage · Teal · Denim · Indigo · Plum ·
 
 ---
 
-*Last updated: 2026-07-08*
+*Last updated: 2026-07-09*
