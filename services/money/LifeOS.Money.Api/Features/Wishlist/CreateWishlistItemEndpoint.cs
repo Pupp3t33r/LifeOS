@@ -27,7 +27,7 @@ public static class CreateWishlistItemEndpoint {
         var item = new WishlistItem {
             Id = request.Id,
             OwnerId = userId,
-            Recurrence = request.Recurrence,
+            Recurrence = WishlistMapping.ParseRecurrence(request.Recurrence),
             Name = request.Name,
             Notes = request.Notes,
             Estimate = request.Estimate,

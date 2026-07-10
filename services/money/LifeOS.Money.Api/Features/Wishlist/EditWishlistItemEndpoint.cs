@@ -21,7 +21,7 @@ public static class EditWishlistItemEndpoint {
             throw new NotFoundException($"Wishlist item '{id}' was not found.");
         }
 
-        item.Recurrence = request.Recurrence;
+        item.Recurrence = WishlistMapping.ParseRecurrence(request.Recurrence);
         item.Name = request.Name;
         item.Notes = request.Notes;
         item.Estimate = request.Estimate;

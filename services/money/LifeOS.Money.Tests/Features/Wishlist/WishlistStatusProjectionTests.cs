@@ -23,7 +23,7 @@ public class WishlistStatusProjectionTests : IClassFixture<MoneyApiFactory> {
         return Assert.Single(wishlist.Items, x => x.Id == itemId);
     }
 
-    private async Task<Guid> CreateWant(HttpClient client, WishlistRecurrence recurrence = WishlistRecurrence.Once) {
+    private async Task<Guid> CreateWant(HttpClient client, string recurrence = "once") {
         var id = Guid.NewGuid();
         var res = await client.PostAsJsonAsync("/api/wishlist/items", new CreateWishlistItemRequest(
             id, recurrence, "Lens", null, new CurrencyAmount(800m, "USD"), null, null));
@@ -41,7 +41,7 @@ public class WishlistStatusProjectionTests : IClassFixture<MoneyApiFactory> {
                 [new PlannedPurchaseLine(800m, null, "Lens", itemId)]));
 
         var status = await StatusOf(client, itemId);
-        Assert.Equal(WishlistCommitment.Planned, status.Status);
+        Assert.Equal("planned", status.Status);
         Assert.Equal(2026, status.PlannedYear);
         Assert.Equal(8, status.PlannedMonth);
     }
@@ -58,7 +58,7 @@ public class WishlistStatusProjectionTests : IClassFixture<MoneyApiFactory> {
         var cancel = await client.DeleteAsync($"/api/months/2026/8/planned-purchases/{entryId}");
         cancel.EnsureSuccessStatusCode();
 
-        Assert.Equal(WishlistCommitment.Idle, (await StatusOf(client, itemId)).Status);
+        Assert.Equal("idle", (await StatusOf(client, itemId)).Status);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class WishlistStatusProjectionTests : IClassFixture<MoneyApiFactory> {
         pay.EnsureSuccessStatusCode();
 
         var status = await StatusOf(client, itemId);
-        Assert.Equal(WishlistCommitment.Bought, status.Status);
+        Assert.Equal("bought", status.Status);
         Assert.Equal(new DateOnly(2026, 5, 10), status.BoughtDate);
     }
 
@@ -101,27 +101,27 @@ public class WishlistStatusProjectionTests : IClassFixture<MoneyApiFactory> {
         create.EnsureSuccessStatusCode();
 
         var financed = await StatusOf(client, itemId);
-        Assert.Equal(WishlistCommitment.Financed, financed.Status);
+        Assert.Equal("financed", financed.Status);
         Assert.Equal(planId, financed.PlanId);
 
         var cancel = await client.PostAsync($"/api/recurring/{planId}/cancel", content: null);
         cancel.EnsureSuccessStatusCode();
 
-        Assert.Equal(WishlistCommitment.Idle, (await StatusOf(client, itemId)).Status);
+        Assert.Equal("idle", (await StatusOf(client, itemId)).Status);
     }
 
     [Fact]
     public async Task ReusableWant_CanBePlanned_AndStaysAWant() {
         var client = NewUser();
-        var itemId = await CreateWant(client, WishlistRecurrence.Reusable);
+        var itemId = await CreateWant(client, "reusable");
 
         await client.PostAsJsonAsync("/api/months/2026/8/planned-purchases",
             new AddPlannedPurchaseRequest(Guid.NewGuid(), "USD", "Coffee",
                 [new PlannedPurchaseLine(5m, null, "Coffee", itemId)]));
 
         var status = await StatusOf(client, itemId);
-        Assert.Equal(WishlistCommitment.Planned, status.Status);
+        Assert.Equal("planned", status.Status);
         // Reusable is preserved so the client keeps it in the tray.
-        Assert.Equal(WishlistRecurrence.Reusable, status.Recurrence);
+        Assert.Equal("reusable", status.Recurrence);
     }
 }

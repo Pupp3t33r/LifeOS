@@ -6,7 +6,7 @@ namespace LifeOS.Money.Api.Features.Wishlist;
 /// user-authored state. The derived commitment status is untouched (it lives on a
 /// separate projection, ADR-0034).
 public sealed record EditWishlistItemRequest(
-    WishlistRecurrence Recurrence,
+    string Recurrence,
     string? Name,
     string? Notes,
     CurrencyAmount? Estimate,

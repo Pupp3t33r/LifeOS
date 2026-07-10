@@ -26,14 +26,14 @@ public class WishlistEndpointsTests : IClassFixture<MoneyApiFactory> {
         var id = Guid.NewGuid();
 
         var res = await client.PostAsJsonAsync("/api/wishlist/items", new CreateWishlistItemRequest(
-            id, WishlistRecurrence.Reusable, "Coffee", null, new CurrencyAmount(5m, "USD"), null, null));
+            id, "reusable", "Coffee", null, new CurrencyAmount(5m, "USD"), null, null));
 
         Assert.Equal(HttpStatusCode.Created, res.StatusCode);
         var wishlist = await GetWishlist(client);
         var item = Assert.Single(wishlist.Items, x => x.Id == id);
         Assert.Equal("Coffee", item.Name);
-        Assert.Equal(WishlistRecurrence.Reusable, item.Recurrence);
-        Assert.Equal(WishlistCommitment.Idle, item.Status);
+        Assert.Equal("reusable", item.Recurrence);
+        Assert.Equal("idle", item.Status);
         Assert.Equal(5m, item.Estimate!.Amount);
     }
 
@@ -43,7 +43,7 @@ public class WishlistEndpointsTests : IClassFixture<MoneyApiFactory> {
         var id = Guid.NewGuid();
 
         var res = await client.PostAsJsonAsync("/api/wishlist/items", new CreateWishlistItemRequest(
-            id, WishlistRecurrence.Once, "Mystery gift", null, null, null, null));
+            id, "once", "Mystery gift", null, null, null, null));
 
         res.EnsureSuccessStatusCode();
         var wishlist = await GetWishlist(client);
@@ -55,7 +55,7 @@ public class WishlistEndpointsTests : IClassFixture<MoneyApiFactory> {
         var client = NewUser();
         var id = Guid.NewGuid();
         var request = new CreateWishlistItemRequest(
-            id, WishlistRecurrence.Once, "Fridge", null, null, null, null);
+            id, "once", "Fridge", null, null, null, null);
 
         var first = await client.PostAsJsonAsync("/api/wishlist/items", request);
         var second = await client.PostAsJsonAsync("/api/wishlist/items", request);
@@ -71,10 +71,10 @@ public class WishlistEndpointsTests : IClassFixture<MoneyApiFactory> {
         var client = NewUser();
         var id = Guid.NewGuid();
         await client.PostAsJsonAsync("/api/wishlist/items", new CreateWishlistItemRequest(
-            id, WishlistRecurrence.Once, "Tires", null, new CurrencyAmount(400m, "USD"), null, null));
+            id, "once", "Tires", null, new CurrencyAmount(400m, "USD"), null, null));
 
         var edit = await client.PutAsJsonAsync($"/api/wishlist/items/{id}", new EditWishlistItemRequest(
-            WishlistRecurrence.Once, "Winter tires", "studded", new CurrencyAmount(520m, "USD"), null, null));
+            "once", "Winter tires", "studded", new CurrencyAmount(520m, "USD"), null, null));
         edit.EnsureSuccessStatusCode();
 
         var item = Assert.Single((await GetWishlist(client)).Items, x => x.Id == id);
@@ -87,7 +87,7 @@ public class WishlistEndpointsTests : IClassFixture<MoneyApiFactory> {
     public async Task Edit_Returns404_OnUnknownItem() {
         var client = NewUser();
         var res = await client.PutAsJsonAsync($"/api/wishlist/items/{Guid.NewGuid()}", new EditWishlistItemRequest(
-            WishlistRecurrence.Once, "x", null, null, null, null));
+            "once", "x", null, null, null, null));
         Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
     }
 
@@ -96,7 +96,7 @@ public class WishlistEndpointsTests : IClassFixture<MoneyApiFactory> {
         var client = NewUser();
         var id = Guid.NewGuid();
         await client.PostAsJsonAsync("/api/wishlist/items", new CreateWishlistItemRequest(
-            id, WishlistRecurrence.Once, "Impulse", null, null, null, null));
+            id, "once", "Impulse", null, null, null, null));
 
         var first = await client.DeleteAsync($"/api/wishlist/items/{id}");
         var second = await client.DeleteAsync($"/api/wishlist/items/{id}");
@@ -113,7 +113,7 @@ public class WishlistEndpointsTests : IClassFixture<MoneyApiFactory> {
         var itemId = Guid.NewGuid();
         await client.PostAsJsonAsync("/api/wishlist/packages", new CreatePackageRequest(packageId, "All-in pledge"));
         await client.PostAsJsonAsync("/api/wishlist/items", new CreateWishlistItemRequest(
-            itemId, WishlistRecurrence.Once, "Base game", null, null, packageId, null));
+            itemId, "once", "Base game", null, null, packageId, null));
 
         var wishlist = await GetWishlist(client);
         Assert.Single(wishlist.Packages, x => x.Id == packageId);
@@ -133,7 +133,7 @@ public class WishlistEndpointsTests : IClassFixture<MoneyApiFactory> {
         var alice = _factory.CreateClientForUser(Guid.NewGuid().ToString());
         var bob = _factory.CreateClientForUser(Guid.NewGuid().ToString());
         await alice.PostAsJsonAsync("/api/wishlist/items", new CreateWishlistItemRequest(
-            Guid.NewGuid(), WishlistRecurrence.Once, "Alice only", null, null, null, null));
+            Guid.NewGuid(), "once", "Alice only", null, null, null, null));
 
         Assert.Empty((await GetWishlist(bob)).Items);
     }
