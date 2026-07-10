@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Wishlist — wants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52; --fin:#6480A0;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+    --c-sage:#6E8E78; --c-teal:#4F8A82; --c-denim:#6480A0; --c-plum:#9B6E8E; --c-rose:#BB7081;
+    --c-clay:#C2855A; --c-ochre:#B59A4E; --c-olive:#899050; --c-stone:#8C8275; --c-slate:#7C8696;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:56px 40px 90px}
+  .board{max-width:1520px;margin:0 auto}
+  :focus-visible{outline:2px solid #8FB39E;outline-offset:2px;border-radius:4px}
+
+  .masthead{color:#EDE7DC;margin-bottom:44px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 33px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:920px;color:#B9B1A3;font-size:15px;line-height:1.62}
+  .masthead p em{color:#D9966E;font-style:normal}
+  .note{margin-top:16px;max-width:920px;font-size:12.5px;line-height:1.62;color:#9C9384;border-left:2px solid #4E6B5A;padding-left:14px}
+  .note b{color:#B9B1A3;font-weight:600}
+  .note code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#C7BFB1}
+
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+  .stage{display:flex;gap:34px;align-items:flex-start}
+  .desktop{flex:1;min-width:0}.phone{flex:0 0 332px}
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative}
+  .phone .screen{border-radius:32px}
+
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:15px 22px 13px;border-bottom:1px solid var(--line)}
+  .wm{font:700 19px/1 var(--disp);letter-spacing:-.02em}.wm i{color:var(--clay);font-style:normal}
+  .gear{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:14px}
+  .appback{display:flex;align-items:center;gap:9px}
+  .appback .bk{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:16px}
+  .appback .ttl{font:700 15px/1 var(--disp);letter-spacing:-.01em}
+  .body{display:flex}
+  .rail{flex:0 0 128px;border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+  .rail .nav{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:12px;font-size:12.5px;color:var(--muted)}
+  .rail .nav svg{width:17px;height:17px;flex:0 0 17px}
+  .rail .nav.on{background:rgba(94,126,107,.12);color:var(--sageDeep);font-weight:600}
+  .content{flex:1;padding:22px 26px 26px;min-width:0}
+
+  .crumb{display:inline-flex;align-items:center;gap:7px;font:600 11.5px/1 var(--body);color:var(--muted);margin-bottom:12px}
+  .crumb .bk{color:var(--sageDeep)} .crumb svg{width:13px;height:13px}
+  .phd{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:5px;gap:16px}
+  .phd .tl{display:flex;align-items:baseline;gap:16px}
+  .phd .h1{font:600 25px/1.05 var(--disp);letter-spacing:-.01em}
+  .phd .tot{font:700 18px/1 var(--disp);color:var(--clay);letter-spacing:-.01em}
+  .phd .tot small{font:500 11px/1 var(--body);color:var(--muted);margin-left:4px}
+  .btn{font:600 12px/1 var(--body);border-radius:999px;padding:10px 15px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  .btn b{font-size:15px;font-weight:400}
+  .btn.pri{background:var(--clay);color:#fff;box-shadow:0 10px 20px -10px rgba(192,122,82,.6)}
+  .sub{font-size:12.5px;color:var(--muted);margin:0 0 20px}
+
+  .libsum{display:flex;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:18px}
+  .libsum .cell{flex:1;padding:13px 16px;border-right:1px solid var(--line)}
+  .libsum .cell:last-child{border-right:0}
+  .libsum .k{font:600 10px/1 var(--body);letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+  .libsum .k .dot{width:8px;height:8px;border-radius:999px;flex:0 0 auto}
+  .libsum .v{font:700 21px/1 var(--disp);letter-spacing:-.01em}
+  .libsum .cap{font-size:11px;color:var(--muted);margin-top:5px}
+
+  /* filter + sort bar — status chips · category · search · sort */
+  .bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .chips{display:inline-flex;background:rgba(44,42,38,.05);border-radius:999px;padding:3px;flex-wrap:wrap}
+  .chips span{font:600 11.5px/1 var(--body);padding:7px 12px;border-radius:999px;color:var(--muted)}
+  .chips span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .chips span .n{color:var(--muted);font-weight:500;margin-left:5px}
+  .chips span.on .n{color:var(--sageDeep)}
+  .pill{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 13px;font:600 11.5px/1 var(--body);color:var(--muted)}
+  .pill svg{width:13px;height:13px}
+  .pill b{color:var(--ink);font-weight:600}
+  .pill .cd{width:8px;height:8px;border-radius:999px}
+  .search{flex:1;min-width:130px;max-width:230px}
+  .search input{border:0;background:transparent;font:400 12px/1 var(--body);color:var(--ink);outline:none;width:100%}
+  .search input::placeholder{color:var(--muted)}
+  .sort{margin-left:auto}
+  .catbar{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .catlab{font:600 10.5px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-right:2px}
+  .catchip{display:inline-flex;align-items:center;gap:6px;font:600 11.5px/1 var(--body);color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 11px}
+  .catchip .cd{width:8px;height:8px;border-radius:999px}
+  .catchip.on{border-color:var(--sage);background:rgba(94,126,107,.09);color:var(--ink)}
+  .catnote{margin-left:auto;font-size:11px;color:var(--muted)}
+  .boughtbar{display:flex;align-items:center;gap:11px;padding:12px 16px;border:1px dashed var(--line);border-radius:14px;background:transparent;color:var(--muted);font-size:12.5px;margin-top:2px}
+  .boughtbar .chk{width:20px;height:20px;border-radius:999px;background:rgba(94,126,107,.14);color:var(--sageDeep);display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+  .boughtbar b{color:var(--ink);font-weight:600}
+  .boughtbar .amt{color:var(--muted)}
+  .boughtbar .ch{margin-left:auto;color:#c3bcac;font-size:15px}
+
+  /* the list of wants */
+  .lib{display:flex;flex-direction:column;gap:10px}
+  .want{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+  .want.done{opacity:.72}
+  .want .nm{flex:0 0 222px;min-width:0}
+  .want .nm .n{font-size:14px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .lnk{display:inline-flex;align-items:center;gap:4px;font:600 9.5px/1 var(--body);letter-spacing:.3px;color:var(--muted);border:1px solid var(--line);padding:3px 6px;border-radius:999px}
+  .lnk svg{width:10px;height:10px}
+  .want .nm .meta{font-size:11.5px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .glyph{width:30px;height:30px;border-radius:9px;flex:0 0 auto;display:grid;place-items:center;font-size:14px;color:#fff}
+  .cat-Kitchen{background:var(--c-teal)} .cat-Auto{background:var(--c-stone)} .cat-Electronics{background:var(--c-denim)}
+  .cat-Food{background:var(--c-olive)} .cat-Photography{background:var(--c-ochre)} .cat-Home{background:var(--c-clay)}
+  .cd{width:9px;height:9px;border-radius:999px;flex:0 0 auto}
+  .cdKitchen{background:var(--c-teal)} .cdAuto{background:var(--c-stone)} .cdElectronics{background:var(--c-denim)}
+  .cdFood{background:var(--c-olive)} .cdPhotography{background:var(--c-ochre)} .cdHome{background:var(--c-clay)}
+  .tag{font:600 9.5px/1 var(--body);letter-spacing:.2px;padding:3px 7px;border-radius:999px}
+  .tag.once{color:var(--muted);background:rgba(44,42,38,.06)}
+  .tag.rep{color:var(--sageDeep);background:rgba(94,126,107,.12)}
+
+  /* the signature: commitment track — Wishing → Committed → Bought */
+  .journey{flex:1;min-width:0;display:flex;align-items:center;gap:16px}
+  .track{display:inline-flex;align-items:center;flex:0 0 auto}
+  .track .n{width:9px;height:9px;border-radius:999px;border:1.6px solid var(--line);background:var(--surface);flex:0 0 auto}
+  .track .n:not(:first-child){margin-left:34px;position:relative}
+  .track .n:not(:first-child)::before{content:"";position:absolute;right:100%;top:50%;transform:translateY(-50%);width:34px;height:1.6px;background:var(--line)}
+  .track.s-wish .n:nth-child(1){background:var(--muted);border-color:var(--muted);box-shadow:0 0 0 3px rgba(124,118,107,.16)}
+  .track.s-plan .n:nth-child(-n+2){background:var(--clay);border-color:var(--clay)}
+  .track.s-plan .n:nth-child(2)::before{background:var(--clay)}
+  .track.s-plan .n:nth-child(2){box-shadow:0 0 0 3px rgba(192,122,82,.20)}
+  .track.s-fin .n:nth-child(-n+2){background:var(--fin);border-color:var(--fin)}
+  .track.s-fin .n:nth-child(2)::before{background:var(--fin)}
+  .track.s-fin .n:nth-child(2){box-shadow:0 0 0 3px rgba(100,128,160,.22)}
+  .track.s-bought .n{background:var(--sage);border-color:var(--sage)}
+  .track.s-bought .n::before{background:var(--sage)}
+  .track.s-bought .n:nth-child(3){box-shadow:0 0 0 3px rgba(94,126,107,.22)}
+
+  .stagelab{font:600 12px/1.35 var(--body);white-space:nowrap}
+  .stagelab small{display:block;font-weight:500;font-size:10.5px;color:var(--muted);margin-top:3px}
+  .stagelab small a{color:var(--fin);font-weight:600}
+  .st-wish{color:var(--muted)} .st-plan{color:var(--clay)} .st-fin{color:var(--fin)} .st-bought{color:var(--sageDeep)}
+  .ghost{font:600 11px/1 var(--body);color:var(--sageDeep);display:inline-flex;align-items:center;gap:5px}
+  .ghost svg{width:13px;height:13px}
+
+  .est{font:600 15px/1 var(--disp);color:var(--clay);white-space:nowrap;text-align:right;flex:0 0 auto;min-width:64px}
+  .est small{display:block;font:500 10px/1 var(--body);color:var(--muted);margin-top:5px}
+  .est.na{color:var(--muted);font-weight:500;font-size:12.5px}
+  .est.paid{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(124,118,107,.5)}
+  .chev{color:#c3bcac;font-size:16px;flex:0 0 auto}
+
+  /* footer legend */
+  .legend{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+  .legend .lt{font:600 10.5px/1 var(--body);letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .legend .ls{font-size:11.5px;color:var(--muted);margin-bottom:14px}
+  .legwrap{display:flex;gap:24px;flex-wrap:wrap}
+  .leg{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted)}
+  .leg .d{width:10px;height:10px;border-radius:999px;flex:0 0 auto}
+  .leg b{color:var(--ink);font-weight:600}
+  .d.wish{background:var(--muted)} .d.plan{background:var(--clay)} .d.fin{background:var(--fin)} .d.bought{background:var(--sage)}
+
+  /* phone */
+  .pbody{padding:16px 15px 84px}
+  .p-want{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 13px}
+  .plist .p-want + .p-want{margin-top:9px}
+  .p-want.done{opacity:.72}
+  .p-want .nm{flex:1;min-width:0}
+  .p-want .nm .n{font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .p-want .nm .meta{font-size:11px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .p-stage{font:600 11px/1 var(--body);display:inline-flex;align-items:center;gap:5px}
+  .p-stage .n{width:7px;height:7px;border-radius:999px;flex:0 0 auto}
+  .p-est{font:600 13.5px/1 var(--disp);color:var(--clay);white-space:nowrap}
+  .p-est.na{color:var(--muted);font-weight:500;font-size:12px}
+  .p-est.paid{color:var(--muted);text-decoration:line-through}
+  .p-sechd{font:600 10px/1 var(--body);letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin:16px 2px 9px;display:flex;align-items:center;gap:8px}
+  .p-sechd::after{content:"";flex:1;height:1px;background:var(--line)}
+  .p-sum{display:flex;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px}
+  .p-sum .cell{flex:1;padding:11px 12px;border-right:1px solid var(--line)}.p-sum .cell:last-child{border-right:0}
+  .p-sum .k{font:600 8.5px/1 var(--body);letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .p-sum .v{font:700 16px/1 var(--disp)}.p-sum .v.neg{color:var(--clay)}
+  .p-bar{display:flex;gap:8px;margin-bottom:14px;align-items:center}
+  .p-chips{display:flex;gap:7px;overflow:hidden;flex:1}
+  .p-chips span{font:600 11px/1 var(--body);padding:7px 11px;border-radius:999px;color:var(--muted);background:rgba(44,42,38,.05);white-space:nowrap}
+  .p-chips span.on{background:var(--sageDeep);color:#fff}
+  .p-filt{width:34px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--muted);flex:0 0 auto}
+  .p-filt svg{width:15px;height:15px}
+
+  .fab{position:absolute;right:16px;bottom:74px;height:48px;width:48px;border-radius:999px;background:var(--clay);color:#fff;font:400 22px/48px var(--disp);text-align:center;box-shadow:0 12px 24px -8px rgba(192,122,82,.6)}
+  .bnav{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;border-top:1px solid var(--line);background:var(--surface);padding:9px 4px 12px}
+  .bnav .nav{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;color:var(--muted)}
+  .bnav .nav svg{width:19px;height:19px}
+  .bnav .nav.on{color:var(--sageDeep);font-weight:600}
+
+  @media(max-width:1160px){.stage{flex-direction:column}.phone{align-self:center}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-plan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M6 4h11.5l-2.4 4 2.4 4H6"/></symbol>
+  <symbol id="i-act" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+  <symbol id="i-acct" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><path d="M16 14.5h2"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8h11l-1 11.5h-9L6.5 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M7 20l-3-3M7 4l3 3"/><path d="M17 20V4M17 4l3 3M17 20l-3-3"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-6.5 8v5l-3 1.5V13z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 0 1 4-4h3a4 4 0 0 1 0 8h-1"/><path d="M15 12a4 4 0 0 1-4 4H8a4 4 0 0 1 0-8h1"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+</svg>
+
+<div class="board">
+
+  <div class="masthead">
+    <div class="kicker">wallet · Wishlist — the wants backlog (Money ADR-0022 · 0034)</div>
+    <h1>Everything you're <b>wishing&nbsp;for</b></h1>
+    <p>A flat list of the things you want — the backlog <em>Plan · Board</em> pulls from but never let you edit. Here you <em>add, price,
+      and remove</em> wants; find them by <em>category</em> and <em>search</em>. Each one shows how far it's travelled: from a <em>wish</em>,
+      to <em>planned</em> on a month or <em>in a payment plan</em>, to <em>bought</em>.</p>
+    <p class="note"><b>No grouping — just wants.</b> One item per thing you want; category filters and search are the way around it (no folders,
+      no bundles). <b>Status is read here, not set:</b> a want turns <b>Planned</b> when you drop it on a month on the Board, <b>Financed</b> when it
+      rides inside a payment plan, and <b>Bought</b> when it's paid (<code>Idle · Planned · Financed · Bought</code> — the as-built projection,
+      Money <b>ADR-0034</b>, derived from period + plan events, never hand-edited; shown as <b>Wishing · Planned · Paying off · Bought</b>). This surface
+      owns the <b>desire</b> side only: name, estimate (optional — a want may have no known price yet, ADR-0030), notes, and the <b>one-time / repeat</b> flag.
+      <b>Bought</b> wants are hidden by default (tucked into a collapsed row); the default view is <b>Active</b> — everything still in play.
+      <b>Linking a want to a domain object</b> (ADR-0030's <code>ExternalRef</code>) is <b>out of scope for now</b> — so the manual picker offers only ordinary
+      user categories. The <b>system/domain categories</b> (Books · Board Games · Video Games, ADR-0024) are <b>link-derived</b>: a want lands in one only by
+      being linked to that domain object (auto-categorized from the ref), so they're not hand-pickable here and light up when linking ships.
+      <b>Nav slot is deliberately open</b> — ADR-0005 §9 defers it to the app-wide IA review; drawn here
+      as candidate (b), pushed from the Board tray, so it claims no bottom-bar slot yet. <b>⚠️ Open:</b> how a <b>Repeat</b> want shows its status is
+      <b>undecided</b> — the track is a one-way journey, but a Repeat want restocks (never terminal); pinned at Wishing here as a placeholder, to be resolved before build.</p>
+  </div>
+
+  <div class="stage">
+
+    <!-- DESKTOP -->
+    <div class="desktop">
+      <div class="label">Desktop · web / windows — pushed from Plan · Board</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+        <div class="body">
+          <div class="rail">
+            <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+            <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+          </div>
+          <div class="content">
+            <div class="crumb"><svg><use href="#i-back"/></svg><span class="bk">Plan · Board</span> &nbsp;›&nbsp; Wishlist</div>
+            <div class="phd">
+              <div class="tl"><div class="h1">Wishlist</div><div class="tot">−$3,288 <small>7 active</small></div></div>
+              <div class="btn pri"><b>+</b> Add want</div>
+            </div>
+            <div class="sub">The wants backlog — edit it here; plan it on the Board; buy it on Home.</div>
+
+            <div class="libsum">
+              <div class="cell"><div class="k"><span class="dot" style="background:var(--muted)"></span>Wishing</div><div class="v">4</div><div class="cap">ideas, not committed</div></div>
+              <div class="cell"><div class="k"><span class="dot" style="background:var(--clay)"></span>Planned</div><div class="v">2</div><div class="cap">on a month</div></div>
+              <div class="cell"><div class="k"><span class="dot" style="background:var(--fin)"></span>Paying off</div><div class="v">1</div><div class="cap">in installments</div></div>
+              <div class="cell"><div class="k"><span class="dot" style="background:var(--sage)"></span>Bought</div><div class="v">1</div><div class="cap">paid for</div></div>
+            </div>
+
+            <div class="bar">
+              <div class="chips">
+                <span class="on">Active <span class="n">7</span></span>
+                <span>Wishing <span class="n">4</span></span>
+                <span>Planned <span class="n">2</span></span>
+                <span>Paying off <span class="n">1</span></span>
+              </div>
+              <div class="pill"><svg><use href="#i-filter"/></svg>All categories <svg style="width:11px;height:11px"><use href="#i-chev"/></svg></div>
+              <div class="pill search"><svg><use href="#i-search"/></svg><input type="text" placeholder="Search wants"></div>
+              <div class="pill sort"><svg><use href="#i-sort"/></svg>Sort <b>Stage</b></div>
+            </div>
+
+            <div class="lib">
+
+              <div class="want">
+                <span class="glyph cat-Electronics"><svg width="14" height="14"><use href="#i-bag"/></svg></span>
+                <div class="nm"><div class="n">MacBook Pro 14"</div><div class="meta"><span class="cd cdElectronics"></span>Electronics</div></div>
+                <div class="journey">
+                  <span class="track s-fin"><span class="n"></span><span class="n"></span><span class="n"></span></span>
+                  <span class="stagelab st-fin">Paying off<small>via <a href="#">Laptop plan</a></small></span>
+                </div>
+                <div class="est">−$1,900</div><span class="chev">›</span>
+              </div>
+
+              <div class="want">
+                <span class="glyph cat-Auto"><svg width="14" height="14"><use href="#i-bag"/></svg></span>
+                <div class="nm"><div class="n">Winter tires</div><div class="meta"><span class="cd cdAuto"></span>Auto</div></div>
+                <div class="journey">
+                  <span class="track s-plan"><span class="n"></span><span class="n"></span><span class="n"></span></span>
+                  <span class="stagelab st-plan">Planned<small>October · on the Board</small></span>
+                </div>
+                <div class="est">−$600</div><span class="chev">›</span>
+              </div>
+
+              <div class="want">
+                <span class="glyph cat-Kitchen"><svg width="14" height="14"><use href="#i-bag"/></svg></span>
+                <div class="nm"><div class="n">Espresso machine</div><div class="meta"><span class="cd cdKitchen"></span>Kitchen</div></div>
+                <div class="journey">
+                  <span class="track s-plan"><span class="n"></span><span class="n"></span><span class="n"></span></span>
+                  <span class="stagelab st-plan">Planned<small>October · on the Board</small></span>
+                </div>
+                <div class="est">−$140</div><span class="chev">›</span>
+              </div>
+
+              <div class="want">
+                <span class="glyph cat-Home"><svg width="14" height="14"><use href="#i-bag"/></svg></span>
+                <div class="nm"><div class="n">Standing desk</div><div class="meta"><span class="cd cdHome"></span>Home</div></div>
+                <div class="journey">
+                  <span class="track s-wish"><span class="n"></span><span class="n"></span><span class="n"></span></span>
+                  <span class="ghost"><svg><use href="#i-plan"/></svg>Plan on a month</span>
+                </div>
+                <div class="est">−$450</div><span class="chev">›</span>
+              </div>
+
+              <div class="want">
+                <span class="glyph cat-Electronics"><svg width="14" height="14"><use href="#i-bag"/></svg></span>
+                <div class="nm"><div class="n">AirPods Pro</div><div class="meta"><span class="cd cdElectronics"></span>Electronics</div></div>
+                <div class="journey">
+                  <span class="track s-wish"><span class="n"></span><span class="n"></span><span class="n"></span></span>
+                  <span class="ghost"><svg><use href="#i-plan"/></svg>Plan on a month</span>
+                </div>
+                <div class="est">−$180</div><span class="chev">›</span>
+              </div>
+
+              <div class="want">
+                <span class="glyph cat-Photography"><svg width="14" height="14"><use href="#i-bag"/></svg></span>
+                <div class="nm"><div class="n">50mm f/1.8 lens</div><div class="meta"><span class="cd cdPhotography"></span>Photography</div></div>
+                <div class="journey">
+                  <span class="track s-wish"><span class="n"></span><span class="n"></span><span class="n"></span></span>
+                  <span class="ghost"><svg><use href="#i-plan"/></svg>Plan on a month</span>
+                </div>
+                <div class="est na">—</div><span class="chev">›</span>
+              </div>
+
+              <div class="want">
+                <span class="glyph cat-Food"><svg width="14" height="14"><use href="#i-bag"/></svg></span>
+                <div class="nm"><div class="n">Coffee beans</div><div class="meta"><span class="cd cdFood"></span>Food <span class="tag rep">↻ Repeat</span></div></div>
+                <div class="journey">
+                  <span class="track s-wish"><span class="n"></span><span class="n"></span><span class="n"></span></span>
+                  <span class="stagelab st-wish">Wishing<small>plan any month</small></span>
+                </div>
+                <div class="est">−$18</div><span class="chev">›</span>
+              </div>
+
+              <div class="boughtbar"><span class="chk">✓</span><span><b>1 bought</b> · hidden</span><span class="amt">−$120</span><span class="ch">›</span></div>
+
+            </div>
+
+            <div class="legend">
+              <div class="lt">The commitment track — how far a want has travelled</div>
+              <div class="ls">Read-only: the Board and Home move a want along it. The middle stop is <b>Planned</b> (on a month) or <b>Paying off</b> (in a payment plan).</div>
+              <div class="legwrap">
+                <span class="leg"><span class="d wish"></span><b>Wishing</b> — just an idea (idle)</span>
+                <span class="leg"><span class="d plan"></span><b>Planned</b> — dropped on a month</span>
+                <span class="leg"><span class="d fin"></span><b>Paying off</b> — in installments</span>
+                <span class="leg"><span class="d bought"></span><b>Bought</b> — paid for</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHONE -->
+    <div class="phone">
+      <div class="label">Phone</div>
+      <div class="screen">
+        <div class="appbar">
+          <div class="appback"><span class="bk"><svg width="15" height="15"><use href="#i-back"/></svg></span><span class="ttl">Wishlist</span></div>
+          <div class="gear">⚙</div>
+        </div>
+        <div class="pbody">
+          <div class="p-sum">
+            <div class="cell"><div class="k">Wishing</div><div class="v">4</div></div>
+            <div class="cell"><div class="k">Planned</div><div class="v">2</div></div>
+            <div class="cell"><div class="k">Paying off</div><div class="v">1</div></div>
+            <div class="cell"><div class="k">Bought</div><div class="v">1</div></div>
+          </div>
+          <div class="p-bar">
+            <div class="p-chips">
+              <span class="on">Active 7</span><span>Wishing 4</span><span>Planned 2</span><span>Paying off 1</span>
+            </div>
+            <div class="p-filt"><svg><use href="#i-filter"/></svg></div>
+          </div>
+
+          <div class="plist">
+            <div class="p-want">
+              <span class="glyph cat-Electronics"><svg width="13" height="13"><use href="#i-bag"/></svg></span>
+              <div class="nm"><div class="n">MacBook Pro 14"</div><div class="meta"><span class="p-stage st-fin"><span class="n" style="background:var(--fin)"></span>Paying off · Laptop</span></div></div>
+              <span class="p-est">−$1,900</span>
+            </div>
+            <div class="p-want">
+              <span class="glyph cat-Auto"><svg width="13" height="13"><use href="#i-bag"/></svg></span>
+              <div class="nm"><div class="n">Winter tires</div><div class="meta"><span class="p-stage st-plan"><span class="n" style="background:var(--clay)"></span>Planned · Oct</span></div></div>
+              <span class="p-est">−$600</span>
+            </div>
+            <div class="p-want">
+              <span class="glyph cat-Kitchen"><svg width="13" height="13"><use href="#i-bag"/></svg></span>
+              <div class="nm"><div class="n">Espresso machine</div><div class="meta"><span class="p-stage st-plan"><span class="n" style="background:var(--clay)"></span>Planned · Oct</span></div></div>
+              <span class="p-est">−$140</span>
+            </div>
+            <div class="p-want">
+              <span class="glyph cat-Home"><svg width="13" height="13"><use href="#i-bag"/></svg></span>
+              <div class="nm"><div class="n">Standing desk</div><div class="meta"><span class="p-stage st-wish"><span class="n" style="background:var(--muted)"></span>Wishing</span></div></div>
+              <span class="p-est">−$450</span>
+            </div>
+            <div class="p-want">
+              <span class="glyph cat-Photography"><svg width="13" height="13"><use href="#i-bag"/></svg></span>
+              <div class="nm"><div class="n">50mm f/1.8 lens</div><div class="meta"><span class="p-stage st-wish"><span class="n" style="background:var(--muted)"></span>Wishing</span></div></div>
+              <span class="p-est na">—</span>
+            </div>
+            <div class="p-want">
+              <span class="glyph cat-Food"><svg width="13" height="13"><use href="#i-bag"/></svg></span>
+              <div class="nm"><div class="n">Coffee beans <span class="tag rep">↻ Repeat</span></div><div class="meta"><span class="p-stage st-wish"><span class="n" style="background:var(--muted)"></span>Wishing</span></div></div>
+              <span class="p-est">−$18</span>
+            </div>
+            <div class="boughtbar" style="margin-top:9px"><span class="chk">✓</span><span><b>1 bought</b> · hidden</span><span class="ch">›</span></div>
+          </div>
+        </div>
+        <div class="fab">+</div>
+        <div class="bnav">
+          <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+          <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+          <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

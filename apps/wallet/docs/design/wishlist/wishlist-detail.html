@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Wishlist — Add / Edit / Remove</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52; --fin:#6480A0;
+    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45); --pop:0 26px 60px -20px rgba(10,8,6,.6);
+    --c-sage:#6E8E78; --c-teal:#4F8A82; --c-denim:#6480A0; --c-slate:#7C8696; --c-clay:#C2855A; --c-olive:#899050; --c-plum:#9B6E8E; --c-ochre:#B59A4E; --c-stone:#8C8275;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:56px 40px 90px}
+  .board{max-width:1500px;margin:0 auto}
+  :focus-visible{outline:2px solid #8FB39E;outline-offset:2px;border-radius:4px}
+
+  .masthead{color:#EDE7DC;margin-bottom:46px}
+  .masthead .kicker{font:600 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:700 33px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:910px;color:#B9B1A3;font-size:15px;line-height:1.62}
+  .masthead p em{color:#D9966E;font-style:normal}
+  .note{margin-top:16px;max-width:910px;font-size:12.5px;line-height:1.62;color:#9C9384;border-left:2px solid #4E6B5A;padding-left:14px}
+  .note b{color:#B9B1A3;font-weight:600}
+  .note code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#C7BFB1}
+
+  .rowhd{display:flex;align-items:center;gap:11px;color:#EDE7DC;margin:0 0 16px}
+  .rowhd .num{width:26px;height:26px;border-radius:8px;background:#8FB39E;color:#15120e;display:grid;place-items:center;font:700 13px/1 var(--disp);flex:0 0 auto}
+  .rowhd h2{font:600 19px/1 var(--disp);letter-spacing:-.01em}
+  .rowhd .sub{font-size:12.5px;color:#9C9384;margin-left:2px}
+  .rowsep{height:1px;background:#332d25;margin:48px 0}
+
+  .label{font:600 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+  .stage{display:flex;gap:34px;align-items:flex-start}
+  .desktop{flex:1;min-width:0}.phone{flex:0 0 332px}
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative}
+  .phone .screen{border-radius:32px;min-height:660px}
+
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:15px 22px 13px;border-bottom:1px solid var(--line);position:relative;z-index:1}
+  .wm{font:700 19px/1 var(--disp);letter-spacing:-.02em}.wm i{color:var(--clay);font-style:normal}
+  .gear{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:14px}
+  .appback{display:flex;align-items:center;gap:9px}
+  .appback .bk{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:16px}
+  .appback .ttl{font:700 15px/1 var(--disp);letter-spacing:-.01em}
+  .body{display:flex;min-height:600px}
+  .rail{flex:0 0 128px;border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+  .rail .nav{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:12px;font-size:12.5px;color:var(--muted)}
+  .rail .nav svg{width:17px;height:17px;flex:0 0 17px}
+  .rail .nav.on{background:rgba(94,126,107,.12);color:var(--sageDeep);font-weight:600}
+  .content{flex:1;padding:22px 26px 26px;min-width:0}
+  .crumb{display:inline-flex;align-items:center;gap:7px;font:600 11.5px/1 var(--body);color:var(--muted);margin-bottom:14px}
+  .crumb .bk{color:var(--sageDeep)} .crumb svg{width:13px;height:13px}
+
+  .phd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .phd .h1{font:600 23px/1 var(--disp);letter-spacing:-.01em}
+  .phd .add{font:600 12px/1 var(--body);color:#fff;background:var(--clay);border-radius:999px;padding:9px 13px}
+  .rowlist{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .lrow{display:flex;align-items:center;gap:12px;padding:12px 15px;border-bottom:1px solid var(--line)}
+  .lrow:last-child{border-bottom:0}
+  .lrow.sel{background:rgba(94,126,107,.06)}
+  .g{width:28px;height:28px;border-radius:8px;flex:0 0 auto}
+  .ln{flex:1;font-size:13px;color:var(--ink)}.ln small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+  .la{font:600 13px/1 var(--disp);color:var(--clay)}.la.na{color:var(--muted);font-weight:500}
+
+  .backdrop{position:absolute;inset:0;background:rgba(20,16,12,.42);z-index:2}
+  .modal{position:absolute;z-index:3;top:50%;left:50%;transform:translate(-50%,-50%);width:380px;max-width:calc(100% - 40px);max-height:calc(100% - 40px);overflow:auto}
+  .modal.sm{width:344px}
+  .bottomsheet{position:absolute;z-index:3;left:0;right:0;bottom:0;max-height:calc(100% - 26px);overflow:auto;border-radius:24px 24px 0 0}
+  .sheetcard{background:var(--surface);border:1px solid #0c0a08;border-radius:22px;box-shadow:var(--pop);padding:16px 18px 20px}
+  .bottomsheet .sheetcard{border-radius:24px 24px 0 0}
+  .grab{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 15px}
+  .sh-title{font:600 18px/1.1 var(--disp);color:var(--ink);letter-spacing:-.01em;margin-bottom:15px}
+  .sh-title small{display:block;font:500 12px/1.4 var(--body);color:var(--muted);margin-top:6px}
+
+  .slab{font:600 10.5px/1 var(--body);letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin:2px 0 9px}
+  .amtfield{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:14px;padding:13px 14px;background:var(--bone);margin-bottom:6px}
+  .amtfield .cur{font:600 15px/1 var(--disp);color:var(--muted)}
+  .amtfield .big{flex:1;font:700 24px/1 var(--disp);color:var(--ink);letter-spacing:-.01em}
+  .amtfield .big.ph{color:#bdb6a8;font-weight:600;font-size:17px}
+  .amtfield .ccy{font:600 11px/1 var(--body);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:var(--surface)}
+  .cap2{font-size:11px;color:var(--muted);margin:0 2px 13px;line-height:1.5}
+
+  .field{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:12px 13px;background:var(--bone);font-size:13px;margin-bottom:10px}
+  .field .k{color:var(--muted);font-size:11.5px}
+  .field .v{color:var(--ink);font-weight:500;display:inline-flex;align-items:center;gap:7px}
+  .field .v.ph{color:#9a9384;font-weight:400}
+  .field .v .cd{width:9px;height:9px;border-radius:999px}.field .v .cx{color:var(--muted);margin-left:2px}
+  .field.input .v{color:var(--ink)}
+  .caret{width:1.5px;height:15px;background:var(--clay);display:inline-block;margin-left:1px;vertical-align:-2px}
+
+  .segf{display:flex;background:rgba(44,42,38,.06);border-radius:999px;padding:3px;margin-bottom:7px}
+  .segf span{flex:1;text-align:center;font:600 12px/1 var(--body);padding:9px;border-radius:999px;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  .segf span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.09)}
+  .segf span .rr{font-size:12px}
+
+  .notefield{border:1px solid var(--line);border-radius:12px;padding:12px 13px;background:var(--bone);min-height:60px;font-size:12.5px;color:#9a9384;line-height:1.5;margin-bottom:12px}
+
+  .statusbanner{display:flex;align-items:center;gap:11px;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:12px}
+  .statusbanner .sd{width:10px;height:10px;border-radius:999px;flex:0 0 auto}
+  .statusbanner.plan{background:rgba(192,122,82,.06);border-color:rgba(192,122,82,.32)}
+  .statusbanner.fin{background:rgba(100,128,160,.07);border-color:rgba(100,128,160,.32)}
+  .statusbanner .tx b{font:600 12.5px/1.2 var(--body);color:var(--ink);display:block}
+  .statusbanner .tx small{display:block;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
+  .st-plan b{color:var(--clay)!important} .st-fin b{color:var(--fin)!important}
+
+  .save{display:block;width:100%;text-align:center;padding:14px;border-radius:14px;background:var(--sageDeep);color:#fff;font:600 14px/1 var(--body);border:0;margin-top:4px}
+  .actbtn{flex:1;text-align:center;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 12.5px/1 var(--body)}
+  .actbtn.danger{border-color:rgba(192,122,82,.5);color:var(--clay);background:rgba(192,122,82,.05)}
+  .actrow{display:flex;gap:10px;margin-top:12px}
+  .removelink{display:block;width:100%;text-align:center;padding:12px;border-radius:12px;border:1px solid rgba(192,122,82,.5);color:var(--clay);background:rgba(192,122,82,.05);font:600 12.5px/1 var(--body);margin-top:10px}
+  .hint{font-size:11px;color:var(--muted);line-height:1.5;margin:9px 2px 0;display:flex;gap:6px}
+  .hint svg{width:12px;height:12px;flex:0 0 auto;margin-top:1px;color:var(--muted)}
+
+  /* delete confirm */
+  .cf-icon{width:42px;height:42px;border-radius:999px;background:rgba(192,122,82,.1);display:grid;place-items:center;color:var(--clay);margin-bottom:13px}
+  .cf-icon svg{width:20px;height:20px}
+  .cf-title{font:600 18px/1.2 var(--disp);color:var(--ink);margin-bottom:8px}
+  .cf-txt{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:6px}
+  .cf-txt b{color:var(--ink);font-weight:600}
+  .cf-item{display:flex;align-items:center;gap:11px;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--bone);margin:2px 0 12px}
+  .cf-item .g{width:28px;height:28px;border-radius:8px;flex:0 0 auto}
+  .cf-item .ci{flex:1;min-width:0}
+  .cf-item .ci b{font:600 13px/1 var(--body);color:var(--ink)}
+  .cf-item .ci small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+  .cf-item .ci-est{font:600 13px/1 var(--disp);color:var(--clay)}
+  .cf-item .ci-est.na{color:var(--muted);font-weight:500;font-size:12px}
+  .cf-warn{display:flex;gap:9px;align-items:flex-start;border:1px solid rgba(192,122,82,.32);background:rgba(192,122,82,.06);border-radius:12px;padding:11px 12px;margin:12px 0 4px;font-size:11.5px;color:var(--ink);line-height:1.5}
+  .cf-warn svg{width:14px;height:14px;flex:0 0 auto;margin-top:1px;color:var(--clay)}
+  .cf-warn .cd{width:9px;height:9px;border-radius:999px;flex:0 0 auto;margin-top:3px}
+  .btnfull{display:block;width:100%;text-align:center;padding:13px;border-radius:12px;font:600 13px/1 var(--body)}
+  .btnfull.del{background:var(--clay);color:#fff;border:0}
+  .btnfull.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);margin-top:9px}
+
+  .pbody{padding:16px 16px 0}
+  .bnav{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;border-top:1px solid var(--line);background:var(--surface);padding:9px 4px 12px;z-index:1}
+  .bnav .nav{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9.5px;color:var(--muted)}
+  .bnav .nav svg{width:19px;height:19px}.bnav .nav.on{color:var(--sageDeep);font-weight:600}
+
+  .cat-Electronics{background:var(--c-denim)} .cat-Home{background:var(--c-clay)} .cat-Auto{background:var(--c-stone)}
+  .cat-Kitchen{background:var(--c-teal)} .cat-Photography{background:var(--c-ochre)} .cat-Food{background:var(--c-olive)}
+  .tag{font:600 9.5px/1 var(--body);letter-spacing:.2px;padding:3px 7px;border-radius:999px}
+  .tag.once{color:var(--muted);background:rgba(44,42,38,.06)}
+  .tag.rep{color:var(--sageDeep);background:rgba(94,126,107,.12)}
+
+  @media(max-width:1160px){.stage{flex-direction:column}.phone{align-self:center}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-plan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M6 4h11.5l-2.4 4 2.4 4H6"/></symbol>
+  <symbol id="i-act" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+  <symbol id="i-acct" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><path d="M16 14.5h2"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8h11l-1 11.5h-9L6.5 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 0 1 4-4h3a4 4 0 0 1 0 8h-1"/><path d="M15 12a4 4 0 0 1-4 4H8a4 4 0 0 1 0-8h1"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></symbol>
+</svg>
+
+<div class="board">
+
+  <div class="masthead">
+    <div class="kicker">wallet · Wishlist — Add · Edit · Remove</div>
+    <h1>Adding, editing &amp; removing a <b>want</b></h1>
+    <p>The CRUD sheets behind the wishlist — the same content framed to the platform: a <em>centered dialog</em> on desktop, a
+      <em>bottom sheet</em> on phone. <em>Add</em> from the header button; <em>Edit</em> or <em>Remove</em> by opening a want.</p>
+    <p class="note"><b>You edit the desire, not the status.</b> A want's fields are yours: name, <b>estimate</b> (optional — a want may have no
+      known price yet, ADR-0030), category, notes, and the <b>one-time / repeat</b> flag (ADR-0034's <code>Once | Reusable</code>). Its <b>stage</b> —
+      <code>Idle · Planned · Financed · Bought</code>, shown as <b>Wishing · Planned · Paying off · Bought</b> — is <b>derived</b> and read-only; you move
+      it by planning on the Board or buying on Home, never by editing here. <b>Linking a want to a domain object</b> (ADR-0030's <code>ExternalRef</code>)
+      is <b>out of scope for now</b>. <b>Removing a committed want</b> also clears the plan/planned-buy that referenced it (ADR-0031's
+      cancel-reverts-the-wishlist, in reverse) — so the confirm says so.</p>
+  </div>
+
+  <!-- ============================================================ 1 · ADD -->
+  <div class="rowhd"><span class="num">1</span><h2>Add a want</h2><span class="sub">create — new wants start as a wish (Idle)</span></div>
+  <div class="stage">
+
+    <div class="desktop">
+      <div class="label">Desktop · centered dialog — one-time want, with a price</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+        <div class="body">
+          <div class="rail">
+            <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+            <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+          </div>
+          <div class="content">
+            <div class="crumb"><svg><use href="#i-back"/></svg><span class="bk">Plan · Board</span> &nbsp;›&nbsp; Wishlist</div>
+            <div class="phd"><div class="h1">Wishlist</div><div class="add">+ Add want</div></div>
+            <div class="rowlist">
+              <div class="lrow"><span class="g cat-Auto"></span><span class="ln">Winter tires<small>Auto · Planned · Oct</small></span><span class="la">−$600</span></div>
+              <div class="lrow"><span class="g cat-Electronics"></span><span class="ln">AirPods Pro<small>Electronics · Wishing</small></span><span class="la">−$180</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="backdrop"></div>
+        <div class="modal">
+          <div class="sheetcard">
+            <div class="sh-title">Add a want</div>
+            <div class="field input"><span class="k">Name</span><span class="v">Standing desk<span class="caret"></span></span></div>
+            <div class="slab" style="margin-top:4px">Estimate</div>
+            <div class="amtfield"><span class="cur">−$</span><span class="big">450</span><span class="ccy">USD ›</span></div>
+            <div class="cap2">Optional — leave blank if you don't know the price yet.</div>
+            <div class="field"><span class="k">Category</span><span class="v"><span class="cd cat-Home"></span>Home <span class="cx">›</span></span></div>
+            <div class="slab" style="margin-top:4px">Type</div>
+            <div class="segf"><span class="on">One-time</span><span>Repeat</span></div>
+            <div class="cap2">One-time — buy or plan it once. Repeat — stays on the list; plan it any month.</div>
+            <div class="notefield">Add a note (optional)</div>
+            <button class="save">Add to wishlist</button>
+            <div class="hint"><svg><use href="#i-info"/></svg><span>New wants start as a <b>wish</b>. Plan one on the Board when you're ready.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="label">Phone · bottom sheet — repeat, no price yet</div>
+      <div class="screen">
+        <div class="appbar"><div class="appback"><span class="bk"><svg width="15" height="15"><use href="#i-back"/></svg></span><span class="ttl">Wishlist</span></div><div class="gear">⚙</div></div>
+        <div class="pbody">
+          <div class="rowlist"><div class="lrow"><span class="g cat-Electronics"></span><span class="ln">AirPods Pro<small>Wishing</small></span><span class="la">−$180</span></div></div>
+        </div>
+        <div class="backdrop"></div>
+        <div class="bottomsheet">
+          <div class="sheetcard">
+            <div class="grab"></div>
+            <div class="sh-title">Add a want</div>
+            <div class="field input"><span class="k">Name</span><span class="v">Coffee beans<span class="caret"></span></span></div>
+            <div class="slab" style="margin-top:4px">Estimate</div>
+            <div class="amtfield"><span class="cur">−$</span><span class="big ph">Optional</span><span class="ccy">USD ›</span></div>
+            <div class="cap2">No price yet — you can add it later.</div>
+            <div class="field"><span class="k">Category</span><span class="v"><span class="cd cat-Food"></span>Food <span class="cx">›</span></span></div>
+            <div class="slab" style="margin-top:4px">Type</div>
+            <div class="segf"><span>One-time</span><span class="on">Repeat</span></div>
+            <div class="cap2">Repeat — stays on the list; plan it any month.</div>
+            <button class="save">Add to wishlist</button>
+            <div class="hint" style="margin-bottom:14px"><svg><use href="#i-info"/></svg><span>Starts as a <b>wish</b> — plan it on the Board later.</span></div>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+          <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+          <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="rowsep"></div>
+
+  <!-- ============================================================ 2 · EDIT -->
+  <div class="rowhd"><span class="num">2</span><h2>Edit a want</h2><span class="sub">update — fields editable; stage shown read-only</span></div>
+  <div class="stage">
+
+    <div class="desktop">
+      <div class="label">Desktop · centered dialog — a committed want (stage is read-only)</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+        <div class="body">
+          <div class="rail">
+            <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+            <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+          </div>
+          <div class="content">
+            <div class="crumb"><svg><use href="#i-back"/></svg><span class="bk">Plan · Board</span> &nbsp;›&nbsp; Wishlist</div>
+            <div class="phd"><div class="h1">Wishlist</div><div class="add">+ Add want</div></div>
+            <div class="rowlist">
+              <div class="lrow sel"><span class="g cat-Kitchen"></span><span class="ln">Espresso machine<small>Kitchen · Planned · Oct</small></span><span class="la">−$140</span></div>
+              <div class="lrow"><span class="g cat-Home"></span><span class="ln">Standing desk<small>Home · Wishing</small></span><span class="la">−$450</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="backdrop"></div>
+        <div class="modal">
+          <div class="sheetcard">
+            <div class="sh-title">Edit want</div>
+            <div class="statusbanner plan st-plan">
+              <span class="sd" style="background:var(--clay)"></span>
+              <div class="tx"><b>Planned · October</b><small>Stage follows the Board &amp; Home — it isn't edited here. Move it on the Board to change it.</small></div>
+            </div>
+            <div class="field input"><span class="k">Name</span><span class="v">Espresso machine</span></div>
+            <div class="slab" style="margin-top:4px">Estimate</div>
+            <div class="amtfield"><span class="cur">−$</span><span class="big">140</span><span class="ccy">USD ›</span></div>
+            <div class="cap2">Optional — the price you expect to pay.</div>
+            <div class="field"><span class="k">Category</span><span class="v"><span class="cd cat-Kitchen"></span>Kitchen <span class="cx">›</span></span></div>
+            <div class="slab" style="margin-top:4px">Type</div>
+            <div class="segf"><span class="on">One-time</span><span>Repeat</span></div>
+            <button class="save" style="margin-top:12px">Save changes</button>
+            <button class="removelink">Remove from wishlist</button>
+            <div class="hint"><svg><use href="#i-info"/></svg><span>It's planned on <b>October</b> — removing it also clears that planned buy.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="label">Phone · bottom sheet — an idle want (fully editable)</div>
+      <div class="screen">
+        <div class="appbar"><div class="appback"><span class="bk"><svg width="15" height="15"><use href="#i-back"/></svg></span><span class="ttl">Wishlist</span></div><div class="gear">⚙</div></div>
+        <div class="pbody">
+          <div class="rowlist"><div class="lrow sel"><span class="g cat-Home"></span><span class="ln">Standing desk<small>Home · Wishing</small></span><span class="la">−$450</span></div></div>
+        </div>
+        <div class="backdrop"></div>
+        <div class="bottomsheet">
+          <div class="sheetcard">
+            <div class="grab"></div>
+            <div class="sh-title">Edit want</div>
+            <div class="statusbanner"><span class="sd" style="background:var(--muted)"></span><div class="tx"><b style="color:var(--muted)!important">Wishing</b><small>Not committed yet. Plan it on the Board to move it along.</small></div></div>
+            <div class="field input"><span class="k">Name</span><span class="v">Standing desk</span></div>
+            <div class="slab" style="margin-top:4px">Estimate</div>
+            <div class="amtfield"><span class="cur">−$</span><span class="big">450</span><span class="ccy">USD ›</span></div>
+            <div class="field" style="margin-top:13px"><span class="k">Category</span><span class="v"><span class="cd cat-Home"></span>Home <span class="cx">›</span></span></div>
+            <div class="slab" style="margin-top:4px">Type</div>
+            <div class="segf"><span class="on">One-time</span><span>Repeat</span></div>
+            <button class="save" style="margin-top:12px">Save changes</button>
+            <button class="removelink" style="margin-bottom:14px">Remove from wishlist</button>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+          <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+          <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="rowsep"></div>
+
+  <!-- ============================================================ 3 · REMOVE -->
+  <div class="rowhd"><span class="num">3</span><h2>Remove a want</h2><span class="sub">delete — a confirm; committed wants warn what else clears</span></div>
+  <div class="stage">
+
+    <div class="desktop">
+      <div class="label">Desktop · centered dialog — removing an idle want</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+        <div class="body">
+          <div class="rail">
+            <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+            <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+            <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+          </div>
+          <div class="content">
+            <div class="crumb"><svg><use href="#i-back"/></svg><span class="bk">Plan · Board</span> &nbsp;›&nbsp; Wishlist</div>
+            <div class="phd"><div class="h1">Wishlist</div><div class="add">+ Add want</div></div>
+            <div class="rowlist">
+              <div class="lrow sel"><span class="g cat-Home"></span><span class="ln">Standing desk<small>Home · Wishing</small></span><span class="la">−$450</span></div>
+              <div class="lrow"><span class="g cat-Photography"></span><span class="ln">50mm f/1.8 lens<small>Photography · Wishing</small></span><span class="la na">—</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="backdrop"></div>
+        <div class="modal sm">
+          <div class="sheetcard">
+            <div class="cf-icon"><svg><use href="#i-trash"/></svg></div>
+            <div class="cf-title">Remove this want?</div>
+            <div class="cf-item">
+              <span class="g cat-Home"></span>
+              <div class="ci"><b>Standing desk</b><small>Home</small></div>
+              <span class="ci-est">−$450</span>
+            </div>
+            <div class="cf-txt">This takes it off your wishlist. It can't be undone.</div>
+            <button class="btnfull del" style="margin-top:12px">Remove want</button>
+            <button class="btnfull ghost">Keep it</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="label">Phone · bottom sheet — removing a planned want (warns)</div>
+      <div class="screen">
+        <div class="appbar"><div class="appback"><span class="bk"><svg width="15" height="15"><use href="#i-back"/></svg></span><span class="ttl">Wishlist</span></div><div class="gear">⚙</div></div>
+        <div class="pbody">
+          <div class="rowlist"><div class="lrow sel"><span class="g cat-Auto"></span><span class="ln">Winter tires<small>Auto · Planned · Oct</small></span><span class="la">−$600</span></div></div>
+        </div>
+        <div class="backdrop"></div>
+        <div class="bottomsheet">
+          <div class="sheetcard">
+            <div class="grab"></div>
+            <div class="cf-icon"><svg><use href="#i-trash"/></svg></div>
+            <div class="cf-title">Remove this want?</div>
+            <div class="cf-item">
+              <span class="g cat-Auto"></span>
+              <div class="ci"><b>Winter tires</b><small>Auto</small></div>
+              <span class="ci-est">−$600</span>
+            </div>
+            <div class="cf-warn"><span class="cd" style="background:var(--clay)"></span><span>It's <b>planned on October</b>. Removing it also clears that planned buy from the month.</span></div>
+            <button class="btnfull del" style="margin-top:12px">Remove anyway</button>
+            <button class="btnfull ghost">Keep it</button>
+            <div class="hint" style="margin-bottom:14px"><svg><use href="#i-info"/></svg><span>Nothing's been paid, so no money is affected.</span></div>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+          <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+          <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>
