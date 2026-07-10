@@ -14,4 +14,5 @@ public sealed record PlannedPurchaseResponse(
     DateTimeOffset AddedAt,
     string Status,
     CurrencyAmount? PaidTotal,
-    DateOnly? PaidOn);
+    DateOnly? PaidOn,
+    DateOnly? Deadline);

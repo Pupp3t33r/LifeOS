@@ -109,14 +109,15 @@ public sealed class AccountingPeriod {
         IReadOnlyList<Line> lines,
         DateTimeOffset addedAt,
         string? description,
-        PlannedPurchaseOrigin? origin = null) {
+        PlannedPurchaseOrigin? origin = null,
+        DateOnly? deadline = null) {
         ValidateLines(lines);
         if (PlannedEntryIds.Contains(entryId)) {
             throw new DuplicatePlannedPurchaseException(entryId);
         }
 
         return new PlannedPurchaseAdded(
-            periodId, ownerId, year, month, entryId, lines, addedAt, description, origin);
+            periodId, ownerId, year, month, entryId, lines, addedAt, description, origin, deadline);
     }
 
     /// Edit an unpaid, uncancelled planned purchase in place (ADR-0018).
@@ -128,10 +129,12 @@ public sealed class AccountingPeriod {
         Guid entryId,
         IReadOnlyList<Line> lines,
         DateTimeOffset editedAt,
-        string? description) {
+        string? description,
+        DateOnly? deadline = null) {
         ValidateLines(lines);
         RequireLivePlannedPurchase(entryId);
-        return new PlannedPurchaseEdited(periodId, ownerId, year, month, entryId, lines, editedAt, description);
+        return new PlannedPurchaseEdited(
+            periodId, ownerId, year, month, entryId, lines, editedAt, description, deadline);
     }
 
     /// Cancel a planned purchase (ADR-0018) — terminal for that entry.

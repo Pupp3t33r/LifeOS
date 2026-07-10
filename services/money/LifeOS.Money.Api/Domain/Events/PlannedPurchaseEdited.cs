@@ -13,4 +13,5 @@ public sealed record PlannedPurchaseEdited(
     Guid EntryId,
     IReadOnlyList<Line> Lines,
     DateTimeOffset EditedAt,
-    string? Description);
+    string? Description,
+    DateOnly? Deadline = null);

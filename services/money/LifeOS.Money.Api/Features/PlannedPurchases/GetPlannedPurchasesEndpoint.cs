@@ -40,12 +40,12 @@ public static class GetPlannedPurchasesEndpoint
                 {
                     return new PlannedPurchaseResponse(
                         record.Id, record.Lines, record.Total, record.Description, record.AddedAt,
-                        "paid", flow.Total, DateOnly.FromDateTime(flow.OccurredAt.UtcDateTime));
+                        "paid", flow.Total, DateOnly.FromDateTime(flow.OccurredAt.UtcDateTime), record.Deadline);
                 }
 
                 return new PlannedPurchaseResponse(
                     record.Id, record.Lines, record.Total, record.Description, record.AddedAt,
-                    "planned", null, null);
+                    "planned", null, null, record.Deadline);
             })
             .ToList();
     }

@@ -79,6 +79,13 @@ public class Program
             options.Projections.Add<SkippedOccurrenceRecordProjection>(ProjectionLifecycle.Inline);
             options.Projections.Add<PlannedPurchaseRecordProjection>(ProjectionLifecycle.Inline);
 
+            // WishlistItemStatus (ADR-0022/0034): derived commitment status per wishlist
+            // want, folded inline from AccountingPeriod + RecurringPayment events. Inline
+            // matches the other read-models (the async option ADR-0022 allowed is the
+            // deferred projection-strategy call). WishlistItem/Package are plain user-CRUD
+            // documents (default Id identity) and need no explicit registration.
+            options.Projections.Add<WishlistItemStatusProjection>(ProjectionLifecycle.Inline);
+
             // UserPreferences (ADR-0013) is a plain document keyed by the owner's
             // Keycloak subject, not an event-sourced aggregate.
             options.Schema.For<UserPreferences>().Identity(x => x.OwnerId);

@@ -11,6 +11,9 @@ using LifeOS.Money.Api.Domain;
 /// [Lines] carry the breakdown with signed amounts (ADR-0019/0026); a planned purchase
 /// is always spending, so amounts are negative. Idempotent on [EntryId] (ADR-0003).
 /// [Origin] is populated only by recurring carry-make-up (ADR-0020) and otherwise null.
+/// [Deadline] (ADR-0034) is an optional "buy by" date: when set the client derived this
+/// period from it (via the ADR-0013 anchor) and it drives display + sort; null means the
+/// period was chosen directly. Additive — old events deserialize it as null.
 public sealed record PlannedPurchaseAdded(
     Guid PeriodId,
     string OwnerId,
@@ -20,4 +23,5 @@ public sealed record PlannedPurchaseAdded(
     IReadOnlyList<Line> Lines,
     DateTimeOffset AddedAt,
     string? Description,
-    PlannedPurchaseOrigin? Origin = null);
+    PlannedPurchaseOrigin? Origin = null,
+    DateOnly? Deadline = null);

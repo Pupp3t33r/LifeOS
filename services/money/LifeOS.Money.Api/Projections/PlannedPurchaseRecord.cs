@@ -23,6 +23,9 @@ public sealed class PlannedPurchaseRecord
     public DateTimeOffset AddedAt { get; set; }
     public string? Description { get; set; }
 
+    /// Optional "buy by" date (ADR-0034); null when the period was chosen directly.
+    public DateOnly? Deadline { get; set; }
+
     /// Set only for a carry-make-up entry (ADR-0020); null otherwise.
     public PlannedPurchaseOrigin? Origin { get; set; }
 }

@@ -22,6 +22,7 @@ public sealed partial class PlannedPurchaseRecordProjection : EventProjection
             Total = new CurrencyAmount(total, currency),
             AddedAt = @event.AddedAt,
             Description = @event.Description,
+            Deadline = @event.Deadline,
             Origin = @event.Origin
         };
     }
@@ -38,6 +39,7 @@ public sealed partial class PlannedPurchaseRecordProjection : EventProjection
         record.Lines = @event.Lines;
         record.Total = new CurrencyAmount(@event.Lines.Sum(x => x.Amount.Amount), currency);
         record.Description = @event.Description;
+        record.Deadline = @event.Deadline;
         ops.Store(record);
     }
 

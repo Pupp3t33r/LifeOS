@@ -25,14 +25,16 @@ public static class AddPlannedPurchaseEndpoint
         var periodId = PeriodStream.IdFor(userId, year, month);
 
         var lines = request.Lines
-            .Select(x => new Line(x.Description, new CurrencyAmount(-x.Amount, request.Currency), x.CategoryId))
+            .Select(x => new Line(
+                x.Description, new CurrencyAmount(-x.Amount, request.Currency), x.CategoryId, x.WishlistItemId))
             .ToList();
         var addedAt = DateTimeOffset.UtcNow;
 
         var stream = await session.Events.FetchForWriting<AccountingPeriod>(periodId);
         var period = stream.Aggregate ?? new AccountingPeriod();
         var added = period.AddPlannedPurchase(
-            periodId, userId, year, month, request.EntryId, lines, addedAt, request.Description);
+            periodId, userId, year, month, request.EntryId, lines, addedAt, request.Description,
+            deadline: request.Deadline);
 
         stream.AppendOne(added);
         await session.SaveChangesAsync();
