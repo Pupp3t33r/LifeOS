@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../domain/period_planned_purchase.dart';
 import '../domain/planned_purchase.dart';
 import 'money_api.dart';
 
@@ -20,6 +21,20 @@ class PlannedPurchaseRepository {
     return [
       for (final x in res.data ?? const [])
         PlannedPurchase.fromJson(x as Map<String, dynamic>),
+    ];
+  }
+
+  /// All the caller's planned purchases across periods (ADR-0034) — the period-agnostic
+  /// read for the Plan List "Planned purchases" shelf and the Board timeline. [fromYear]/
+  /// [fromMonth] trim to a forward horizon.
+  Future<List<PeriodPlannedPurchase>> listAll({int? fromYear, int? fromMonth}) async {
+    final query = <String, dynamic>{};
+    if (fromYear != null) query['fromYear'] = fromYear;
+    if (fromMonth != null) query['fromMonth'] = fromMonth;
+    final res = await _dio.get<List<dynamic>>('/planned-purchases', queryParameters: query);
+    return [
+      for (final x in res.data ?? const [])
+        PeriodPlannedPurchase.fromJson(x as Map<String, dynamic>),
     ];
   }
 }

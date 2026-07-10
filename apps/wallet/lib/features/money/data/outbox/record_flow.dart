@@ -8,13 +8,21 @@ import '../../domain/month_period.dart';
 
 /// One line of a flow entry as the client sends it: a **positive magnitude**
 /// [amount] (the entry's direction supplies the sign server-side), an optional
-/// budgeting [categoryId] (ADR-0024), and an optional [description].
+/// budgeting [categoryId] (ADR-0024), an optional [description], and an optional
+/// [wishlistItemId] linking the line to a wishlist want (ADR-0034 — the ref a Board
+/// drag carries so the want reads as Planned).
 class FlowLineDraft {
-  const FlowLineDraft({required this.amount, this.categoryId, this.description});
+  const FlowLineDraft({
+    required this.amount,
+    this.categoryId,
+    this.description,
+    this.wishlistItemId,
+  });
 
   final double amount;
   final String? categoryId;
   final String? description;
+  final String? wishlistItemId;
 }
 
 /// Money-specific bridge onto the generic outbox: builds a `record_flow` operation

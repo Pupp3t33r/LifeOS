@@ -108,6 +108,7 @@ class PlannedPurchaseOutbox {
         'amount': line.amount,
         'categoryId': line.categoryId,
         'description': line.description,
+        'wishlistItemId': line.wishlistItemId,
       };
 
   Future<void> _enqueue(
