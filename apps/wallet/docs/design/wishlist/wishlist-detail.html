@@ -149,6 +149,12 @@
   .tag.once{color:var(--muted);background:rgba(44,42,38,.06)}
   .tag.rep{color:var(--sageDeep);background:rgba(94,126,107,.12)}
 
+  /* Repeat schedule chips, shown read-only in the edit sheet */
+  .ro-sched{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:11px 2px 2px}
+  .ro-schi{font:600 11px/1 var(--body);padding:6px 10px;border-radius:999px;border:1px solid var(--sage);color:var(--sageDeep);background:rgba(94,126,107,.10);display:inline-flex;align-items:center;gap:5px}
+  .ro-schi.paid{background:var(--sage);color:#fff;border-color:var(--sage);opacity:.88}
+  .ro-schi svg{width:11px;height:11px}
+
   @media(max-width:1160px){.stage{flex-direction:column}.phone{align-self:center}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -164,6 +170,9 @@
   <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-wish" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></symbol>
 </svg>
 
 <div class="board">
@@ -177,8 +186,9 @@
       known price yet, ADR-0030), category, notes, and the <b>one-time / repeat</b> flag (ADR-0034's <code>Once | Reusable</code>). Its <b>stage</b> —
       <code>Idle · Planned · Financed · Bought</code>, shown as <b>Wishing · Planned · Paying off · Bought</b> — is <b>derived</b> and read-only; you move
       it by planning on the Board or buying on Home, never by editing here. <b>Linking a want to a domain object</b> (ADR-0030's <code>ExternalRef</code>)
-      is <b>out of scope for now</b>. <b>Removing a committed want</b> also clears the plan/planned-buy that referenced it (ADR-0031's
-      cancel-reverts-the-wishlist, in reverse) — so the confirm says so.</p>
+      is <b>out of scope for now</b>. <b>Category</b> is on the want (amends ADR-0022/0034): pick from your <b>user categories</b>; the system/domain
+      categories arrive with linking. <b>Removing</b> a committed want does <b>not</b> cancel its planned buy — the line keeps tracking until you clear it on
+      the Board; nothing's been paid, so no money is affected. A <b>Repeat</b> want's schedule shows <b>read-only</b> here as month chips — edit instances on the Board. A Repeat want also carries a default <b>Unit</b> (a generic dimension — <code>Pieces · Mass · Volume · Length</code>), shown on Repeat sheets; the kg/lb/gal/ft symbol is <b>cosmetic</b>, rendered from the metric/imperial preference.</p>
   </div>
 
   <!-- ============================================================ 1 · ADD -->
@@ -192,12 +202,13 @@
         <div class="body">
           <div class="rail">
             <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
-            <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav on"><svg><use href="#i-wish"/></svg>Wishlist</div>
             <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
             <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
           </div>
           <div class="content">
-            <div class="crumb"><svg><use href="#i-back"/></svg><span class="bk">Plan · Board</span> &nbsp;›&nbsp; Wishlist</div>
+            <div class="crumb"><span class="bk">Wishlist</span></div>
             <div class="phd"><div class="h1">Wishlist</div><div class="add">+ Add want</div></div>
             <div class="rowlist">
               <div class="lrow"><span class="g cat-Auto"></span><span class="ln">Winter tires<small>Auto · Planned · Oct</small></span><span class="la">−$600</span></div>
@@ -245,13 +256,15 @@
             <div class="slab" style="margin-top:4px">Type</div>
             <div class="segf"><span>One-time</span><span class="on">Repeat</span></div>
             <div class="cap2">Repeat — stays on the list; plan it any month.</div>
+            <div class="field"><span class="k">Unit</span><span class="v">Mass · kg <span class="cx">›</span></span></div>
             <button class="save">Add to wishlist</button>
             <div class="hint" style="margin-bottom:14px"><svg><use href="#i-info"/></svg><span>Starts as a <b>wish</b> — plan it on the Board later.</span></div>
           </div>
         </div>
         <div class="bnav">
           <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
-          <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav on"><svg><use href="#i-wish"/></svg><span>Wishlist</span></div>
           <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
           <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
         </div>
@@ -273,12 +286,13 @@
         <div class="body">
           <div class="rail">
             <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
-            <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav on"><svg><use href="#i-wish"/></svg>Wishlist</div>
             <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
             <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
           </div>
           <div class="content">
-            <div class="crumb"><svg><use href="#i-back"/></svg><span class="bk">Plan · Board</span> &nbsp;›&nbsp; Wishlist</div>
+            <div class="crumb"><span class="bk">Wishlist</span></div>
             <div class="phd"><div class="h1">Wishlist</div><div class="add">+ Add want</div></div>
             <div class="rowlist">
               <div class="lrow sel"><span class="g cat-Kitchen"></span><span class="ln">Espresso machine<small>Kitchen · Planned · Oct</small></span><span class="la">−$140</span></div>
@@ -303,7 +317,7 @@
             <div class="segf"><span class="on">One-time</span><span>Repeat</span></div>
             <button class="save" style="margin-top:12px">Save changes</button>
             <button class="removelink">Remove from wishlist</button>
-            <div class="hint"><svg><use href="#i-info"/></svg><span>It's planned on <b>October</b> — removing it also clears that planned buy.</span></div>
+            <div class="hint"><svg><use href="#i-info"/></svg><span>It's planned on <b>October</b> — removing it takes it off your wishlist, but that planned buy keeps its line (clear it on the Board). Nothing's been paid, so no money is affected.</span></div>
           </div>
         </div>
       </div>
@@ -334,7 +348,8 @@
         </div>
         <div class="bnav">
           <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
-          <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav on"><svg><use href="#i-wish"/></svg><span>Wishlist</span></div>
           <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
           <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
         </div>
@@ -356,12 +371,13 @@
         <div class="body">
           <div class="rail">
             <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
-            <div class="nav on"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav on"><svg><use href="#i-wish"/></svg>Wishlist</div>
             <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
             <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
           </div>
           <div class="content">
-            <div class="crumb"><svg><use href="#i-back"/></svg><span class="bk">Plan · Board</span> &nbsp;›&nbsp; Wishlist</div>
+            <div class="crumb"><span class="bk">Wishlist</span></div>
             <div class="phd"><div class="h1">Wishlist</div><div class="add">+ Add want</div></div>
             <div class="rowlist">
               <div class="lrow sel"><span class="g cat-Home"></span><span class="ln">Standing desk<small>Home · Wishing</small></span><span class="la">−$450</span></div>
@@ -405,7 +421,7 @@
               <div class="ci"><b>Winter tires</b><small>Auto</small></div>
               <span class="ci-est">−$600</span>
             </div>
-            <div class="cf-warn"><span class="cd" style="background:var(--clay)"></span><span>It's <b>planned on October</b>. Removing it also clears that planned buy from the month.</span></div>
+            <div class="cf-warn"><span class="cd" style="background:var(--clay)"></span><span>It's <b>planned on October</b>. Removing it takes it off your wishlist — that planned buy <b>keeps its line but stops tracking this want</b>. Clear it on the Board if you want it gone.</span></div>
             <button class="btnfull del" style="margin-top:12px">Remove anyway</button>
             <button class="btnfull ghost">Keep it</button>
             <div class="hint" style="margin-bottom:14px"><svg><use href="#i-info"/></svg><span>Nothing's been paid, so no money is affected.</span></div>
@@ -413,7 +429,99 @@
         </div>
         <div class="bnav">
           <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
-          <div class="nav on"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav on"><svg><use href="#i-wish"/></svg><span>Wishlist</span></div>
+          <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
+          <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="rowsep"></div>
+
+  <!-- ============================================================ 4 · EDIT REPEAT -->
+  <div class="rowhd"><span class="num">4</span><h2>Edit a Repeat want</h2><span class="sub">update — the schedule is read-only (edit instances on the Board)</span></div>
+  <div class="stage">
+
+    <div class="desktop">
+      <div class="label">Desktop · centered dialog — the schedule shows as read-only chips</div>
+      <div class="screen">
+        <div class="appbar"><div class="wm">wallet<i>.</i></div><div class="gear">⚙</div></div>
+        <div class="body">
+          <div class="rail">
+            <div class="nav"><svg><use href="#i-home"/></svg>Home</div>
+            <div class="nav"><svg><use href="#i-plan"/></svg>Plan</div>
+            <div class="nav on"><svg><use href="#i-wish"/></svg>Wishlist</div>
+            <div class="nav"><svg><use href="#i-act"/></svg>Activity</div>
+            <div class="nav"><svg><use href="#i-acct"/></svg>Accounts</div>
+          </div>
+          <div class="content">
+            <div class="crumb"><span class="bk">Wishlist</span></div>
+            <div class="phd"><div class="h1">Wishlist</div><div class="add">+ Add want</div></div>
+            <div class="rowlist">
+              <div class="lrow sel"><span class="g cat-Electronics"></span><span class="ln">GLM subscription<small>Electronics · Repeat · 3 scheduled</small></span><span class="la">−$20</span></div>
+              <div class="lrow"><span class="g cat-Food"></span><span class="ln">Tea<small>Food · Repeat · 1 scheduled</small></span><span class="la">−$12</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="backdrop"></div>
+        <div class="modal">
+          <div class="sheetcard">
+            <div class="sh-title">Edit want</div>
+            <div class="statusbanner">
+              <span class="sd" style="background:var(--sageDeep)"></span>
+              <div class="tx"><b style="color:var(--sageDeep)!important">Repeat · restocks</b><small>The schedule is set on the Board — drag the want onto a month to add an instance. Paid instances clear automatically.</small></div>
+            </div>
+            <div class="ro-sched">
+              <span class="ro-schi">Jul</span>
+              <span class="ro-schi paid"><svg><use href="#i-check"/></svg>Aug</span>
+              <span class="ro-schi">Nov</span>
+            </div>
+            <div class="field input" style="margin-top:12px"><span class="k">Name</span><span class="v">GLM subscription</span></div>
+            <div class="slab" style="margin-top:4px">Estimate</div>
+            <div class="amtfield"><span class="cur">−$</span><span class="big">20</span><span class="ccy">USD ›</span></div>
+            <div class="cap2">Optional — the price per instance.</div>
+            <div class="field"><span class="k">Category</span><span class="v"><span class="cd cat-Electronics"></span>Electronics <span class="cx">›</span></span></div>
+            <div class="slab" style="margin-top:4px">Type</div>
+            <div class="segf"><span>One-time</span><span class="on">Repeat</span></div>
+            <div class="field" style="margin-top:10px"><span class="k">Unit</span><span class="v">Pieces <span class="cx">›</span></span></div>
+            <button class="save" style="margin-top:12px">Save changes</button>
+            <button class="removelink">Remove from wishlist</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="label">Phone · bottom sheet — Repeat, nothing scheduled yet</div>
+      <div class="screen">
+        <div class="appbar"><div class="appback"><span class="bk"><svg width="15" height="15"><use href="#i-back"/></svg></span><span class="ttl">Wishlist</span></div><div class="gear">⚙</div></div>
+        <div class="pbody">
+          <div class="rowlist"><div class="lrow sel"><span class="g cat-Food"></span><span class="ln">Coffee beans<small>Food · Repeat · none scheduled</small></span><span class="la">−$18</span></div></div>
+        </div>
+        <div class="backdrop"></div>
+        <div class="bottomsheet">
+          <div class="sheetcard">
+            <div class="grab"></div>
+            <div class="sh-title">Edit want</div>
+            <div class="statusbanner"><span class="sd" style="background:var(--muted)"></span><div class="tx"><b style="color:var(--muted)!important">Repeat · plan any month</b><small>Nothing scheduled yet. Drag it onto a month on the Board to plan an instance.</small></div></div>
+            <div class="field input" style="margin-top:12px"><span class="k">Name</span><span class="v">Coffee beans</span></div>
+            <div class="slab" style="margin-top:4px">Estimate</div>
+            <div class="amtfield"><span class="cur">−$</span><span class="big">18</span><span class="ccy">USD ›</span></div>
+            <div class="field" style="margin-top:13px"><span class="k">Category</span><span class="v"><span class="cd cat-Food"></span>Food <span class="cx">›</span></span></div>
+            <div class="slab" style="margin-top:4px">Type</div>
+            <div class="segf"><span>One-time</span><span class="on">Repeat</span></div>
+            <div class="field" style="margin-top:10px"><span class="k">Unit</span><span class="v">Mass · kg <span class="cx">›</span></span></div>
+            <button class="save" style="margin-top:12px">Save changes</button>
+            <button class="removelink" style="margin-bottom:14px">Remove from wishlist</button>
+          </div>
+        </div>
+        <div class="bnav">
+          <div class="nav"><svg><use href="#i-home"/></svg><span>Home</span></div>
+          <div class="nav"><svg><use href="#i-plan"/></svg><span>Plan</span></div>
+          <div class="nav on"><svg><use href="#i-wish"/></svg><span>Wishlist</span></div>
           <div class="nav"><svg><use href="#i-act"/></svg><span>Activity</span></div>
           <div class="nav"><svg><use href="#i-acct"/></svg><span>Accounts</span></div>
         </div>
