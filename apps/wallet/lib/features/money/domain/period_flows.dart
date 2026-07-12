@@ -1,4 +1,5 @@
 import 'money.dart';
+import 'unit_dimension.dart';
 
 /// Dart mirror of the Money service's `PeriodFlowsResponse` — the flow ledger for
 /// one accounting period (ADR-0016): the recorded [entries], newest first, plus the
@@ -69,18 +70,34 @@ class FlowEntry {
 }
 
 /// One line of an entry: a signed [amount], an optional budgeting [categoryId]
-/// (ADR-0024; null = uncategorised) and an optional [description].
+/// (ADR-0024; null = uncategorised), an optional [description], an optional
+/// [quantity] + [unitDimension] (ADR-0036 — the count/magnitude and its generic
+/// dimension; amount stays the line total), and an optional [wishlistItemId]
+/// back-ref (ADR-0034 — links a planned-purchase line to the want it satisfies).
 class FlowLine {
-  const FlowLine({required this.amount, this.categoryId, this.description});
+  const FlowLine({
+    required this.amount,
+    this.categoryId,
+    this.description,
+    this.quantity,
+    this.unitDimension,
+    this.wishlistItemId,
+  });
 
   final Money amount;
   final String? categoryId;
   final String? description;
+  final double? quantity;
+  final UnitDimension? unitDimension;
+  final String? wishlistItemId;
 
   factory FlowLine.fromJson(Map<String, dynamic> json) => FlowLine(
         amount: _money(json['amount'] as Map<String, dynamic>),
         categoryId: json['categoryId'] as String?,
         description: json['description'] as String?,
+        quantity: (json['quantity'] as num?)?.toDouble(),
+        unitDimension: UnitDimension.fromWire(json['unitDimension']),
+        wishlistItemId: json['wishlistItemId'] as String?,
       );
 }
 

@@ -1,4 +1,5 @@
 import 'money.dart';
+import 'unit_dimension.dart';
 
 /// Whether a want can be committed once or repeatedly (Money ADR-0034). A [once] want
 /// leaves the Board try-on tray when planned/financed; a [reusable] one stays and each
@@ -30,10 +31,14 @@ enum WishlistCommitment {
       };
 }
 
-/// Dart mirror of the Money service's `WishlistItemResponse` (ADR-0022/0034): a want
+/// Dart mirror of the Money service's `WishlistItemResponse` (ADR-0022/0034/0036): a want
 /// document zipped with its derived commitment [status]. [estimate] is optional
-/// (ADR-0030). Context fields are populated only for their status ([plannedYear]/
-/// [plannedMonth] when planned, [planId] when financed, [boughtDate] when bought).
+/// (ADR-0030). [categoryId] is the want's own category (ADR-0036 — user categories only
+/// in the picker; system/domain ones arrive with linking). [defaultUnitDimension] is the
+/// cosmetic quantity dimension inherited by planned buys (ADR-0036 — saves clicks; the
+/// picker shows on Repeat sheets, One-time implies Pieces). Context fields are populated
+/// only for their status ([plannedYear]/[plannedMonth] when planned, [planId] when
+/// financed, [boughtDate] when bought).
 class WishlistItem {
   const WishlistItem({
     required this.id,
@@ -42,6 +47,8 @@ class WishlistItem {
     this.name,
     this.notes,
     this.estimate,
+    this.categoryId,
+    this.defaultUnitDimension,
     this.packageId,
     this.plannedYear,
     this.plannedMonth,
@@ -55,6 +62,8 @@ class WishlistItem {
   final String? name;
   final String? notes;
   final Money? estimate;
+  final String? categoryId;
+  final UnitDimension? defaultUnitDimension;
   final String? packageId;
   final int? plannedYear;
   final int? plannedMonth;
@@ -78,6 +87,8 @@ class WishlistItem {
       estimate: estimate == null
           ? null
           : Money(amount: estimate['amount'] as num, currency: estimate['currency'] as String),
+      categoryId: json['categoryId'] as String?,
+      defaultUnitDimension: UnitDimension.fromWire(json['defaultUnitDimension']),
       packageId: json['packageId'] as String?,
       plannedYear: json['plannedYear'] as int?,
       plannedMonth: json['plannedMonth'] as int?,
