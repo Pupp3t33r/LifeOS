@@ -108,6 +108,8 @@ class PlannedPurchaseOutbox {
         'amount': line.amount,
         'categoryId': line.categoryId,
         'description': line.description,
+        'quantity': line.quantity,
+        'unitDimension': line.unitDimension?.wire,
         'wishlistItemId': line.wishlistItemId,
       };
 

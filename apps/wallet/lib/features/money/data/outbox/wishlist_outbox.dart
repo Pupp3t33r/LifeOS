@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/data/outbox_repository.dart';
 import '../../../../app/sync/outbox_drainer.dart';
+import '../../domain/unit_dimension.dart';
 import '../../domain/wishlist_item.dart';
 
 /// Money-specific bridge onto the generic outbox for the wishlist (ADR-0022/0034). Every
@@ -23,6 +24,8 @@ class WishlistOutbox {
     String? notes,
     double? estimateAmount,
     String? estimateCurrency,
+    String? categoryId,
+    UnitDimension? defaultUnitDimension,
     String? packageId,
     DateTime? now,
   }) {
@@ -34,6 +37,8 @@ class WishlistOutbox {
       'estimate': estimateAmount == null
           ? null
           : {'amount': estimateAmount, 'currency': estimateCurrency},
+      'categoryId': categoryId,
+      'defaultUnitDimension': defaultUnitDimension?.wire,
       'packageId': packageId,
       'externalRef': null,
     });
@@ -49,6 +54,8 @@ class WishlistOutbox {
     String? notes,
     double? estimateAmount,
     String? estimateCurrency,
+    String? categoryId,
+    UnitDimension? defaultUnitDimension,
     String? packageId,
     DateTime? now,
   }) {
@@ -59,6 +66,8 @@ class WishlistOutbox {
       'estimate': estimateAmount == null
           ? null
           : {'amount': estimateAmount, 'currency': estimateCurrency},
+      'categoryId': categoryId,
+      'defaultUnitDimension': defaultUnitDimension?.wire,
       'packageId': packageId,
       'externalRef': null,
     });

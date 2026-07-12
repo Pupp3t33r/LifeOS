@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../domain/unit_system.dart';
 import '../domain/user_preferences.dart';
 import 'money_api.dart';
 
@@ -32,6 +33,16 @@ class PreferencesRepository {
     final res = await _dio.put<Map<String, dynamic>>(
       '/preferences/month-start-day',
       data: {'monthStartDay': monthStartDay},
+    );
+    return UserPreferences.fromJson(res.data!);
+  }
+
+  /// Sets the cosmetic metric/imperial display preference (ADR-0036). The value
+  /// relabels quantity symbols at render time; no conversions.
+  Future<UserPreferences> setUnitSystem(UnitSystem unitSystem) async {
+    final res = await _dio.put<Map<String, dynamic>>(
+      '/preferences/unit-system',
+      data: {'unitSystem': unitSystem.wire},
     );
     return UserPreferences.fromJson(res.data!);
   }

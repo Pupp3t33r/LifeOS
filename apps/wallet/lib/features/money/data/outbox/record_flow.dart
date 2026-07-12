@@ -5,23 +5,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/data/outbox_repository.dart';
 import '../../../../app/sync/outbox_drainer.dart';
 import '../../domain/month_period.dart';
+import '../../domain/unit_dimension.dart';
 
 /// One line of a flow entry as the client sends it: a **positive magnitude**
 /// [amount] (the entry's direction supplies the sign server-side), an optional
-/// budgeting [categoryId] (ADR-0024), an optional [description], and an optional
-/// [wishlistItemId] linking the line to a wishlist want (ADR-0034 — the ref a Board
-/// drag carries so the want reads as Planned).
+/// budgeting [categoryId] (ADR-0024), an optional [description], an optional
+/// [quantity] + [unitDimension] (ADR-0036 — the count/magnitude and its generic
+/// dimension; amount stays the line total), and an optional [wishlistItemId]
+/// linking the line to a wishlist want (ADR-0034 — the ref a Board drag carries
+/// so the want reads as Planned).
 class FlowLineDraft {
   const FlowLineDraft({
     required this.amount,
     this.categoryId,
     this.description,
+    this.quantity,
+    this.unitDimension,
     this.wishlistItemId,
   });
 
   final double amount;
   final String? categoryId;
   final String? description;
+  final double? quantity;
+  final UnitDimension? unitDimension;
   final String? wishlistItemId;
 }
 
@@ -64,6 +71,8 @@ class FlowOutbox {
             'amount': line.amount,
             'categoryId': line.categoryId,
             'description': line.description,
+            'quantity': line.quantity,
+            'unitDimension': line.unitDimension?.wire,
           },
       ],
     });
