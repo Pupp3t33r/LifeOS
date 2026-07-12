@@ -206,6 +206,6 @@ public class RecurringOccurrenceLifecycleTests : IClassFixture<MoneyApiFactory>
         var first = occurrences!.Single(x => x.OccurrenceRef == p1.ToString());
         Assert.Equal("paid", first.Status);
         Assert.Equal(-57m, first.ActualAmount!.Amount);   // the scheduled payment, plan category
-        Assert.Equal("projected", occurrences.Single(x => x.OccurrenceRef == p2.ToString()).Status);
+        Assert.Equal("projected", occurrences!.Single(x => x.OccurrenceRef == p2.ToString()).Status);
     }
 }
