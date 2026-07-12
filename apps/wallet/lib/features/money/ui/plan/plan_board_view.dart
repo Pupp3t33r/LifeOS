@@ -9,6 +9,7 @@ import '../../data/outbox/planned_purchase_outbox.dart';
 import '../../data/outbox/record_flow.dart';
 import '../../domain/planned_purchase.dart';
 import '../../domain/recurring/recurring_payment.dart';
+import '../../domain/unit_dimension.dart';
 import '../../domain/wishlist_item.dart';
 import '../../../../shared/uuid.dart';
 import '../recurring/recurring_shared.dart' show formatMagnitude;
@@ -157,6 +158,8 @@ class _PlanBoardViewState extends ConsumerState<PlanBoardView> {
             FlowLineDraft(
               amount: amount,
               description: want.name,
+              categoryId: want.categoryId,
+              unitDimension: want.defaultUnitDimension ?? UnitDimension.pieces,
               wishlistItemId: want.id,
             ),
           ],
