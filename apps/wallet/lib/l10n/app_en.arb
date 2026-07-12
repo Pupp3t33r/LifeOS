@@ -12,6 +12,8 @@
   "@navHome": { "description": "Primary navigation label — the savings-canvas home." },
   "navPlan": "Plan",
   "@navPlan": { "description": "Primary navigation label — the planning levers (recurring, wishlist, budgets)." },
+  "navWishlist": "Wishlist",
+  "@navWishlist": { "description": "Primary navigation label — the wants backlog." },
   "navActivity": "Activity",
   "@navActivity": { "description": "Primary navigation label — the flows/transactions log." },
   "navAccounts": "Accounts",

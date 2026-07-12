@@ -4,7 +4,7 @@ import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/wordmark.dart';
 
 /// The authenticated app shell — persistent navigation chrome around the primary
-/// destinations (Home / Plan / Activity / Accounts). Adapts to width: a bottom
+/// destinations (Home / Plan / Wishlist / Activity / Accounts). Adapts to width: a
 /// [NavigationBar] on narrow (phone-portrait) layouts, a [NavigationRail] on
 /// wider ones, extended to a labelled sidebar on the widest (desktop/web
 /// landscape). Settings is reached via the app-bar gear, not a nav slot.
@@ -102,6 +102,7 @@ class AppShell extends StatelessWidget {
   List<_Destination> _destinations(AppLocalizations l10n) => [
         _Destination(Icons.savings_outlined, Icons.savings, l10n.navHome),
         _Destination(Icons.event_note_outlined, Icons.event_note, l10n.navPlan),
+        _Destination(Icons.bookmark_outline, Icons.bookmark, l10n.navWishlist),
         _Destination(Icons.receipt_long_outlined, Icons.receipt_long, l10n.navActivity),
         _Destination(
           Icons.account_balance_wallet_outlined,

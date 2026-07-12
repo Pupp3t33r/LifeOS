@@ -9,6 +9,7 @@ import '../../features/money/ui/categories/categories_screen.dart';
 import '../../features/money/ui/onboarding/onboarding_screen.dart';
 import '../../features/money/ui/month_overview/month_overview_screen.dart';
 import '../../features/money/ui/plan/plan_screen.dart';
+import '../../features/money/ui/wishlist/wishlist_screen.dart';
 import '../../features/money/ui/activity/activity_screen.dart';
 import '../../features/money/ui/accounts/accounts_screen.dart';
 import 'app_shell.dart';
@@ -89,6 +90,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/plan',
                 builder: (context, state) => const PlanScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/wishlist',
+                builder: (context, state) => const WishlistScreen(),
               ),
             ],
           ),
