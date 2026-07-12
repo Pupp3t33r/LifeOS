@@ -137,4 +137,28 @@ public class WishlistEndpointsTests : IClassFixture<MoneyApiFactory> {
 
         Assert.Empty((await GetWishlist(bob)).Items);
     }
+
+    [Fact]
+    public async Task Create_AndEdit_CarryCategoryAndDefaultUnitDimension() {
+        var client = NewUser();
+        var id = Guid.NewGuid();
+        var category = Guid.NewGuid();
+
+        var res = await client.PostAsJsonAsync("/api/wishlist/items", new CreateWishlistItemRequest(
+            id, "reusable", "Coffee beans", null, new CurrencyAmount(5m, "USD"), null, null, category, UnitDimension.Mass));
+        res.EnsureSuccessStatusCode();
+
+        var item = Assert.Single((await GetWishlist(client)).Items, x => x.Id == id);
+        Assert.Equal(category, item.CategoryId);
+        Assert.Equal(UnitDimension.Mass, item.DefaultUnitDimension);
+
+        // Edit clears both (null) — a full replace of the desire fields.
+        var edit = await client.PutAsJsonAsync($"/api/wishlist/items/{id}", new EditWishlistItemRequest(
+            "reusable", "Coffee beans", null, new CurrencyAmount(5m, "USD"), null, null, null, null));
+        edit.EnsureSuccessStatusCode();
+
+        var after = Assert.Single((await GetWishlist(client)).Items, x => x.Id == id);
+        Assert.Null(after.CategoryId);
+        Assert.Null(after.DefaultUnitDimension);
+    }
 }

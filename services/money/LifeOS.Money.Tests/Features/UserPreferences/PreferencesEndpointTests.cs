@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using LifeOS.Money.Api.Domain;
 using LifeOS.Money.Api.Features.UserPreferences;
 using LifeOS.Money.Tests.Infrastructure;
 
@@ -114,5 +115,44 @@ public class PreferencesEndpointTests : IClassFixture<MoneyApiFactory>
         var bobView = await bob.GetFromJsonAsync<PreferencesResponse>("/api/preferences");
         Assert.Null(bobView!.DisplayCurrency);
         Assert.False(bobView.OnboardingComplete);
+    }
+
+    [Fact]
+    public async Task Get_DefaultsToMetricUnitSystem()
+    {
+        var client = _factory.CreateClientFor(TestUsers.Alice);
+
+        var body = await client.GetFromJsonAsync<PreferencesResponse>("/api/preferences");
+
+        Assert.Equal(UnitSystem.Metric, body!.UnitSystem);
+    }
+
+    [Fact]
+    public async Task SetUnitSystem_PersistsAndReadsBack()
+    {
+        var client = _factory.CreateClientForUser("prefs-unitsystem-user");
+
+        var put = await client.PutAsJsonAsync(
+            "/api/preferences/unit-system",
+            new SetUnitSystemRequest(UnitSystem.Imperial));
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+
+        var putBody = await put.Content.ReadFromJsonAsync<PreferencesResponse>();
+        Assert.Equal(UnitSystem.Imperial, putBody!.UnitSystem);
+
+        var body = await client.GetFromJsonAsync<PreferencesResponse>("/api/preferences");
+        Assert.Equal(UnitSystem.Imperial, body!.UnitSystem);
+    }
+
+    [Fact]
+    public async Task SetUnitSystem_Returns400_OnInvalidValue()
+    {
+        var client = _factory.CreateClientFor(TestUsers.Alice);
+
+        var response = await client.PutAsJsonAsync(
+            "/api/preferences/unit-system",
+            new SetUnitSystemRequest((UnitSystem)999));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }

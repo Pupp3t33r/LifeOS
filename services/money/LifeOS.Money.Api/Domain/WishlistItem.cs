@@ -32,5 +32,14 @@ public sealed class WishlistItem {
     /// Once vs reusable (ADR-0034) — the Board tray keystone. Defaults to Once.
     public WishlistRecurrence Recurrence { get; set; }
 
+    /// The user category this want belongs to (ADR-0036), or null = uncategorized. User
+    /// categories only; system categories (Books/Board Games/Video Games) are link-derived
+    /// from <see cref="ExternalRef"/> and never stored here.
+    public Guid? CategoryId { get; set; }
+
+    /// The default unit dimension for this want's quantity (ADR-0036) — a UI convenience the
+    /// client pre-fills when planning the want. Nullable; null = no default.
+    public UnitDimension? DefaultUnitDimension { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 }

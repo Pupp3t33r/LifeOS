@@ -27,6 +27,8 @@ public static class EditWishlistItemEndpoint {
         item.Estimate = request.Estimate;
         item.PackageId = request.PackageId;
         item.ExternalRef = request.ExternalRef;
+        item.CategoryId = request.CategoryId;
+        item.DefaultUnitDimension = request.DefaultUnitDimension;
         session.Store(item);
         await session.SaveChangesAsync();
 

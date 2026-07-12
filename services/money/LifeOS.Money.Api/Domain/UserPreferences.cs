@@ -24,6 +24,12 @@ public sealed class UserPreferences
     /// onboarding sets it (defaulted from the first savings account's currency).
     public string? DisplayCurrency { get; set; }
 
+    /// The owner's preferred unit system (ADR-0036) — selects the unit SYMBOL the client
+    /// renders for line quantities (kg/L/m for Metric, lb/gal/ft for Imperial). Default
+    /// Metric. Display-only: Money stores no symbols and performs no conversions; switching
+    /// this relabels every quantity without touching any stored magnitude.
+    public UnitSystem UnitSystem { get; set; } = UnitSystem.Metric;
+
     /// The implied document for an owner who has none stored yet.
     public static UserPreferences Defaults(string ownerId) =>
         new() { OwnerId = ownerId, MonthStartDay = 1, DisplayCurrency = null };

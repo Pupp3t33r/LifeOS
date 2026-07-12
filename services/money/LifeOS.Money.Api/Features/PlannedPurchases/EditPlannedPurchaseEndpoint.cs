@@ -24,7 +24,8 @@ public static class EditPlannedPurchaseEndpoint
 
         var lines = request.Lines
             .Select(x => new Line(
-                x.Description, new CurrencyAmount(-x.Amount, request.Currency), x.CategoryId, x.WishlistItemId))
+                x.Description, new CurrencyAmount(-x.Amount, request.Currency), x.CategoryId, x.WishlistItemId,
+                x.Quantity, x.UnitDimension))
             .ToList();
         var editedAt = DateTimeOffset.UtcNow;
 

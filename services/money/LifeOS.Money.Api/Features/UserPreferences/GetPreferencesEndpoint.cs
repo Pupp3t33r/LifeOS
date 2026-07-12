@@ -19,6 +19,7 @@ public static class GetPreferencesEndpoint
         return new PreferencesResponse(
             prefs.MonthStartDay,
             prefs.DisplayCurrency,
+            prefs.UnitSystem,
             prefs.DisplayCurrency is not null);
     }
 }

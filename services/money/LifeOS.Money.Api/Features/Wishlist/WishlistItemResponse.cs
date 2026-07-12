@@ -6,7 +6,8 @@ namespace LifeOS.Money.Api.Features.Wishlist;
 /// One wishlist want as the Wallet reads it (ADR-0022/0034): the item document zipped
 /// with its derived commitment status. A want with no status document reads as
 /// <see cref="WishlistCommitment.Idle"/>. [PlannedYear]/[PlannedMonth] are set only when
-/// Planned; [PlanId] only when Financed; [BoughtDate] only when Bought.
+/// Planned; [PlanId] only when Financed; [BoughtDate] only when Bought. [CategoryId] +
+/// [DefaultUnitDimension] (ADR-0036) are the want's user category and default quantity unit.
 public sealed record WishlistItemResponse(
     Guid Id,
     string Recurrence,
@@ -20,7 +21,9 @@ public sealed record WishlistItemResponse(
     int? PlannedYear,
     int? PlannedMonth,
     Guid? PlanId,
-    DateOnly? BoughtDate) {
+    DateOnly? BoughtDate,
+    Guid? CategoryId,
+    UnitDimension? DefaultUnitDimension) {
     public static WishlistItemResponse From(WishlistItem item, WishlistItemStatus? status) =>
         new(item.Id,
             WishlistMapping.RecurrenceString(item.Recurrence),
@@ -34,5 +37,7 @@ public sealed record WishlistItemResponse(
             status?.PlannedYear,
             status?.PlannedMonth,
             status?.PlanId,
-            status?.BoughtDate);
+            status?.BoughtDate,
+            item.CategoryId,
+            item.DefaultUnitDimension);
 }

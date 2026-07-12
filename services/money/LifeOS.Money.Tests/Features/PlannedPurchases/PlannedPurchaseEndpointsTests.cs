@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using LifeOS.Money.Api.Domain;
 using LifeOS.Money.Api.Features.Periods;
 using LifeOS.Money.Api.Features.PlannedPurchases;
 using LifeOS.Money.Tests.Infrastructure;
@@ -259,5 +260,25 @@ public class PlannedPurchaseEndpointsTests : IClassFixture<MoneyApiFactory>
         var response = await client.GetAsync($"/api/months/{year}/{month}/planned-purchases");
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<List<PlannedPurchaseResponse>>())!;
+    }
+
+    [Fact]
+    public async Task Add_CarriesLineQuantityAndUnitDimension()
+    {
+        var client = _factory.CreateClientFor(TestUsers.Alice);
+        var entryId = Guid.NewGuid();
+
+        // The line carries a 0.5 Mass quantity (ADR-0036). Line is serialized directly
+        // with no DTO, so UnitDimension rides the response as its underlying integer and
+        // round-trips through the client (which reads ints into enums) with no converter.
+        var response = await client.PostAsJsonAsync(
+            "/api/months/2026/7/planned-purchases",
+            new AddPlannedPurchaseRequest(entryId, "USD", "Coffee",
+                [new PlannedPurchaseLine(5m, null, null, null, 0.5m, UnitDimension.Mass)]));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<PlannedPurchaseWriteResponse>();
+        Assert.Equal(0.5m, body!.Lines[0].Quantity);
+        Assert.Equal(UnitDimension.Mass, body.Lines[0].UnitDimension);
     }
 }

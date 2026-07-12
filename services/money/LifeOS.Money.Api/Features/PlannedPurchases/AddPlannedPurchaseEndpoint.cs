@@ -26,7 +26,8 @@ public static class AddPlannedPurchaseEndpoint
 
         var lines = request.Lines
             .Select(x => new Line(
-                x.Description, new CurrencyAmount(-x.Amount, request.Currency), x.CategoryId, x.WishlistItemId))
+                x.Description, new CurrencyAmount(-x.Amount, request.Currency), x.CategoryId, x.WishlistItemId,
+                x.Quantity, x.UnitDimension))
             .ToList();
         var addedAt = DateTimeOffset.UtcNow;
 

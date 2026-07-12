@@ -6,7 +6,8 @@ namespace LifeOS.Money.Api.Features.Wishlist;
 /// (ADR-0003). [Estimate] is optional (ADR-0030 — a want may have no known price).
 /// [Recurrence] is the once/reusable keystone (ADR-0034) as a wire string
 /// ("once" | "reusable"). [ExternalRef] links a domain object (e.g. board-games/{bggId});
-/// [PackageId] groups it under a package.
+/// [PackageId] groups it under a package. [CategoryId] sets a user category on the want
+/// (ADR-0036); [DefaultUnitDimension] is the UI default unit for its quantity (ADR-0036).
 public sealed record CreateWishlistItemRequest(
     Guid Id,
     string Recurrence,
@@ -14,4 +15,6 @@ public sealed record CreateWishlistItemRequest(
     string? Notes,
     CurrencyAmount? Estimate,
     Guid? PackageId,
-    ExternalReference? ExternalRef);
+    ExternalReference? ExternalRef,
+    Guid? CategoryId = null,
+    UnitDimension? DefaultUnitDimension = null);

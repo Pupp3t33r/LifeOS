@@ -33,6 +33,8 @@ public static class CreateWishlistItemEndpoint {
             Estimate = request.Estimate,
             PackageId = request.PackageId,
             ExternalRef = request.ExternalRef,
+            CategoryId = request.CategoryId,
+            DefaultUnitDimension = request.DefaultUnitDimension,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         session.Store(item);

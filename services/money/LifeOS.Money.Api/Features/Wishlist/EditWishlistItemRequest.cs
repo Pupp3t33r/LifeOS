@@ -11,4 +11,6 @@ public sealed record EditWishlistItemRequest(
     string? Notes,
     CurrencyAmount? Estimate,
     Guid? PackageId,
-    ExternalReference? ExternalRef);
+    ExternalReference? ExternalRef,
+    Guid? CategoryId = null,
+    UnitDimension? DefaultUnitDimension = null);

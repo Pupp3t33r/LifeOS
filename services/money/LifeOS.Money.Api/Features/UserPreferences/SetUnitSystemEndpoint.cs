@@ -1,34 +1,27 @@
 using LifeOS.Money.Api.Auth;
-using LifeOS.Money.Api.Http;
 using Marten;
 using Wolverine.Http;
 using Domain = LifeOS.Money.Api.Domain;
 
 namespace LifeOS.Money.Api.Features.UserPreferences;
 
-public static class SetMonthStartDayEndpoint
+public static class SetUnitSystemEndpoint
 {
-    [WolverinePut("/preferences/month-start-day")]
+    // The unit-symbol selector (ADR-0036) — display-only. Switching it relabels every
+    // quantity's symbol (kg↔lb, L↔gal, m↔ft) without touching any stored magnitude: Money
+    // stores the dimension only and performs no conversions. Not locked by a closed month
+    // (unlike MonthStartDay) because it re-buckets nothing.
+    [WolverinePut("/preferences/unit-system")]
     public static async Task<PreferencesResponse> Handle(
-        SetMonthStartDayRequest request,
+        SetUnitSystemRequest request,
         HttpContext context,
-        IDocumentSession session,
-        IClosedMonthGuard closedMonths)
+        IDocumentSession session)
     {
         var userId = context.GetUserId();
-
-        // Re-anchoring is locked after the first close (ADR-0013): it would
-        // re-bucket dates across locked, audited months.
-        if (await closedMonths.HasClosedMonthAsync(userId, session))
-        {
-            throw new ConflictException(
-                "Month start day cannot be changed after a month has been closed.");
-        }
-
         var prefs = await session.LoadAsync<Domain.UserPreferences>(userId)
             ?? Domain.UserPreferences.Defaults(userId);
 
-        prefs.MonthStartDay = request.MonthStartDay;
+        prefs.UnitSystem = request.UnitSystem;
         session.Store(prefs);
         await session.SaveChangesAsync();
 
