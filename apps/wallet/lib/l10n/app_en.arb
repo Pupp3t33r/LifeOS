@@ -766,6 +766,8 @@
   "@ratesScreenTitle": { "description": "App-bar title of the exchange-rates view." },
   "ratesRefreshTooltip": "Refresh rates",
   "@ratesRefreshTooltip": { "description": "Tooltip on the refresh button in the exchange-rates view." },
+  "ratesFilterAll": "All",
+  "@ratesFilterAll": { "description": "Currency-filter chip that clears the filter and shows every pair." },
   "ratesEmpty": "No exchange rates yet.",
   "@ratesEmpty": { "description": "Empty state when the server has published no FX rates." },
   "ratesLoadError": "Couldn't load exchange rates.",

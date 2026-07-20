@@ -358,6 +358,7 @@
   "settingsRatesSubtitle": "Курсы, по которым считаются все конвертации, и их свежесть.",
   "ratesScreenTitle": "Курсы валют",
   "ratesRefreshTooltip": "Обновить курсы",
+  "ratesFilterAll": "Все",
   "ratesEmpty": "Курсов валют пока нет.",
   "ratesLoadError": "Не удалось загрузить курсы валют.",
   "ratesRetryButton": "Повторить",

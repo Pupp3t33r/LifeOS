@@ -13,14 +13,25 @@ import '../../domain/fx_rate.dart';
 /// threshold. Satisfies the no-false-precision principle — every converted number
 /// is traceable to a dated, sourced rate.
 ///
+/// A currency-filter chip strip narrows the list to every pair containing a chosen
+/// currency (base or quote) — a pure client-side view control over the
+/// already-fetched pairs. Pinning a pair and adding an untracked currency are v2
+/// (see docs/design/rates/).
+///
 /// A leaf above the shell, reached from a navigation row on Settings.
-class RatesScreen extends ConsumerWidget {
+class RatesScreen extends ConsumerStatefulWidget {
   const RatesScreen({super.key});
 
-  static const double _contentMaxWidth = 640;
+  @override
+  ConsumerState<RatesScreen> createState() => _RatesScreenState();
+}
+
+class _RatesScreenState extends ConsumerState<RatesScreen> {
+  /// The currency the list is filtered to, or null for "All".
+  String? _filter;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final rates = ref.watch(latestFxRatesProvider);
 
@@ -40,7 +51,115 @@ class RatesScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, _) =>
               _ErrorState(onRetry: () => ref.invalidate(latestFxRatesProvider)),
-          data: (list) => _RatesList(rates: list),
+          data: _buildData,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildData(List<FxRate> all) {
+    if (all.isEmpty) {
+      return _EmptyState(message: AppLocalizations.of(context).ratesEmpty);
+    }
+
+    // Every currency that appears in a pair, as base or quote.
+    final currencies = <String>{};
+    for (final rate in all) {
+      currencies
+        ..add(rate.base)
+        ..add(rate.quote);
+    }
+    final sorted = currencies.toList()..sort();
+
+    // Fall back to "All" if a previously-picked currency is no longer present
+    // (e.g. after a refresh dropped it) — without mutating state during build.
+    final active = _filter != null && currencies.contains(_filter) ? _filter : null;
+    final filtered = active == null
+        ? all
+        : [for (final rate in all) if (rate.base == active || rate.quote == active) rate];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _FilterStrip(
+          currencies: sorted,
+          selected: active,
+          onSelect: (currency) => setState(() => _filter = currency),
+        ),
+        Expanded(child: _RatesList(rates: filtered)),
+      ],
+    );
+  }
+}
+
+class _FilterStrip extends StatelessWidget {
+  const _FilterStrip({
+    required this.currencies,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final List<String> currencies;
+  final String? selected;
+  final ValueChanged<String?> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+      child: Row(
+        children: [
+          _FilterChip(
+            label: l10n.ratesFilterAll,
+            active: selected == null,
+            onTap: () => onSelect(null),
+          ),
+          for (final currency in currencies) ...[
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: currency,
+              active: selected == currency,
+              onTap: () => onSelect(currency),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({required this.label, required this.active, required this.onTap});
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = CalmTokens.of(theme.brightness);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: active ? tokens.sage : tokens.surface,
+            borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
+            border: Border.all(color: active ? tokens.sage : tokens.line),
+          ),
+          child: Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: active ? CalmTokens.white : tokens.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );
@@ -52,22 +171,18 @@ class _RatesList extends StatelessWidget {
 
   final List<FxRate> rates;
 
+  static const double _contentMaxWidth = 640;
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    if (rates.isEmpty) {
-      return _EmptyState(message: l10n.ratesEmpty);
-    }
-
     final now = DateTime.now();
     return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 8, 18, 48),
+      padding: const EdgeInsets.fromLTRB(18, 6, 18, 48),
       children: [
         for (final rate in rates)
           Center(
             child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(maxWidth: RatesScreen._contentMaxWidth),
+              constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
               child: _RateRow(rate: rate, now: now),
             ),
           ),
