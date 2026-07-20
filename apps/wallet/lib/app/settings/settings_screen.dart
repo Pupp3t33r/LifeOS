@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/money/application/preferences_providers.dart';
 import '../../features/money/data/preferences_repository.dart';
+import '../../features/money/domain/unit_system.dart';
 import '../../features/security/application/security_providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../locale/locale_controller.dart';
@@ -111,6 +112,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           : l10n.settingsMonthStartUpdateError);
     } catch (_) {
       _snack(l10n.settingsMonthStartUpdateError);
+    }
+  }
+
+  Future<void> _setUnitSystem(UnitSystem system) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(preferencesRepositoryProvider).setUnitSystem(system);
+      ref.invalidate(preferencesProvider);
+    } catch (_) {
+      _snack(l10n.settingsUnitSystemUpdateError);
     }
   }
 
@@ -260,6 +271,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             value: prefsValue?.monthStartDay ?? 1,
             enabled: !prefsBusy,
             onChanged: _setMonthStartDay,
+            l10n: l10n,
+          ),
+        ),
+        _Item(
+          title: l10n.settingsUnitSystemTitle,
+          subtitle: l10n.settingsUnitSystemSubtitle,
+          keywords: const ['unit', 'metric', 'imperial', 'kg', 'lb', 'quantity'],
+          stacked: true,
+          control: _UnitSystemControl(
+            value: prefsValue?.unitSystem ?? UnitSystem.metric,
+            enabled: !prefsBusy,
+            onChanged: _setUnitSystem,
             l10n: l10n,
           ),
         ),
@@ -674,6 +697,39 @@ class _MonthStartControl extends StatelessWidget {
           (day, day == 1 ? l10n.settingsMonthStartCalendarLabel : '$day'),
       ],
       onChanged: enabled ? (day) => onChanged(day) : null,
+    );
+  }
+}
+
+class _UnitSystemControl extends StatelessWidget {
+  const _UnitSystemControl({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+    required this.l10n,
+  });
+
+  final UnitSystem value;
+  final bool enabled;
+  final ValueChanged<UnitSystem> onChanged;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<UnitSystem>(
+      showSelectedIcon: false,
+      segments: [
+        ButtonSegment(
+          value: UnitSystem.metric,
+          label: Text(l10n.unitSystemMetric),
+        ),
+        ButtonSegment(
+          value: UnitSystem.imperial,
+          label: Text(l10n.unitSystemImperial),
+        ),
+      ],
+      selected: {value},
+      onSelectionChanged: enabled ? (s) => onChanged(s.first) : null,
     );
   }
 }
