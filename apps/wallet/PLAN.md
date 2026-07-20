@@ -319,7 +319,7 @@ Plan is a **destination** again — a three-view planning home (**List · Board 
 
 | Page | Holds |
 |---|---|
-| **Settings** | Locale (ADR-0001), theme, app-lock & passkey (ADR-0014), display currency & month-start (ADR-0013), **Categories** management incl. **colour** (ADR-0024 + Wallet ADR-0003), rates pinning (ADR-0015). *(built: a searchable, grouped page — Appearance (theme System/Light/Dark + language), Money (display currency, month-start), Security (app-lock, native-only); passkey enrollment, Categories, and rates pinning still pending. Account name/opening balance are omitted — immutable server-side, no edit endpoint.)* |
+| **Settings** | Locale (ADR-0001), theme, app-lock & passkey (ADR-0014), display currency & month-start (ADR-0013), unit system (ADR-0036), **Categories** management incl. **colour** (ADR-0024 + Wallet ADR-0003), **Exchange rates** (ADR-0015). *(built: a searchable, grouped page — Appearance (theme System/Light/Dark + language), Money (display currency, month-start, unit system, Categories link, Exchange rates link), Security (app-lock, native-only). The **Exchange rates** view lists every stored pair with its rate, source (Belarusbank / Frankfurter), as-of date, and a staleness badge (ADR-0015 no-false-precision). Still pending: passkey enrollment; and — **v2** — a **user-curated currency picker** ("show only the rates I care about" / add-a-currency), which for currencies outside the server's fetch set also needs a per-user `TrackedCurrencies` preference unioned into `FxRateFetchService` (amends Money ADR-0015/0013). Account name/opening balance are omitted — immutable server-side, no edit endpoint.)* |
 
 ### Non-page surfaces
 
