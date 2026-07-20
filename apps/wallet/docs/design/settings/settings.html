@@ -6,12 +6,12 @@
 <title>wallet · Settings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
     --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
-    --disp:'Bricolage Grotesque',system-ui,sans-serif; --body:'Spline Sans',system-ui,sans-serif;
+    --disp:'Manrope',system-ui,sans-serif; --body:'Manrope',system-ui,sans-serif;
     --shadow:0 18px 40px -24px rgba(32,30,26,.45);
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -67,6 +67,7 @@
   .sw::after{content:"";position:absolute;top:3px;left:21px;width:20px;height:20px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25)}
   .note{font-size:11.5px;color:var(--clay);margin-top:9px;display:flex;align-items:center;gap:6px}
   .note::before{content:"⚠";font-size:12px}
+  .chev{color:var(--muted);font-size:20px;font-weight:600;flex:0 0 auto;line-height:1}
 
   .pbody{padding:0 0 20px}
   .phone .search{margin:14px 16px 4px}
@@ -86,7 +87,7 @@
   <div class="masthead">
     <div class="kicker">wallet · Settings</div>
     <h1>Settings — a <b>searchable, grouped</b> page</h1>
-    <p>A single scroll of grouped settings (IDE/Discord-style): a filter narrows by name, and a contents rail on wide screens jumps to — and highlights — the group in view. Only settings with a working write path ship: theme + language (device-local), display currency + month-start (Money ADR-0013), and the biometric app-lock (native only, ADR-0014). Account name / opening balance are absent — immutable server-side, no edit endpoint.</p>
+    <p>A single scroll of grouped settings (IDE/Discord-style): a filter narrows by name, and a contents rail on wide screens jumps to — and highlights — the group in view. Only settings with a working write path ship: theme + language (device-local), display currency + month-start (Money ADR-0013), unit system (ADR-0036), the biometric app-lock (native only, ADR-0014), and two pushed surfaces — <b>Categories</b> (ADR-0024/0008) and <b>Exchange rates</b> (ADR-0015). Account name / opening balance are absent — immutable server-side, no edit endpoint.</p>
   </div>
 
   <div class="stage">
@@ -128,6 +129,16 @@
                   <div class="top"><div class="lbl"><div class="n">Month start day</div><div class="s">The day your accounting month begins.</div></div><div class="dd">1 (calendar) <span class="cx">▾</span></div></div>
                   <div class="note">Locks once a month has been closed (ADR-0013).</div>
                 </div>
+                <div class="row">
+                  <div class="top"><div class="lbl"><div class="n">Unit system</div><div class="s">How quantities read across the app. Cosmetic — no conversions (ADR-0036).</div></div></div>
+                  <div class="seg"><span class="on">Metric</span><span>Imperial</span></div>
+                </div>
+                <div class="row">
+                  <div class="top"><div class="lbl"><div class="n">Categories</div><div class="s">Create, recolour, and archive your categories.</div></div><div class="chev">›</div></div>
+                </div>
+                <div class="row">
+                  <div class="top"><div class="lbl"><div class="n">Exchange rates</div><div class="s">The rates behind every conversion, and how fresh they are.</div></div><div class="chev">›</div></div>
+                </div>
               </div>
             </div>
 
@@ -168,6 +179,9 @@
               <div class="card">
                 <div class="row"><div class="top"><div class="lbl"><div class="n">Display currency</div></div><div class="dd">USD <span class="cx">▾</span></div></div></div>
                 <div class="row"><div class="top"><div class="lbl"><div class="n">Month start day</div></div><div class="dd">1 <span class="cx">▾</span></div></div><div class="note">Locks after a close.</div></div>
+                <div class="row"><div class="top"><div class="lbl"><div class="n">Unit system</div></div></div><div class="seg"><span class="on">Metric</span><span>Imperial</span></div></div>
+                <div class="row"><div class="top"><div class="lbl"><div class="n">Categories</div></div><div class="chev">›</div></div></div>
+                <div class="row"><div class="top"><div class="lbl"><div class="n">Exchange rates</div></div><div class="chev">›</div></div></div>
               </div>
             </div>
             <div class="grp">

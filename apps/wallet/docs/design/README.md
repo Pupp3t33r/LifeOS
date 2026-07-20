@@ -10,6 +10,8 @@ Static HTML mockups for the Wallet app's surfaces. **Design references, not app 
 | **[plan](./plan/)** | The Plan destination — List · Board · Budget. | [README](./plan/README.md) |
 | **[recurring](./recurring/)** | Create & resolve Ongoing and Payment-plan flows. | [README](./recurring/README.md) |
 | **[wishlist](./wishlist/)** | The wants backlog — the management surface. | [README](./wishlist/README.md) |
+| **[rates](./rates/)** | The Exchange-rates view — traceable FX rates + sources (ADR-0015). | [README](./rates/README.md) |
+| **[settings](./settings/)** | The searchable, grouped Settings page + Categories. | — |
 
 ## Convention — frames ship only what's real
 

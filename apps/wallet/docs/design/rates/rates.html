@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wallet · Exchange rates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F1EA; --surface:#FBFAF6; --ink:#2C2A26; --muted:#7C766B; --line:#E6E1D6;
+    --sage:#5E7E6B; --sageDeep:#4E6B5A; --clay:#C07A52;
+    --disp:'Manrope',system-ui,sans-serif; --body:'Manrope',system-ui,sans-serif;
+    --shadow:0 18px 40px -24px rgba(32,30,26,.45);
+  }
+  .dark{
+    --bone:#15120E; --surface:#211C16; --ink:#EDE7DC; --muted:#9C9384; --line:#332D24;
+    --sage:#8FB39E; --sageDeep:#A7C6B6; --clay:#D9966E;
+    --shadow:0 18px 40px -24px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#211c16;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding:54px 40px 80px}
+  .board{max-width:1500px;margin:0 auto}
+  .masthead{color:#EDE7DC;margin-bottom:40px}
+  .masthead .kicker{font:700 12px/1 var(--body);letter-spacing:2.4px;text-transform:uppercase;color:#9C9384;margin-bottom:14px}
+  .masthead h1{font:800 32px/1.05 var(--disp);letter-spacing:-.01em}
+  .masthead h1 b{color:#8FB39E}
+  .masthead p{margin-top:14px;max-width:900px;color:#B9B1A3;font-size:14.5px;line-height:1.6}
+  .label{font:700 10.5px/1 var(--body);letter-spacing:1.6px;text-transform:uppercase;color:#8a8276;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .label::after{content:"";flex:1;height:1px;background:#3a342b}
+  .label b{color:#c9a37f;letter-spacing:1.6px}
+
+  .stage{display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap}
+  .screen{background:var(--bone);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid #0c0a08;position:relative}
+  .desktop{flex:1;min-width:0}.phone{flex:0 0 332px}.phone .screen{border-radius:32px}
+
+  .appbar{display:flex;align-items:center;gap:14px;padding:15px 22px 13px;border-bottom:1px solid var(--line)}
+  .back{width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface);font-size:16px}
+  .title{font:600 18px/1 var(--disp);letter-spacing:-.01em;flex:1}
+  .iconbtn{width:32px;height:32px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface)}
+  .iconbtn svg{width:17px;height:17px}
+
+  .content{padding:16px 22px 30px;max-width:680px}
+  .lede{font-size:13px;color:var(--muted);line-height:1.5;margin:2px 4px 16px}
+
+  .filter{display:flex;gap:8px;margin:0 4px 16px;overflow-x:auto;padding-bottom:2px}
+  .fchip{font:600 12.5px/1 var(--body);padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);white-space:nowrap;flex:0 0 auto}
+  .fchip.on{background:var(--sage);color:#fff;border-color:var(--sage)}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+  .rrow{display:flex;align-items:center;gap:14px;padding:15px 17px;border-bottom:1px solid var(--line)}
+  .rrow:last-child{border-bottom:0}
+  .rmain{flex:1;min-width:0}
+  .rpair{font:600 15px/1 var(--disp);color:var(--ink);letter-spacing:-.01em}
+  .rconv{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .rmeta{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .src{font:600 10.5px/1 var(--body);letter-spacing:.2px;padding:4px 9px;border-radius:999px;background:rgba(94,126,107,.12);color:var(--sageDeep)}
+  .src.f{background:rgba(120,120,160,.12);color:#6b6f8a}
+  .dark .src.f{color:#a6abcf}
+  .asof{font-size:11.5px;color:var(--muted)}
+  .stale{font:700 10px/1 var(--body);letter-spacing:.4px;text-transform:uppercase;padding:5px 9px;border-radius:999px;background:rgba(192,122,82,.15);color:var(--clay);flex:0 0 auto}
+
+  /* Home rail card (as it appears in the cockpit) */
+  .rail{flex:0 0 300px}
+  .scard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 17px}
+  .scard .h{font:700 11px/1 var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:13px;display:flex;justify-content:space-between;align-items:center}
+  .scard .h a{color:var(--sageDeep);letter-spacing:0;text-transform:none;font-size:11px;font-weight:600}
+  .rate{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:12.5px}
+  .rate .pair{flex:1;color:var(--ink)}
+  .rate .v{font:600 12.5px/1 var(--disp)}
+  .ratefoot{margin-top:11px;padding-top:11px;border-top:1px solid var(--line);font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .ratefoot .dot{width:5px;height:5px;border-radius:999px;background:var(--sage)}
+  .pinmore{margin-top:11px;font-size:11.5px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:7px}
+  .v2tag{font:700 8.5px/1 var(--body);letter-spacing:.6px;text-transform:uppercase;padding:3px 7px;border-radius:999px;border:1px dashed var(--clay);color:var(--clay)}
+
+  /* v2 curated exploration */
+  .pin{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--sage);display:grid;place-items:center;color:var(--sage);flex:0 0 auto;font-size:12px}
+  .pin.off{border-color:var(--line);color:var(--muted)}
+  .addrow{display:flex;align-items:center;gap:10px;padding:15px 17px;color:var(--sageDeep);font-weight:600;font-size:13.5px}
+  .addrow .plus{width:22px;height:22px;border-radius:999px;border:1.5px dashed var(--sage);display:grid;place-items:center}
+
+  .colwrap{display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap;margin-top:6px}
+  .col{flex:1;min-width:300px}
+  @media(max-width:1160px){.stage{flex-direction:column}.phone,.rail{align-self:flex-start}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></symbol>
+</svg>
+
+<div class="board">
+  <div class="masthead">
+    <div class="kicker">wallet · Exchange rates · Money ADR-0015</div>
+    <h1>Exchange rates — <b>every conversion, traceable</b></h1>
+    <p>The view behind “Open rates ▸” on Home, and behind Settings → Money → Exchange rates. For each pair the app shows the applicable rate, its source (Belarusbank card <i>sell</i> preferred, Frankfurter fallback), the date it applies to, and a <b>Stale</b> badge once it ages past two days. No number in the app is a rate the user can’t trace here — the no-false-precision valve (ADR-0015). A <b>currency filter</b> narrows the list to every pair containing a chosen currency (base or quote) — client-side, ships in v1. Belarusbank rates are quoted against the BYN pivot; cross pairs come from Frankfurter, which stores the full base×base matrix directly (no triangulation).</p>
+  </div>
+
+  <!-- SHIPPED v1 -->
+  <div class="stage">
+    <div class="desktop">
+      <div class="label">Desktop · the full view (shipped)</div>
+      <div class="screen">
+        <div class="appbar">
+          <div class="back">‹</div>
+          <div class="title">Exchange rates</div>
+          <div class="iconbtn"><svg><use href="#i-refresh"/></svg></div>
+        </div>
+        <div class="content">
+          <div class="lede">The rates behind every conversion, and how fresh each one is. Tap a currency to see just its pairs.</div>
+          <div class="filter">
+            <span class="fchip on">All</span>
+            <span class="fchip">USD</span>
+            <span class="fchip">BYN</span>
+            <span class="fchip">EUR</span>
+            <span class="fchip">RUB</span>
+            <span class="fchip">CNY</span>
+            <span class="fchip">PLN</span>
+          </div>
+          <div class="card">
+            <div class="rrow">
+              <div class="rmain">
+                <div class="rpair">USD → BYN</div>
+                <div class="rconv">1 USD = 3.2456 BYN</div>
+                <div class="rmeta"><span class="src">Belarusbank</span><span class="asof">as of Jul 20</span></div>
+              </div>
+            </div>
+            <div class="rrow">
+              <div class="rmain">
+                <div class="rpair">EUR → BYN</div>
+                <div class="rconv">1 EUR = 3.5210 BYN</div>
+                <div class="rmeta"><span class="src">Belarusbank</span><span class="asof">as of Jul 20</span></div>
+              </div>
+            </div>
+            <div class="rrow">
+              <div class="rmain">
+                <div class="rpair">RUB → BYN</div>
+                <div class="rconv">1 RUB = 0.0341 BYN</div>
+                <div class="rmeta"><span class="src">Belarusbank</span><span class="asof">as of Jul 20</span></div>
+              </div>
+            </div>
+            <div class="rrow">
+              <div class="rmain">
+                <div class="rpair">EUR → USD</div>
+                <div class="rconv">1 EUR = 1.0849 USD</div>
+                <div class="rmeta"><span class="src f">Frankfurter</span><span class="asof">as of Jul 19</span></div>
+              </div>
+            </div>
+            <div class="rrow">
+              <div class="rmain">
+                <div class="rpair">PLN → USD</div>
+                <div class="rconv">1 PLN = 0.2518 USD</div>
+                <div class="rmeta"><span class="src f">Frankfurter</span><span class="asof">as of Jul 19</span></div>
+              </div>
+            </div>
+            <div class="rrow">
+              <div class="rmain">
+                <div class="rpair">GBP → USD</div>
+                <div class="rconv">1 GBP = 1.2710 USD</div>
+                <div class="rmeta"><span class="src f">Frankfurter</span><span class="asof">as of Jul 12</span></div>
+              </div>
+              <div class="stale">Stale</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- phone, dark -->
+    <div class="phone dark">
+      <div class="label">Phone · dark</div>
+      <div class="screen">
+        <div class="appbar">
+          <div class="back">‹</div>
+          <div class="title">Exchange rates</div>
+          <div class="iconbtn"><svg><use href="#i-refresh"/></svg></div>
+        </div>
+        <div class="content" style="padding:14px 16px 26px">
+          <div class="lede">Filtered to <b style="color:var(--ink)">USD</b> — every pair that contains it.</div>
+          <div class="filter">
+            <span class="fchip">All</span>
+            <span class="fchip on">USD</span>
+            <span class="fchip">BYN</span>
+            <span class="fchip">EUR</span>
+          </div>
+          <div class="card">
+            <div class="rrow">
+              <div class="rmain">
+                <div class="rpair">USD → BYN</div>
+                <div class="rconv">1 USD = 3.2456 BYN</div>
+                <div class="rmeta"><span class="src">Belarusbank</span><span class="asof">Jul 20</span></div>
+              </div>
+            </div>
+            <div class="rrow">
+              <div class="rmain">
+                <div class="rpair">EUR → USD</div>
+                <div class="rconv">1 EUR = 1.0849 USD</div>
+                <div class="rmeta"><span class="src f">Frankfurter</span><span class="asof">Jul 19</span></div>
+              </div>
+            </div>
+            <div class="rrow">
+              <div class="rmain">
+                <div class="rpair">GBP → USD</div>
+                <div class="rconv">1 GBP = 1.2710 USD</div>
+                <div class="rmeta"><span class="src f">Frankfurter</span><span class="asof">Jul 12</span></div>
+              </div>
+              <div class="stale">Stale</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECONDARY: home rail + v2 -->
+  <div class="colwrap" style="margin-top:44px">
+    <div class="col">
+      <div class="label">On Home · desktop rail (extended)</div>
+      <div class="rail" style="flex:none">
+        <div class="scard">
+          <div class="h"><span>Rates</span><a>Open rates ▸</a></div>
+          <div class="rate"><span class="pair">USD → BYN</span><span class="v">3.2456</span></div>
+          <div class="rate"><span class="pair">EUR → BYN</span><span class="v">3.5210</span></div>
+          <div class="rate"><span class="pair">EUR → USD</span><span class="v">1.0849</span></div>
+          <div class="ratefoot"><span class="dot"></span>Belarusbank &amp; Frankfurter · Jul 20</div>
+          <div class="pinmore"><span class="v2tag">v2</span>+ Pin a currency</div>
+        </div>
+      </div>
+      <div class="lede" style="max-width:300px;margin-top:14px">A compact glance in the desktop side rail (phone reaches rates via Settings). <b>Change deltas dropped</b> — the old ▲/▼ .3% needs a prior-day comparison the read model doesn’t compute yet; it returns in v2 alongside pinning.</div>
+    </div>
+
+    <div class="col">
+      <div class="label">v2 · <b>pin pairs + add currencies</b> — future exploration</div>
+      <div class="screen" style="max-width:420px">
+        <div class="appbar"><div class="back">‹</div><div class="title">Exchange rates</div><div class="iconbtn"><svg><use href="#i-refresh"/></svg></div></div>
+        <div class="content" style="padding:14px 16px 22px">
+          <div class="lede">Tap the star to pin a pair — pinned pairs ride along on the Home rail card. Filtered to <b style="color:var(--ink)">USD</b>.</div>
+          <div class="filter">
+            <span class="fchip">All</span>
+            <span class="fchip on">USD</span>
+            <span class="fchip">BYN</span>
+            <span class="fchip">EUR</span>
+          </div>
+          <div class="card">
+            <div class="rrow">
+              <div class="pin">★</div>
+              <div class="rmain">
+                <div class="rpair">USD → BYN</div>
+                <div class="rmeta"><span class="src">Belarusbank</span><span class="asof">Jul 20</span></div>
+              </div>
+              <div class="rpair" style="font-size:14px">3.2456</div>
+            </div>
+            <div class="rrow">
+              <div class="pin">★</div>
+              <div class="rmain">
+                <div class="rpair">EUR → USD</div>
+                <div class="rmeta"><span class="src f">Frankfurter</span><span class="asof">Jul 19</span></div>
+              </div>
+              <div class="rpair" style="font-size:14px">1.0849</div>
+            </div>
+            <div class="rrow">
+              <div class="pin off">☆</div>
+              <div class="rmain">
+                <div class="rpair">PLN → USD</div>
+                <div class="rmeta"><span class="src f">Frankfurter</span><span class="asof">Jul 19</span></div>
+              </div>
+              <div class="rpair" style="font-size:14px;color:var(--muted)">0.2518</div>
+            </div>
+            <div class="addrow"><span class="plus">+</span>Add a currency</div>
+          </div>
+        </div>
+      </div>
+      <div class="lede" style="max-width:420px;margin-top:14px"><b>Currency filter ships in v1</b> (client-side; no backend). Deferred to v2: <b>pinning a pair</b> (a device-local favourite that surfaces on Home) and <b>Add a currency</b> — tracking one <i>outside</i> the server’s fetch set, which needs a per-user <code>TrackedCurrencies</code> preference unioned into <code>FxRateFetchService</code> (amends Money ADR-0015/0013).</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
