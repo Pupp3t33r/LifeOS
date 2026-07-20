@@ -757,5 +757,34 @@
   "@monthOverviewDaysAgo": {
     "description": "Relative time — days.",
     "placeholders": { "n": { "type": "int" } }
-  }
+  },
+  "settingsRatesTitle": "Exchange rates",
+  "@settingsRatesTitle": { "description": "Settings row title — link to the exchange-rates view (ADR-0015)." },
+  "settingsRatesSubtitle": "The rates behind every conversion, and how fresh they are.",
+  "@settingsRatesSubtitle": { "description": "Settings row subtitle for the exchange-rates link." },
+  "ratesScreenTitle": "Exchange rates",
+  "@ratesScreenTitle": { "description": "App-bar title of the exchange-rates view." },
+  "ratesRefreshTooltip": "Refresh rates",
+  "@ratesRefreshTooltip": { "description": "Tooltip on the refresh button in the exchange-rates view." },
+  "ratesEmpty": "No exchange rates yet.",
+  "@ratesEmpty": { "description": "Empty state when the server has published no FX rates." },
+  "ratesLoadError": "Couldn't load exchange rates.",
+  "@ratesLoadError": { "description": "Error state when the exchange-rates fetch fails." },
+  "ratesRetryButton": "Retry",
+  "@ratesRetryButton": { "description": "Button to re-attempt loading the exchange rates." },
+  "ratesAsOf": "as of {date}",
+  "@ratesAsOf": {
+    "description": "Caption showing the date a rate applies to.",
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "ratesStaleBadge": "Stale",
+  "@ratesStaleBadge": { "description": "Badge marking a rate older than the freshness threshold (ADR-0015)." },
+  "ratesSourceBelarusbank": "Belarusbank",
+  "@ratesSourceBelarusbank": { "description": "FX source label — Belarusbank card rates." },
+  "ratesSourceFrankfurter": "Frankfurter",
+  "@ratesSourceFrankfurter": { "description": "FX source label — Frankfurter (ECB) rates." },
+  "ratesSourceIdentity": "Direct",
+  "@ratesSourceIdentity": { "description": "FX source label — a same-currency identity rate." },
+  "ratesSourceUnknown": "Unknown source",
+  "@ratesSourceUnknown": { "description": "FX source label — an unrecognised source." }
 }

@@ -293,6 +293,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           onTap: () => context.push('/settings/categories'),
           control: const Icon(Icons.chevron_right),
         ),
+        _Item(
+          title: l10n.settingsRatesTitle,
+          subtitle: l10n.settingsRatesSubtitle,
+          keywords: const ['rate', 'rates', 'fx', 'exchange', 'currency', 'conversion'],
+          onTap: () => context.push('/settings/rates'),
+          control: const Icon(Icons.chevron_right),
+        ),
       ],
     );
 

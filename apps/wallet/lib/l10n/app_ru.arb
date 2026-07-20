@@ -353,5 +353,18 @@
   "monthOverviewJustNow": "только что",
   "monthOverviewMinutesAgo": "{n} мин назад",
   "monthOverviewHoursAgo": "{n} ч назад",
-  "monthOverviewDaysAgo": "{n} дн назад"
+  "monthOverviewDaysAgo": "{n} дн назад",
+  "settingsRatesTitle": "Курсы валют",
+  "settingsRatesSubtitle": "Курсы, по которым считаются все конвертации, и их свежесть.",
+  "ratesScreenTitle": "Курсы валют",
+  "ratesRefreshTooltip": "Обновить курсы",
+  "ratesEmpty": "Курсов валют пока нет.",
+  "ratesLoadError": "Не удалось загрузить курсы валют.",
+  "ratesRetryButton": "Повторить",
+  "ratesAsOf": "на {date}",
+  "ratesStaleBadge": "Устарел",
+  "ratesSourceBelarusbank": "Беларусбанк",
+  "ratesSourceFrankfurter": "Frankfurter",
+  "ratesSourceIdentity": "Напрямую",
+  "ratesSourceUnknown": "Неизвестный источник"
 }
