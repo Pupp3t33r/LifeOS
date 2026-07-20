@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/categories_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../data/outbox/record_flow.dart';
 import '../../domain/category.dart';
 import '../../domain/currencies.dart';
+import '../recurring/recurring_shared.dart' show formatMonthDay;
 
 /// Currency codes offered in the entry sheet (the shared pool).
 const List<String> _currencies = kCurrencyPool;
@@ -179,8 +181,9 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
 
     if (!mounted) return;
     Navigator.of(context).pop();
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_isIncome ? 'Income added' : 'Expense added')),
+      SnackBar(content: Text(_isIncome ? l10n.addEntryIncomeAdded : l10n.addEntryExpenseAdded)),
     );
   }
 
@@ -238,11 +241,12 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
 
   Widget _header(ThemeData theme) {
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
           child: Text(
-            _isIncome ? 'NEW INCOME' : 'NEW EXPENSE',
+            _isIncome ? l10n.addEntryNewIncomeHeader : l10n.addEntryNewExpenseHeader,
             style: theme.textTheme.labelSmall
                 ?.copyWith(color: muted, letterSpacing: 1.8, fontWeight: FontWeight.w600),
           ),
@@ -297,19 +301,23 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
         color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
       ),
-      child: Row(children: [seg('Expense', _Direction.expense), seg('Income', _Direction.income)]),
+      child: Row(children: [
+        seg(AppLocalizations.of(context).directionExpense, _Direction.expense),
+        seg(AppLocalizations.of(context).directionIncome, _Direction.income),
+      ]),
     );
   }
 
   // ---- single-line (opening) -------------------------------------------------
 
   List<Widget> _singleLine(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return [
       _heroAmountField(theme),
       const SizedBox(height: 10),
       Center(child: _currencyChip(theme)),
       const SizedBox(height: 18),
-      _textField(theme, _descCtrl, 'What was it?  e.g. Lidl'),
+      _textField(theme, _descCtrl, l10n.addEntryWhatHint),
       const SizedBox(height: 12),
       _pickRows(theme, includeCurrency: false),
       const SizedBox(height: 14),
@@ -377,7 +385,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
             Icon(Icons.add, size: 16, color: enabled ? sage : theme.colorScheme.onSurface.withValues(alpha: 0.4)),
             const SizedBox(width: 8),
             Text(
-              'Add another line',
+              AppLocalizations.of(context).addEntryAddAnotherLine,
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: enabled ? sage : theme.colorScheme.onSurface.withValues(alpha: 0.4),
@@ -396,6 +404,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
         ? CalmTokens.of(theme.brightness).sageDeep
         : theme.colorScheme.secondary;
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final l10n = AppLocalizations.of(context);
     return [
       Center(
         child: Text(
@@ -410,14 +419,14 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
       const SizedBox(height: 6),
       Center(
         child: Text(
-          'TOTAL · ${_lines.length} ${_lines.length == 1 ? 'item' : 'items'}',
+          l10n.addEntryTotalItems(_lines.length),
           style: theme.textTheme.labelSmall?.copyWith(color: muted, letterSpacing: 1.4, fontWeight: FontWeight.w600),
         ),
       ),
       const SizedBox(height: 16),
       _pickRows(theme, includeCurrency: true),
       const SizedBox(height: 12),
-      _textField(theme, _entryNameCtrl, 'Name this entry — optional'),
+      _textField(theme, _entryNameCtrl, l10n.addEntryNameOptionalHint),
       const SizedBox(height: 12),
       _itemsList(theme, accent),
       const SizedBox(height: 10),
@@ -450,6 +459,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
     final dotColor = line.categoryId == null
         ? null
         : CategoryColors.slotFor(line.categoryId!).resolve(theme.brightness);
+    final l10n = AppLocalizations.of(context);
     return Container(
       color: editing ? CalmTokens.of(theme.brightness).sageDeep.withValues(alpha: 0.08) : null,
       padding: const EdgeInsets.fromLTRB(14, 11, 8, 11),
@@ -470,7 +480,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  line.description ?? (line.categoryName ?? 'Line ${index + 1}'),
+                  line.description ?? (line.categoryName ?? l10n.addEntryLineFallback(index + 1)),
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -513,6 +523,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
     final sage = CalmTokens.of(theme.brightness).sageDeep;
     final editing = _editingIndex != null;
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -527,7 +538,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
             children: [
               Expanded(
                 child: Text(
-                  editing ? 'EDITING LINE' : 'ADD A LINE',
+                  editing ? l10n.addEntryEditingLine : l10n.addEntryAddALine,
                   style: theme.textTheme.labelSmall?.copyWith(color: muted, letterSpacing: 1.4, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -537,7 +548,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
                     _editingIndex = null;
                     _clearComposer();
                   }),
-                  child: Text('Cancel', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.secondary, fontWeight: FontWeight.w600)),
+                  child: Text(l10n.commonCancel, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.secondary, fontWeight: FontWeight.w600)),
                 ),
             ],
           ),
@@ -565,11 +576,11 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
                 child: TextField(
                   controller: _descCtrl,
                   style: theme.textTheme.bodyMedium,
-                  decoration: _decoration(theme, 'Description'),
+                  decoration: _decoration(theme, l10n.addEntryDescriptionHint),
                 ),
               ),
               const SizedBox(width: 8),
-              _addButton(theme, sage, editing),
+              _addButton(theme, sage, editing, l10n),
             ],
           ),
         ],
@@ -577,7 +588,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
     );
   }
 
-  Widget _addButton(ThemeData theme, Color sage, bool editing) {
+  Widget _addButton(ThemeData theme, Color sage, bool editing, AppLocalizations l10n) {
     final enabled = _readComposer() != null;
     return Material(
       color: enabled ? sage.withValues(alpha: 0.10) : theme.colorScheme.onSurface.withValues(alpha: 0.04),
@@ -591,7 +602,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Text(
-            editing ? 'Save' : '＋ Add',
+            editing ? l10n.createSaveButton : l10n.addEntryAddButton,
             style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w600,
               color: enabled ? sage : theme.colorScheme.onSurface.withValues(alpha: 0.4),
@@ -646,9 +657,10 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
   }
 
   Widget _categoryRow(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
     final Widget value = _categoryId == null
-        ? Text('Optional', style: theme.textTheme.bodyMedium?.copyWith(color: muted))
+        ? Text(l10n.addEntryOptionalValue, style: theme.textTheme.bodyMedium?.copyWith(color: muted))
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -664,24 +676,26 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
               Text(_categoryName ?? '', style: theme.textTheme.bodyMedium),
             ],
           );
-    return _row(theme, Icons.sell_outlined, 'Category', value, _pickCategory);
+    return _row(theme, Icons.sell_outlined, l10n.createCategoryLabel, value, _pickCategory);
   }
 
   Widget _whenRow(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return _row(
       theme,
       Icons.calendar_today_outlined,
-      'When',
-      Text(_dateLabel(_occurredAt), style: theme.textTheme.bodyMedium),
+      l10n.addEntryWhenLabel,
+      Text(_dateLabel(context, _occurredAt), style: theme.textTheme.bodyMedium),
       _pickDate,
     );
   }
 
   Widget _currencyRow(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return _row(
       theme,
       Icons.payments_outlined,
-      'Currency',
+      l10n.createCurrencyLabel,
       Text(
         _effectiveCurrency(ref),
         style: theme.textTheme.bodyMedium?.copyWith(fontFamily: CalmTokens.fontDisplay, fontWeight: FontWeight.w600),
@@ -717,6 +731,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
 
   Widget _categorySelector(ThemeData theme) {
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final l10n = AppLocalizations.of(context);
     return InkWell(
       onTap: _pickCategory,
       borderRadius: BorderRadius.circular(CalmTokens.radiusSm),
@@ -739,7 +754,7 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
             ],
             Expanded(
               child: Text(
-                _categoryName ?? 'Category',
+                _categoryName ?? l10n.createCategoryLabel,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(color: _categoryName == null ? muted : theme.colorScheme.onSurface),
               ),
@@ -752,7 +767,8 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
   }
 
   Widget _commitButton(ThemeData theme) {
-    final label = _isIncome ? 'Add income' : 'Add expense';
+    final l10n = AppLocalizations.of(context);
+    final label = _isIncome ? l10n.addEntryAddIncome : l10n.addEntryAddExpense;
     return FilledButton(
       onPressed: (_canCommit && !_submitting) ? _commit : null,
       child: _submitting
@@ -838,12 +854,12 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
 
   String _fmt(double value) => value.toStringAsFixed(2);
 
-  String _dateLabel(DateTime date) {
+  String _dateLabel(BuildContext context, DateTime date) {
     final today = DateTime.now();
     final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final label = '${months[date.month - 1]} ${date.day}';
-    return isToday ? 'Today · $label' : label;
+    final l10n = AppLocalizations.of(context);
+    final label = formatMonthDay(context, date.month, date.day);
+    return isToday ? l10n.addEntryTodayPrefix(label) : label;
   }
 }
 
@@ -877,7 +893,7 @@ class _CategoryPicker extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Text(
-                'CATEGORY',
+                AppLocalizations.of(context).addEntryCategoryDialogTitle,
                 style: theme.textTheme.labelSmall?.copyWith(color: muted, letterSpacing: 1.6, fontWeight: FontWeight.w600),
               ),
             ),
@@ -889,7 +905,8 @@ class _CategoryPicker extends ConsumerWidget {
                 ),
                 error: (_, _) => Padding(
                   padding: const EdgeInsets.all(20),
-                  child: Text('Couldn’t load categories.', style: theme.textTheme.bodyMedium?.copyWith(color: muted)),
+                  child: Text(AppLocalizations.of(context).addEntryCategoryLoadError,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: muted)),
                 ),
                 data: (items) => ListView(
                   shrinkWrap: true,
@@ -900,7 +917,8 @@ class _CategoryPicker extends ConsumerWidget {
                         height: 12,
                         decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: theme.colorScheme.outline, width: 1.6)),
                       ),
-                      title: Text('None', style: theme.textTheme.bodyMedium?.copyWith(color: muted)),
+                      title: Text(AppLocalizations.of(context).commonNone,
+                          style: theme.textTheme.bodyMedium?.copyWith(color: muted)),
                       onTap: () => Navigator.of(context).pop(const _CategoryChoice(null, null)),
                     ),
                     for (final category in items) _categoryTile(context, theme, muted, category),
@@ -928,7 +946,8 @@ class _CategoryPicker extends ConsumerWidget {
               children: [
                 Icon(Icons.lock_outline, size: 13, color: muted),
                 const SizedBox(width: 4),
-                Text('system', style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+                Text(AppLocalizations.of(context).addEntrySystemTag,
+                    style: theme.textTheme.labelSmall?.copyWith(color: muted)),
               ],
             )
           : null,

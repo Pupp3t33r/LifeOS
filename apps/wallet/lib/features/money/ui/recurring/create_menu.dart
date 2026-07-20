@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../add_entry/add_entry_sheet.dart';
 import 'create_ongoing_sheet.dart';
 import 'create_payment_plan_sheet.dart';
@@ -34,6 +35,7 @@ Future<void> showCreateMenu(
     ),
     builder: (context) {
       final tokens = CalmTokens.of(Theme.of(context).brightness);
+      final l10n = AppLocalizations.of(context);
       return SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -42,20 +44,20 @@ Future<void> showCreateMenu(
             _MenuItem(
               icon: Icons.add,
               color: tokens.sageDeep,
-              title: 'Add',
+              title: l10n.createMenuAddTitle,
               subtitle: allowOneOff
-                  ? 'A one-off expense or income'
-                  : 'Switch to the current period to add',
+                  ? l10n.createMenuAddSubtitleOn
+                  : l10n.createMenuAddSubtitleOff,
               enabled: allowOneOff,
               onTap: allowOneOff ? () => Navigator.of(context).pop(_Create.add) : null,
             ),
             _MenuItem(
               icon: Icons.shopping_bag_outlined,
               color: tokens.clay,
-              title: 'Planned purchase',
+              title: l10n.createMenuPlannedTitle,
               subtitle: allowPlanned
-                  ? 'Something you plan to buy this month'
-                  : 'Switch to a current or future period to plan',
+                  ? l10n.createMenuPlannedSubtitleOn
+                  : l10n.createMenuPlannedSubtitleOff,
               enabled: allowPlanned,
               onTap: allowPlanned
                   ? () => Navigator.of(context).pop(_Create.plannedPurchase)
@@ -64,15 +66,15 @@ Future<void> showCreateMenu(
             _MenuItem(
               icon: Icons.autorenew,
               color: tokens.sageDeep,
-              title: 'Ongoing',
-              subtitle: 'Repeats until you stop it — rent, salary, a subscription',
+              title: l10n.createMenuOngoingTitle,
+              subtitle: l10n.createMenuOngoingSubtitle,
               onTap: () => Navigator.of(context).pop(_Create.ongoing),
             ),
             _MenuItem(
               icon: Icons.receipt_long_outlined,
               color: tokens.clay,
-              title: 'Payment plan',
-              subtitle: 'One purchase, paid over a set of payments',
+              title: l10n.createMenuPlanTitle,
+              subtitle: l10n.createMenuPlanSubtitle,
               onTap: () => Navigator.of(context).pop(_Create.paymentPlan),
             ),
             const SizedBox(height: 8),

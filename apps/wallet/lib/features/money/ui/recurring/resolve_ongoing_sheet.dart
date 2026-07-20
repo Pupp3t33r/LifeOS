@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../data/outbox/recurring_outbox.dart';
 import '../../domain/recurring/occurrence.dart';
 import '../../domain/recurring/recurring_line.dart';
@@ -101,6 +102,7 @@ class _ResolveOngoingSheetState extends ConsumerState<_ResolveOngoingSheet> {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
     final amount = _amount;
+    final l10n = AppLocalizations.of(context);
 
     return SheetContainer(
       bottomSheet: widget.bottomSheet,
@@ -117,7 +119,7 @@ class _ResolveOngoingSheetState extends ConsumerState<_ResolveOngoingSheet> {
             ),
             child: Row(
               children: [
-                Text('Planned', style: theme.textTheme.bodySmall?.copyWith(
+                Text(l10n.resolveOngoingPlannedLabel, style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
                 const Spacer(),
                 Text(
@@ -130,7 +132,7 @@ class _ResolveOngoingSheetState extends ConsumerState<_ResolveOngoingSheet> {
             ),
           ),
           const SizedBox(height: 14),
-          Text('Amount paid', style: theme.textTheme.labelSmall?.copyWith(
+          Text(l10n.resolveOngoingAmountPaidLabel, style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             fontWeight: FontWeight.w600, letterSpacing: 0.6,
           )),
@@ -143,8 +145,8 @@ class _ResolveOngoingSheetState extends ConsumerState<_ResolveOngoingSheet> {
           ),
           const SizedBox(height: 12),
           PickerButton(
-            label: 'Paid on',
-            value: _dateLabel(_date),
+            label: l10n.resolveOngoingPaidOnLabel,
+            value: formatFullDate(context, _date),
             onTap: () async {
               final picked = await showDatePicker(
                 context: context,
@@ -157,7 +159,7 @@ class _ResolveOngoingSheetState extends ConsumerState<_ResolveOngoingSheet> {
           ),
           const SizedBox(height: 18),
           PrimarySaveButton(
-            label: 'Mark paid',
+            label: l10n.resolveOngoingMarkPaid,
             trailing: amount != null
                 ? formatSigned(widget.recurring.isIncome ? amount : -amount, _currency)
                 : null,
@@ -170,12 +172,12 @@ class _ResolveOngoingSheetState extends ConsumerState<_ResolveOngoingSheet> {
             child: TextButton(
               onPressed: _submitting ? null : _skip,
               child: Text.rich(TextSpan(
-                text: "Didn't happen?  ",
+                text: l10n.resolveOngoingDidntHappenPrefix,
                 style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                 children: [
                   TextSpan(
-                    text: 'Skip',
+                    text: l10n.resolveOngoingSkip,
                     style: TextStyle(color: tokens.clay, fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -186,11 +188,4 @@ class _ResolveOngoingSheetState extends ConsumerState<_ResolveOngoingSheet> {
       ),
     );
   }
-}
-
-String _dateLabel(DateTime date) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-  return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/category.dart';
 import '../../domain/currencies.dart';
 
@@ -25,6 +27,60 @@ String formatMagnitude(num amount, String currency) {
 String formatSigned(num amount, String currency) {
   final sign = amount < 0 ? '−' : '+';
   return '$sign${formatMagnitude(amount, currency)}';
+}
+
+/// Formats a (year, month) pair as a localized "Mon YYYY" (e.g. "Jan 2026", "янв. 2026")
+/// or "Month YYYY" (e.g. "January 2026", "январь 2026") when [long] is set. Uses the
+/// active locale from [context] via [intl.DateFormat].
+String formatMonthYear(BuildContext context, int year, int month, {bool long = false}) {
+  final locale = Localizations.localeOf(context).languageCode;
+  final format = long ? DateFormat.yMMMM(locale) : DateFormat.yMMM(locale);
+  return format.format(DateTime(year, month));
+}
+
+/// Formats a (month, day) pair as a localized "Mon D" (e.g. "Jan 5", "5 янв.").
+String formatMonthDay(BuildContext context, int month, int day) {
+  final locale = Localizations.localeOf(context).languageCode;
+  return DateFormat.MMMd(locale).format(DateTime(2024, month, day));
+}
+
+/// Formats a full date as a localized "Mon D, YYYY" (e.g. "Jan 5, 2026", "5 янв. 2026 г.").
+String formatFullDate(BuildContext context, DateTime date) {
+  final locale = Localizations.localeOf(context).languageCode;
+  return DateFormat.yMMMd(locale).format(date);
+}
+
+/// Short weekday name for [weekday] (DateTime.monday=1 … DateTime.sunday=7), localized
+/// (e.g. "Mon", "пн"). Used by the weekly-recurrence rule editor.
+String formatWeekday(BuildContext context, int weekday) {
+  final locale = Localizations.localeOf(context).languageCode;
+  // DateTime.monday=1, but DateFormat week starts on Sunday=0 in the underlying data —
+  // build a date in a fixed week to derive the right name.
+  final date = DateTime(2024, 1, 7 + weekday); // 2024-01-07 is a Sunday
+  return DateFormat.E(locale).format(date);
+}
+
+/// Day-of-month anchor rendering for the monthly-recurrence rule editor. English uses
+/// ordinals ("1st", "2nd", "3rd"); most other locales use a bare number.
+String formatDayOfMonthAnchor(BuildContext context, int day) {
+  final locale = Localizations.localeOf(context).languageCode;
+  if (locale == 'en') {
+    if (day >= 11 && day <= 13) return '${day}th';
+    return switch (day % 10) {
+      1 => '${day}st',
+      2 => '${day}nd',
+      3 => '${day}rd',
+      _ => '${day}th'
+    };
+  }
+  return '$day';
+}
+
+/// Long localized month name for [month] (1..12), e.g. "January" / "январь". Used by the
+/// yearly-recurrence month dropdown.
+String formatMonthName(BuildContext context, int month) {
+  final locale = Localizations.localeOf(context).languageCode;
+  return DateFormat.MMMM(locale).format(DateTime(2024, month));
 }
 
 /// Opens a money create/resolve surface: a bottom sheet on phones, a centred dialog
@@ -80,7 +136,7 @@ Future<Category?> pickCategory(
         children: [
           ListTile(
             leading: const Icon(Icons.block_outlined),
-            title: const Text('None'),
+            title: Text(AppLocalizations.of(context).commonNone),
             trailing: selectedId == null ? const Icon(Icons.check) : null,
             onTap: () => Navigator.of(context).pop(kNoCategory),
           ),

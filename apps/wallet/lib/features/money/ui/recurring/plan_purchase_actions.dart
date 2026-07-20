@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../data/outbox/planned_purchase_outbox.dart';
 import '../../data/outbox/recurring_outbox.dart' show recurringUuidV4;
 import '../../domain/planned_purchase.dart';
@@ -96,16 +97,17 @@ class _PlannedActionsSheet extends ConsumerWidget {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final l10n = AppLocalizations.of(context);
 
     return SheetContainer(
       bottomSheet: bottomSheet,
-      title: 'Planned purchase',
+      title: l10n.createPlannedSheetTitle,
       icon: Icons.shopping_bag_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            planned.description ?? 'Planned purchase',
+            planned.description ?? l10n.createPlannedSheetTitle,
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
@@ -120,7 +122,7 @@ class _PlannedActionsSheet extends ConsumerWidget {
           const SizedBox(height: 20),
           if (canBuy) ...[
             PrimarySaveButton(
-              label: 'Mark as bought',
+              label: l10n.plannedActionMarkBought,
               enabled: true,
               onTap: () async {
                 Navigator.of(context).pop();
@@ -135,12 +137,12 @@ class _PlannedActionsSheet extends ConsumerWidget {
               await removePlannedPurchase(ref, entryId: planned.entryId, year: year, month: month);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Removed from plan')),
+                  SnackBar(content: Text(l10n.plannedActionRemoved)),
                 );
               }
             },
             icon: Icon(Icons.delete_outline, size: 18, color: muted),
-            label: Text('Remove from plan', style: TextStyle(color: muted)),
+            label: Text(l10n.plannedActionRemoveFromPlan, style: TextStyle(color: muted)),
           ),
         ],
       ),
@@ -208,8 +210,9 @@ class _BuyPlannedSheetState extends ConsumerState<_BuyPlannedSheet> {
 
     if (!mounted) return;
     Navigator.of(context).pop();
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Marked as bought')),
+      SnackBar(content: Text(l10n.plannedActionMarkedBought)),
     );
   }
 
@@ -218,21 +221,22 @@ class _BuyPlannedSheetState extends ConsumerState<_BuyPlannedSheet> {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
     final currency = widget.planned.total.currency;
+    final l10n = AppLocalizations.of(context);
 
     return SheetContainer(
       bottomSheet: widget.bottomSheet,
-      title: 'Mark as bought',
+      title: l10n.plannedActionMarkBought,
       icon: Icons.shopping_bag_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            widget.planned.description ?? 'Planned purchase',
+            widget.planned.description ?? l10n.createPlannedSheetTitle,
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           Text(
-            'What did you actually pay? Adjust if it differs from the plan.',
+            l10n.plannedActionBuyDescription,
             style: theme.textTheme.bodySmall?.copyWith(color: muted, height: 1.4),
           ),
           const SizedBox(height: 16),
@@ -244,7 +248,7 @@ class _BuyPlannedSheetState extends ConsumerState<_BuyPlannedSheet> {
           ),
           const SizedBox(height: 20),
           PrimarySaveButton(
-            label: 'Mark as bought',
+            label: l10n.plannedActionMarkBought,
             enabled: _amount != null && !_submitting,
             loading: _submitting,
             onTap: _confirm,

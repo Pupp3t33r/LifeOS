@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/categories_providers.dart';
 import '../../application/category_colors_provider.dart';
 import '../../application/period_flows_providers.dart';
@@ -18,6 +19,8 @@ import '../recurring/create_menu.dart';
 import '../recurring/occurrence_actions.dart';
 import '../recurring/plan_occurrence_sheet.dart';
 import '../recurring/plan_purchase_actions.dart';
+import '../recurring/recurring_shared.dart'
+    show formatMonthDay, formatMonthYear;
 import '../recurring/resolve_ongoing_sheet.dart';
 
 /// Home — the current-period cockpit (Wallet ADR-0002; nav branch 0).
@@ -40,7 +43,7 @@ class MonthOverviewScreen extends ConsumerWidget {
     final startDay = ref.watch(preferencesProvider).value?.monthStartDay ?? 1;
     final key = ref.watch(viewedPeriodProvider);
     final status = ref.watch(viewedPeriodStatusProvider);
-    final period = _Period.forKey(key, startDay, DateTime.now());
+    final period = _Period.forKey(context, key, startDay, DateTime.now());
 
     final entries = ref.watch(periodFlowsProvider(key)).value ?? const <FlowEntry>[];
     final totals = ref.watch(periodTotalsProvider(key));
@@ -169,8 +172,8 @@ class _PeriodHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            _NavArrow(icon: Icons.chevron_left, tooltip: 'Previous period', onTap: onPrevious),
-            _NavArrow(icon: Icons.chevron_right, tooltip: 'Next period', onTap: onNext),
+            _NavArrow(icon: Icons.chevron_left, tooltip: AppLocalizations.of(context).monthOverviewPreviousPeriod, onTap: onPrevious),
+            _NavArrow(icon: Icons.chevron_right, tooltip: AppLocalizations.of(context).monthOverviewNextPeriod, onTap: onNext),
             const SizedBox(width: 6),
             SizedBox(
               width: 104,
@@ -197,7 +200,8 @@ class _PeriodHeader extends StatelessWidget {
         if (syncedAt != null) ...[
           const SizedBox(height: 6),
           Text(
-            'Updated ${_relativeTime(syncedAt!, DateTime.now())}',
+            AppLocalizations.of(context)
+                .monthOverviewUpdatedPrefix(_relativeTime(context, syncedAt!, DateTime.now())),
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
             ),
@@ -253,7 +257,7 @@ class _JumpToActiveButton extends StatelessWidget {
               Icon(Icons.today_outlined, size: 15, color: theme.colorScheme.primary),
               const SizedBox(width: 6),
               Text(
-                'Current',
+                AppLocalizations.of(context).monthOverviewCurrentPill,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w600,
@@ -278,10 +282,11 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
     final (label, dot, text) = switch (status) {
-      PeriodStatus.active => ('Active', theme.colorScheme.primary, tokens.sageDeep),
-      PeriodStatus.future => ('Planning', tokens.clay, tokens.clay),
-      PeriodStatus.past => ('Past', tokens.line, theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+      PeriodStatus.active => (l10n.monthOverviewStatusActive, theme.colorScheme.primary, tokens.sageDeep),
+      PeriodStatus.future => (l10n.monthOverviewStatusPlanning, tokens.clay, tokens.clay),
+      PeriodStatus.past => (l10n.monthOverviewStatusPast, tokens.line, theme.colorScheme.onSurface.withValues(alpha: 0.6)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
@@ -339,7 +344,7 @@ class _NetTotals extends StatelessWidget {
               children: [
                 TextSpan(text: _signed(money.amount, money.currency)),
                 TextSpan(
-                  text: '  net',
+                  text: AppLocalizations.of(context).monthOverviewNetSuffix,
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
               ],
@@ -377,7 +382,7 @@ class _PendingCaption extends StatelessWidget {
               text: TextSpan(
                 style: theme.textTheme.labelSmall?.copyWith(color: muted),
                 children: [
-                  const TextSpan(text: 'includes '),
+                  TextSpan(text: AppLocalizations.of(context).monthOverviewPendingIncludesPrefix),
                   TextSpan(
                     text: amounts,
                     style: theme.textTheme.labelSmall?.copyWith(
@@ -385,7 +390,7 @@ class _PendingCaption extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const TextSpan(text: ' syncing'),
+                  TextSpan(text: AppLocalizations.of(context).monthOverviewPendingSyncingSuffix),
                 ],
               ),
             ),
@@ -412,7 +417,7 @@ class _Worklist extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Text(
-            'Logged · ${entries.length}',
+            AppLocalizations.of(context).monthOverviewLoggedCount(entries.length),
             style: theme.textTheme.labelLarge?.copyWith(
               color: muted,
               fontWeight: FontWeight.w600,
@@ -476,14 +481,14 @@ class _EntryTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _title(entry, nameById),
+                  _title(context, entry, nameById),
                   style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _subtitle(entry, nameById),
+                  _subtitle(context, entry, nameById),
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -516,7 +521,8 @@ class _EntryTile extends StatelessWidget {
 
   /// Best human title: the entry note, else a single line's note, else the
   /// category name, else the bare direction.
-  String _title(FlowEntry entry, Map<String, String> nameById) {
+  String _title(BuildContext context, FlowEntry entry, Map<String, String> nameById) {
+    final l10n = AppLocalizations.of(context);
     final note = entry.description?.trim();
     if (note != null && note.isNotEmpty) return note;
     if (entry.lines.length == 1) {
@@ -525,15 +531,16 @@ class _EntryTile extends StatelessWidget {
       final id = entry.lines.first.categoryId;
       if (id != null && nameById[id] != null) return nameById[id]!;
     }
-    return entry.isIncome ? 'Income' : 'Expense';
+    return entry.isIncome ? l10n.directionIncome : l10n.directionExpense;
   }
 
-  String _subtitle(FlowEntry entry, Map<String, String> nameById) {
-    final date = '${_shortMonths[entry.occurredAt.month - 1]} ${entry.occurredAt.day}';
-    if (entry.lines.length > 1) return '$date · ${entry.lines.length} items';
+  String _subtitle(BuildContext context, FlowEntry entry, Map<String, String> nameById) {
+    final l10n = AppLocalizations.of(context);
+    final date = formatMonthDay(context, entry.occurredAt.month, entry.occurredAt.day);
+    if (entry.lines.length > 1) return l10n.monthOverviewEntrySubtitleMulti(date, entry.lines.length);
     final id = entry.lines.first.categoryId;
     final name = id != null ? nameById[id] : null;
-    return name != null ? '$date · $name' : date;
+    return name != null ? l10n.monthOverviewEntrySubtitleWithCategory(date, name) : date;
   }
 }
 
@@ -547,7 +554,8 @@ class _SyncingPill extends StatelessWidget {
       children: [
         Icon(Icons.cloud_upload_outlined, size: 12, color: muted),
         const SizedBox(width: 4),
-        Text('Syncing', style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+        Text(AppLocalizations.of(context).monthOverviewSyncingPill,
+            style: theme.textTheme.labelSmall?.copyWith(color: muted)),
       ],
     );
   }
@@ -583,12 +591,12 @@ class _EmptyPeriod extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Nothing logged yet',
+            AppLocalizations.of(context).monthOverviewEmptyTitle,
             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
-            'Add an expense or income for $monthLabel and it shows up here.',
+            AppLocalizations.of(context).monthOverviewEmptyBody(monthLabel),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(color: muted, height: 1.5),
           ),
@@ -631,7 +639,7 @@ class _Fab extends StatelessWidget {
                 Icon(Icons.add, color: theme.colorScheme.onSecondary),
                 const SizedBox(width: 9),
                 Text(
-                  'Add',
+                  AppLocalizations.of(context).createMenuAddTitle,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontFamily: CalmTokens.fontDisplay,
                     fontWeight: FontWeight.w600,
@@ -698,7 +706,9 @@ class _UpcomingList extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Text(
-            '${preview ? 'Planned' : 'Upcoming'} · ${items.length}',
+            preview
+                ? AppLocalizations.of(context).monthOverviewPlannedTitle(items.length)
+                : AppLocalizations.of(context).monthOverviewUpcomingTitle(items.length),
             style: theme.textTheme.labelLarge?.copyWith(
               color: muted,
               fontWeight: FontWeight.w600,
@@ -738,7 +748,7 @@ class _UpcomingList extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 4, top: 8),
             child: Text(
-              'Preview — these become payable once the period begins.',
+              AppLocalizations.of(context).monthOverviewPreviewNote,
               style: theme.textTheme.labelSmall?.copyWith(color: muted),
             ),
           ),
@@ -781,8 +791,11 @@ class _PlannedTile extends ConsumerWidget {
         ? CategoryColors.slotFor(firstCategoryId).of(context)
         : tokens.line;
     final categoryName = firstCategoryId != null ? nameById[firstCategoryId] : null;
-    final title = planned.description ?? categoryName ?? 'Planned purchase';
-    final subtitle = categoryName != null ? 'Planned · $categoryName' : 'Planned';
+    final l10n = AppLocalizations.of(context);
+    final title = planned.description ?? categoryName ?? l10n.planRowPlannedFallback;
+    final subtitle = categoryName != null
+        ? l10n.monthOverviewPlannedSubtitleWithCategory(categoryName)
+        : l10n.monthOverviewPlannedSubtitle;
 
     Future<void> openActions() =>
         showPlannedActions(context, ref, planned, periodKey.year, periodKey.month, canBuy: canBuy);
@@ -839,7 +852,7 @@ class _PlannedTile extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Text(
-                      'Buy',
+                      AppLocalizations.of(context).monthOverviewBuyButton,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: tokens.clay,
                         fontWeight: FontWeight.w600,
@@ -880,13 +893,15 @@ class _OccurrenceTile extends ConsumerWidget {
         firstCategoryId != null ? CategoryColors.slotFor(firstCategoryId).of(context) : tokens.line;
     final currency = occ.expectedAmount.currency;
     final categoryName = occ.lines.length == 1 && firstCategoryId != null ? nameById[firstCategoryId] : null;
-    final due = 'due ${_shortMonths[occ.dueDate.month - 1]} ${occ.dueDate.day}';
+    final due = AppLocalizations.of(context)
+        .monthOverviewDueOnDate(formatMonthDay(context, occ.dueDate.month, occ.dueDate.day));
 
     Future<void> markPaid() async {
       await markOccurrencePaidAsPlanned(
           ref, recurringId: recurring.id, occurrence: occ, description: recurring.name);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked paid')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context).monthOverviewMarkedPaidSnack)));
       }
     }
 
@@ -950,7 +965,7 @@ class _OccurrenceTile extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Text(
-                      'Mark paid',
+                      AppLocalizations.of(context).planOccurrenceMarkPaid,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: tokens.sageDeep,
                         fontWeight: FontWeight.w600,
@@ -978,7 +993,9 @@ class _Period {
   /// Header label + calendar span for [key] under [startDay]. The "day X of Y"
   /// progress suffix is added only when [key] is the period containing [now] — for
   /// any other browsed period it would be meaningless, so the span is just the range.
-  factory _Period.forKey(PeriodKey key, int startDay, DateTime now) {
+  factory _Period.forKey(
+      BuildContext context, PeriodKey key, int startDay, DateTime now) {
+    final l10n = AppLocalizations.of(context);
     final start = _anchor(key.year, key.month, startDay);
     final next = key.month == 12 ? (year: key.year + 1, month: 1) : (year: key.year, month: key.month + 1);
     final endExclusive = _anchor(next.year, next.month, startDay);
@@ -987,14 +1004,14 @@ class _Period {
     final today = DateTime(now.year, now.month, now.day);
     final isActive = !today.isBefore(start) && today.isBefore(endExclusive);
 
-    final range = '${_shortMonths[start.month - 1]} ${start.day} – '
-        '${_shortMonths[lastDay.month - 1]} ${lastDay.day}';
+    final range = '${formatMonthDay(context, start.month, start.day)} – '
+        '${formatMonthDay(context, lastDay.month, lastDay.day)}';
     final span = isActive
-        ? '$range · day ${today.difference(start).inDays + 1} of ${endExclusive.difference(start).inDays}'
+        ? '$range${l10n.monthOverviewDayProgressSuffix(today.difference(start).inDays + 1, endExclusive.difference(start).inDays)}'
         : range;
 
     return _Period(
-      monthLabel: '${_fullMonths[key.month - 1]} ${key.year}',
+      monthLabel: formatMonthYear(context, key.year, key.month, long: true),
       span: span,
     );
   }
@@ -1004,14 +1021,6 @@ class _Period {
     return DateTime(year, month, startDay < daysInMonth ? startDay : daysInMonth);
   }
 }
-
-const List<String> _shortMonths = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
-const List<String> _fullMonths = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
 
 /// Compact currency formatting for display only (the decimal-safe model lands with
 /// the OpenAPI client in Phase 5). [_signed] prefixes the sign by the amount's sign.
@@ -1050,11 +1059,12 @@ List<Money> _sumByCurrency(Iterable<FlowEntry> entries) {
 /// Coarse relative time for the cache freshness line. Computed at build (it doesn't
 /// tick on its own), but the cockpit revalidates on every open and outbox change, so
 /// in practice it re-renders fresh; precision finer than this isn't worth a timer.
-String _relativeTime(DateTime then, DateTime now) {
+String _relativeTime(BuildContext context, DateTime then, DateTime now) {
+  final l10n = AppLocalizations.of(context);
   final diff = now.difference(then);
-  if (diff.inSeconds < 45) return 'just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  if (diff.inDays < 7) return '${diff.inDays}d ago';
-  return 'on ${_shortMonths[then.month - 1]} ${then.day}';
+  if (diff.inSeconds < 45) return l10n.monthOverviewJustNow;
+  if (diff.inMinutes < 60) return l10n.monthOverviewMinutesAgo(diff.inMinutes);
+  if (diff.inHours < 24) return l10n.monthOverviewHoursAgo(diff.inHours);
+  if (diff.inDays < 7) return l10n.monthOverviewDaysAgo(diff.inDays);
+  return formatMonthDay(context, then.month, then.day);
 }

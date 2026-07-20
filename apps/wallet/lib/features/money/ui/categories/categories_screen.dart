@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/categories_providers.dart';
 import '../../application/category_colors_provider.dart';
 import '../../domain/category.dart';
@@ -53,40 +54,44 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   }
 
   Future<void> _createCategory() async {
-    final name = await _promptName(title: 'New category', cta: 'Create');
+    final l10n = AppLocalizations.of(context);
+    final name = await _promptName(title: l10n.categoriesNewButton, cta: l10n.categoriesCreateCta);
     if (name == null) return;
     try {
       await ref.read(categoriesControllerProvider.notifier).create(name);
-    } on CategoryNameConflict catch (e) {
-      _snack(e.toString());
+    } on CategoryNameConflict {
+      _snack(l10n.categoriesNameConflictError);
     }
   }
 
   Future<void> _renameCategory(Category category) async {
+    final l10n = AppLocalizations.of(context);
     final name = await _promptName(
-      title: 'Rename category',
-      cta: 'Save',
+      title: l10n.categoriesRenameTitle,
+      cta: l10n.createSaveButton,
       initial: category.name,
       excludeId: category.id,
     );
     if (name == null || name == category.name) return;
     try {
       await ref.read(categoriesControllerProvider.notifier).rename(category.id, name);
-    } on CategoryNameConflict catch (e) {
-      _snack(e.toString());
+    } on CategoryNameConflict {
+      _snack(l10n.categoriesNameConflictError);
     }
   }
 
   Future<void> _archive(Category category) async {
     setState(() => _expandedId = null);
     await ref.read(categoriesControllerProvider.notifier).archive(category.id);
-    _snack('Archived “${category.name}”.');
+    if (!mounted) return;
+    _snack(AppLocalizations.of(context).categoriesArchivedSnack(category.name));
   }
 
   Future<void> _unarchive(Category category) async {
     setState(() => _expandedId = null);
     await ref.read(categoriesControllerProvider.notifier).unarchive(category.id);
-    _snack('Restored “${category.name}”.');
+    if (!mounted) return;
+    _snack(AppLocalizations.of(context).categoriesRestoredSnack(category.name));
   }
 
   /// A name dialog with live uniqueness validation (the client mirror of Money
@@ -99,6 +104,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   }) {
     final controller = TextEditingController(text: initial);
     final notifier = ref.read(categoriesControllerProvider.notifier);
+    final l10n = AppLocalizations.of(context);
     return showDialog<String>(
       context: context,
       builder: (dialogContext) {
@@ -120,14 +126,14 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                   if (canSubmit) Navigator.of(context).pop(value);
                 },
                 decoration: InputDecoration(
-                  hintText: 'Category name',
-                  errorText: available ? null : 'A category with this name already exists.',
+                  hintText: l10n.categoriesNameHint,
+                  errorText: available ? null : l10n.categoriesNameConflictError,
                 ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 FilledButton(
                   onPressed: canSubmit ? () => Navigator.of(context).pop(value) : null,
@@ -146,12 +152,13 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     // Rebuild when a colour override changes so swatches repaint immediately.
     ref.watch(categoryColorsProvider);
     final categories = ref.watch(categoriesControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Categories')),
+      appBar: AppBar(title: Text(l10n.categoriesScreenTitle)),
       body: SafeArea(
         child: categories.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -172,6 +179,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
 
     final searching = _query.isNotEmpty;
     final nothingMatches = searching && yours.isEmpty && system.isEmpty && archived.isEmpty;
+    final l10n = AppLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -194,18 +202,20 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                         _NoMatches(query: _query)
                       else ...[
                         if (yours.isNotEmpty || !searching) ...[
-                          const _Eyebrow(label: 'Yours'),
+                          _Eyebrow(label: l10n.categoriesYoursLabel),
                           if (yours.isNotEmpty) _card([for (final c in yours) _row(theme, c)]),
                           if (!searching) _GhostRow(onTap: _createCategory),
                         ],
                         if (system.isNotEmpty) ...[
-                          const _Eyebrow(label: 'System', sub: 'names locked · colour yours'),
+                          _Eyebrow(label: l10n.categoriesSystemLabel, sub: l10n.categoriesSystemSub),
                           _card([for (final c in system) _row(theme, c)]),
                         ],
                         if (archived.isNotEmpty) ...[
                           _Eyebrow(
-                            label: 'Archived',
-                            sub: searching ? 'in results' : '${archived.length} · kept for history',
+                            label: l10n.categoriesArchivedLabel,
+                            sub: searching
+                                ? l10n.categoriesArchivedInResults
+                                : l10n.categoriesArchivedCount(archived.length),
                           ),
                           _card([for (final c in archived) _row(theme, c)]),
                         ],
@@ -298,6 +308,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   Widget _colourDrawer(ThemeData theme, Category category, CategoryPalette selected) {
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
     final sage = CalmTokens.of(theme.brightness).sageDeep;
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: sage.withValues(alpha: 0.06),
@@ -312,7 +323,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text('COLOUR',
+              Text(l10n.categoriesColorLabel,
                   style: theme.textTheme.labelSmall
                       ?.copyWith(color: muted, letterSpacing: 1.4, fontWeight: FontWeight.w600)),
               Text(
@@ -341,12 +352,12 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                _LinkAction(label: 'Rename', color: sage, onTap: () => _renameCategory(category)),
+                _LinkAction(label: l10n.categoriesRenameLink, color: sage, onTap: () => _renameCategory(category)),
                 const SizedBox(width: 22),
                 category.archived
-                    ? _LinkAction(label: 'Unarchive', color: sage, onTap: () => _unarchive(category))
+                    ? _LinkAction(label: l10n.categoriesUnarchiveLink, color: sage, onTap: () => _unarchive(category))
                     : _LinkAction(
-                        label: 'Archive',
+                        label: l10n.categoriesArchiveLink,
                         color: CalmTokens.of(theme.brightness).clay,
                         onTap: () => _archive(category)),
               ],
@@ -372,13 +383,14 @@ class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
         decoration: InputDecoration(
-          hintText: 'Search categories',
+          hintText: l10n.categoriesSearchHint,
           prefixIcon: const Icon(Icons.search, size: 20),
           isDense: true,
           filled: true,
@@ -441,6 +453,7 @@ class _GhostRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sage = CalmTokens.of(theme.brightness).sageDeep;
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: InkWell(
@@ -458,7 +471,7 @@ class _GhostRow extends StatelessWidget {
             children: [
               Icon(Icons.add, size: 18, color: sage),
               const SizedBox(width: 8),
-              Text('New category',
+              Text(l10n.categoriesNewButton,
                   style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: sage)),
             ],
           ),
@@ -487,7 +500,8 @@ class _SystemChip extends StatelessWidget {
         children: [
           Icon(Icons.lock_outline, size: 12, color: muted),
           const SizedBox(width: 5),
-          Text('system', style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+          Text(AppLocalizations.of(context).addEntrySystemTag,
+              style: theme.textTheme.labelSmall?.copyWith(color: muted)),
         ],
       ),
     );
@@ -554,11 +568,12 @@ class _NoMatches extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Center(
         child: Text(
-          'No categories match “$query”.',
+          l10n.categoriesNoMatches(query),
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(color: muted),
         ),
@@ -576,16 +591,17 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Couldn't load categories.",
+            Text(l10n.addEntryCategoryLoadError,
                 style: theme.textTheme.bodyMedium?.copyWith(color: muted)),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+            OutlinedButton(onPressed: onRetry, child: Text(l10n.categoriesRetryButton)),
           ],
         ),
       ),

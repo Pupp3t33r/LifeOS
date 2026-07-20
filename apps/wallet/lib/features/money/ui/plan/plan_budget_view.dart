@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/budget_providers.dart';
 import '../../application/categories_providers.dart';
 import '../../application/preferences_providers.dart';
@@ -9,12 +10,7 @@ import '../../application/selected_period_providers.dart';
 import '../../data/outbox/budget_outbox.dart';
 import '../../domain/category.dart';
 import '../../domain/recurring/recurring_payment.dart';
-import '../recurring/recurring_shared.dart' show formatMagnitude, formatSigned, pickCategory;
-
-const List<String> _monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
+import '../recurring/recurring_shared.dart' show formatMagnitude, formatSigned, formatMonthYear, pickCategory;
 
 /// The **Budget** view (Wallet ADR-0005 §5, Money ADR-0035) — set the month's shape: a
 /// spending limit per tracked category + a savings target, with a plain-arithmetic "Your
@@ -57,6 +53,7 @@ class _PlanBudgetViewState extends ConsumerState<PlanBudgetView> {
     final period = _period!;
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
     final currency = ref.watch(preferencesProvider).value?.displayCurrency ?? 'USD';
 
     final budgetAsync = ref.watch(budgetProvider(period));
@@ -96,29 +93,29 @@ class _PlanBudgetViewState extends ConsumerState<PlanBudgetView> {
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
                   children: [
-                    _yourMonthCard(theme, tokens, currency, expectedIncome, target, free),
+                    _yourMonthCard(theme, tokens, currency, expectedIncome, target, free, l10n),
                     const SizedBox(height: 20),
-                    Text('Savings target', style: theme.textTheme.titleMedium
+                    Text(l10n.planBudgetSavingsTargetTitle, style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     _amountField(
                       keyString: '$_key-target',
                       initial: _target,
                       currency: currency,
-                      hint: 'How much to save this month',
+                      hint: l10n.planBudgetSavingsTargetHint,
                       onChanged: (v) => setState(() => _target = v),
                     ),
                     const SizedBox(height: 24),
                     Row(
                       children: [
                         Expanded(
-                          child: Text('Spending limits', style: theme.textTheme.titleMedium
+                          child: Text(l10n.planBudgetSpendingLimitsTitle, style: theme.textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w700)),
                         ),
                         TextButton.icon(
                           onPressed: () => _addCategory(categories),
                           icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Track a category'),
+                          label: Text(l10n.planBudgetTrackButton),
                         ),
                       ],
                     ),
@@ -126,16 +123,16 @@ class _PlanBudgetViewState extends ConsumerState<PlanBudgetView> {
                     if (tracked.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text('No categories tracked yet — add one to set a limit.',
+                        child: Text(l10n.planBudgetTrackEmpty,
                             style: theme.textTheme.bodyMedium?.copyWith(color: tokens.muted)),
                       )
                     else
                       for (final id in tracked)
-                        _limitRow(theme, tokens, byId[id]!, currency),
+                        _limitRow(theme, tokens, byId[id]!, currency, l10n),
                     const SizedBox(height: 24),
                     FilledButton(
                       onPressed: () => _save(period, currency),
-                      child: const Text('Save budget'),
+                      child: Text(l10n.planBudgetSaveButton),
                     ),
                   ],
                 ),
@@ -154,7 +151,7 @@ class _PlanBudgetViewState extends ConsumerState<PlanBudgetView> {
             onPressed: () => _shift(-1),
             icon: const Icon(Icons.chevron_left),
           ),
-          Text('${_monthNames[period.month - 1]} ${period.year}',
+          Text(formatMonthYear(context, period.year, period.month, long: true),
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
           IconButton(
             onPressed: () => _shift(1),
@@ -166,7 +163,7 @@ class _PlanBudgetViewState extends ConsumerState<PlanBudgetView> {
   }
 
   Widget _yourMonthCard(ThemeData theme, CalmTokens tokens, String currency,
-      double income, double target, double free) {
+      double income, double target, double free, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -176,11 +173,11 @@ class _PlanBudgetViewState extends ConsumerState<PlanBudgetView> {
       ),
       child: Column(
         children: [
-          _row(theme, tokens, 'Expected income', formatMagnitude(income, currency)),
-          _row(theme, tokens, 'Spending limits', '−${formatMagnitude(_sumLimits(), currency)}'),
-          _row(theme, tokens, 'Savings target', '−${formatMagnitude(target, currency)}'),
+          _row(theme, tokens, l10n.planBudgetExpectedIncome, formatMagnitude(income, currency)),
+          _row(theme, tokens, l10n.planBudgetSpendingLimitsTitle, '−${formatMagnitude(_sumLimits(), currency)}'),
+          _row(theme, tokens, l10n.planBudgetSavingsTargetTitle, '−${formatMagnitude(target, currency)}'),
           const Divider(height: 20),
-          _row(theme, tokens, 'Free to spend',
+          _row(theme, tokens, l10n.planBudgetFreeToSpend,
               formatSigned(free, currency), emphasise: true,
               color: free < 0 ? tokens.clay : tokens.sage),
         ],
@@ -204,7 +201,7 @@ class _PlanBudgetViewState extends ConsumerState<PlanBudgetView> {
     );
   }
 
-  Widget _limitRow(ThemeData theme, CalmTokens tokens, Category category, String currency) {
+  Widget _limitRow(ThemeData theme, CalmTokens tokens, Category category, String currency, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -216,12 +213,12 @@ class _PlanBudgetViewState extends ConsumerState<PlanBudgetView> {
               keyString: '$_key-limit-${category.id}',
               initial: _limits[category.id] ?? '',
               currency: currency,
-              hint: 'Limit',
+              hint: l10n.planBudgetLimitHint,
               onChanged: (v) => setState(() => _limits[category.id] = v),
             ),
           ),
           IconButton(
-            tooltip: 'Stop tracking',
+            tooltip: l10n.planBudgetStopTrackingTooltip,
             icon: const Icon(Icons.close, size: 18),
             onPressed: () => setState(() {
               _tracked.remove(category.id);
@@ -282,8 +279,9 @@ class _PlanBudgetViewState extends ConsumerState<PlanBudgetView> {
           trackedCategories: _tracked.toList(),
         );
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Budget saved')),
+      SnackBar(content: Text(l10n.planBudgetSaved)),
     );
   }
 

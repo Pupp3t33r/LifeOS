@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/categories_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../data/outbox/recurring_outbox.dart';
@@ -81,8 +82,9 @@ class _CreateOngoingSheetState extends ConsumerState<CreateOngoingSheet> {
 
     if (!mounted) return;
     Navigator.of(context).pop();
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ongoing added')),
+      SnackBar(content: Text(l10n.createOngoingAdded)),
     );
   }
 
@@ -90,10 +92,11 @@ class _CreateOngoingSheetState extends ConsumerState<CreateOngoingSheet> {
   Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider).value ?? const <Category>[];
     final currency = _effectiveCurrency();
+    final l10n = AppLocalizations.of(context);
 
     return SheetContainer(
       bottomSheet: widget.bottomSheet,
-      title: '↻ Ongoing',
+      title: l10n.createOngoingSheetTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -109,11 +112,11 @@ class _CreateOngoingSheetState extends ConsumerState<CreateOngoingSheet> {
             },
           ),
           const SizedBox(height: 12),
-          SheetTextField(controller: _nameCtrl, hint: 'What is it?  e.g. Rent'),
+          SheetTextField(controller: _nameCtrl, hint: l10n.createOngoingNameHint),
           const SizedBox(height: 12),
           PickerButton(
-            label: 'Category',
-            value: _categoryName ?? 'Category',
+            label: l10n.createCategoryLabel,
+            value: _categoryName ?? l10n.createCategoryLabel,
             muted: _categoryName == null,
             dotColor: _categoryId != null ? CategoryColors.slotFor(_categoryId!).of(context) : null,
             onTap: () async {
@@ -133,7 +136,7 @@ class _CreateOngoingSheetState extends ConsumerState<CreateOngoingSheet> {
           const SizedBox(height: 16),
           RuleEditor(onChanged: (rule) => setState(() => _rule = rule)),
           const SizedBox(height: 20),
-          PrimarySaveButton(label: 'Save', enabled: _canSave, loading: _submitting, onTap: _save),
+          PrimarySaveButton(label: l10n.createSaveButton, enabled: _canSave, loading: _submitting, onTap: _save),
         ],
       ),
     );

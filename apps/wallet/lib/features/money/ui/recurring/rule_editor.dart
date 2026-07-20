@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/recurring/recurrence_rule.dart';
+import 'recurring_shared.dart'
+    show formatDayOfMonthAnchor, formatFullDate, formatMonthName, formatWeekday;
 
 /// The **Repeats** block of the Ongoing sheet (create-ongoing design): the
 /// Every / On / Ends controls that assemble a [RecurrenceRule]. Start is implicitly
@@ -86,29 +89,31 @@ class _RuleEditorState extends State<RuleEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _divider(context, 'Repeats'),
-        _row(context, 'Every', _everyControl(context)),
-        if (_onControl(context) case final on?) ...[
+        _divider(context, l10n.ruleEditorRepeatsLabel),
+        _row(context, l10n.ruleEditorEveryLabel, _everyControl(context)),
+        if (_onControl(context, l10n) case final on?) ...[
           const SizedBox(height: 10),
-          _labelled(context, _onLabel, on),
+          _labelled(context, _onLabel(l10n), on),
         ],
         const SizedBox(height: 10),
-        _row(context, 'Ends', _endsControl(context)),
+        _row(context, l10n.ruleEditorEndsLabel, _endsControl(context, l10n)),
       ],
     );
   }
 
-  String get _onLabel => switch (_unit) {
-        _Unit.week => 'On',
-        _Unit.month => 'On day',
-        _Unit.year => 'On',
+  String _onLabel(AppLocalizations l10n) => switch (_unit) {
+        _Unit.week => l10n.ruleEditorOnLabel,
+        _Unit.month => l10n.ruleEditorOnDayLabel,
+        _Unit.year => l10n.ruleEditorOnLabel,
         _Unit.day => '',
       };
 
   Widget _everyControl(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -118,7 +123,7 @@ class _RuleEditorState extends State<RuleEditor> {
             for (final unit in _Unit.values)
               _chip(
                 context,
-                _unitLabel(unit),
+                _unitLabel(l10n, unit),
                 selected: _unit == unit,
                 onTap: () => _set(() => _unit = unit),
               ),
@@ -127,7 +132,7 @@ class _RuleEditorState extends State<RuleEditor> {
         const SizedBox(height: 10),
         Row(
           children: [
-            Text('every', style: Theme.of(context).textTheme.bodySmall),
+            Text(l10n.ruleEditorEveryWord, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(width: 10),
             _StepperControl(
               value: _interval,
@@ -135,29 +140,28 @@ class _RuleEditorState extends State<RuleEditor> {
               onChanged: (v) => _set(() => _interval = v),
             ),
             const SizedBox(width: 8),
-            Text(_unitPlural(_unit), style: Theme.of(context).textTheme.bodySmall),
+            Text(_unitPlural(l10n, _unit), style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ],
     );
   }
 
-  Widget? _onControl(BuildContext context) {
+  Widget? _onControl(BuildContext context, AppLocalizations l10n) {
     switch (_unit) {
       case _Unit.day:
         return null;
       case _Unit.week:
-        const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const ints = [1, 2, 3, 4, 5, 6, 0];
+        final ints = [1, 2, 3, 4, 5, 6, 0];
         return Wrap(
           spacing: 7, runSpacing: 7,
           children: [
-            for (var i = 0; i < labels.length; i++)
+            for (final n in ints)
               _chip(
-                context, labels[i],
-                selected: _weekdays.contains(ints[i]),
+                context, formatWeekday(context, n),
+                selected: _weekdays.contains(n),
                 onTap: () => _set(() =>
-                    _weekdays.contains(ints[i]) ? _weekdays.remove(ints[i]) : _weekdays.add(ints[i])),
+                    _weekdays.contains(n) ? _weekdays.remove(n) : _weekdays.add(n)),
               ),
           ],
         );
@@ -167,13 +171,13 @@ class _RuleEditorState extends State<RuleEditor> {
           children: [
             for (final d in _curatedDays)
               _chip(
-                context, _ordinal(d),
+                context, formatDayOfMonthAnchor(context, d),
                 selected: _monthDays.contains(d),
                 onTap: () => _set(() =>
                     _monthDays.contains(d) ? _monthDays.remove(d) : _monthDays.add(d)),
               ),
             _chip(
-              context, 'Last day',
+              context, l10n.ruleEditorLastDay,
               selected: _lastDay,
               onTap: () => _set(() => _lastDay = !_lastDay),
             ),
@@ -189,7 +193,10 @@ class _RuleEditorState extends State<RuleEditor> {
                 decoration: const InputDecoration(border: OutlineInputBorder()),
                 items: [
                   for (var m = 1; m <= 12; m++)
-                    DropdownMenuItem(value: m, child: Text(_monthNames[m - 1])),
+                    DropdownMenuItem(
+                      value: m,
+                      child: Text(formatMonthName(context, m)),
+                    ),
                 ],
                 onChanged: (v) => _set(() => _yearMonth = v ?? _yearMonth),
               ),
@@ -204,16 +211,16 @@ class _RuleEditorState extends State<RuleEditor> {
     }
   }
 
-  Widget _endsControl(BuildContext context) {
+  Widget _endsControl(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            _chip(context, 'Never', selected: !_endsOnDate, onTap: () => _set(() => _endsOnDate = false)),
+            _chip(context, l10n.ruleEditorNever, selected: !_endsOnDate, onTap: () => _set(() => _endsOnDate = false)),
             const SizedBox(width: 7),
-            _chip(context, 'On a date', selected: _endsOnDate, onTap: () => _set(() => _endsOnDate = true)),
+            _chip(context, l10n.ruleEditorOnADate, selected: _endsOnDate, onTap: () => _set(() => _endsOnDate = true)),
           ],
         ),
         if (_endsOnDate) ...[
@@ -222,7 +229,7 @@ class _RuleEditorState extends State<RuleEditor> {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               icon: const Icon(Icons.calendar_today_outlined, size: 16),
-              label: Text('${_monthNames[_endDate.month - 1]} ${_endDate.day}, ${_endDate.year}'),
+              label: Text(formatFullDate(context, _endDate)),
               onPressed: () async {
                 final picked = await showDatePicker(
                   context: context,
@@ -238,7 +245,7 @@ class _RuleEditorState extends State<RuleEditor> {
         Padding(
           padding: const EdgeInsets.only(top: 6),
           child: Text(
-            'A countable end is a Payment plan.',
+            l10n.ruleEditorCountableEndNote,
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
@@ -317,30 +324,20 @@ class _RuleEditorState extends State<RuleEditor> {
     );
   }
 
-  static String _unitLabel(_Unit unit) => switch (unit) {
-        _Unit.day => 'Day',
-        _Unit.week => 'Week',
-        _Unit.month => 'Month',
-        _Unit.year => 'Year',
+  static String _unitLabel(AppLocalizations l10n, _Unit unit) => switch (unit) {
+        _Unit.day => l10n.ruleEditorUnitDay,
+        _Unit.week => l10n.ruleEditorUnitWeek,
+        _Unit.month => l10n.ruleEditorUnitMonth,
+        _Unit.year => l10n.ruleEditorUnitYear,
       };
 
-  static String _unitPlural(_Unit unit) => switch (unit) {
-        _Unit.day => 'day(s)',
-        _Unit.week => 'week(s)',
-        _Unit.month => 'month(s)',
-        _Unit.year => 'year(s)',
+  static String _unitPlural(AppLocalizations l10n, _Unit unit) => switch (unit) {
+        _Unit.day => l10n.ruleEditorUnitDayPlural,
+        _Unit.week => l10n.ruleEditorUnitWeekPlural,
+        _Unit.month => l10n.ruleEditorUnitMonthPlural,
+        _Unit.year => l10n.ruleEditorUnitYearPlural,
       };
-
-  static String _ordinal(int n) {
-    if (n >= 11 && n <= 13) return '${n}th';
-    return switch (n % 10) { 1 => '${n}st', 2 => '${n}nd', 3 => '${n}rd', _ => '${n}th' };
-  }
 }
-
-const List<String> _monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
 
 /// A compact −/N/+ stepper.
 class _StepperControl extends StatelessWidget {

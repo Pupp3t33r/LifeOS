@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/categories_providers.dart';
 import '../../application/wishlist_providers.dart';
 import '../../domain/category.dart';
@@ -46,9 +47,10 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
   @override
   Widget build(BuildContext context) {
     final wishlist = ref.watch(wishlistProvider);
+    final l10n = AppLocalizations.of(context);
     return wishlist.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const Center(child: Text('Could not load wishlist')),
+      error: (_, _) => Center(child: Text(l10n.wishlistLoadError)),
       data: (w) => _body(w.items),
     );
   }
@@ -130,6 +132,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
       List<WishlistItem> active) {
     final total = _estimateTotal(active);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
@@ -138,7 +141,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('Wishlist',
+                Text(l10n.navWishlist,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontFamily: CalmTokens.fontDisplay,
                       fontWeight: FontWeight.w700,
@@ -148,7 +151,10 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2),
                     child: Text(
-                        '−${formatMagnitude(total.amount, total.currency)} · ${active.length} active',
+                        l10n.wishlistTotalSummary(
+                          formatMagnitude(total.amount, total.currency),
+                          active.length,
+                        ),
                       style: theme.textTheme.bodySmall?.copyWith(color: tokens.clay)),
                   ),
               ],
@@ -164,6 +170,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
 
   Widget _filterBar(CalmTokens tokens, bool wide, Map<String, int> catCounts) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: Wrap(
@@ -192,7 +199,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
               onChanged: (_) => setState(() {}),
               style: theme.textTheme.bodySmall,
               decoration: InputDecoration(
-                hintText: 'Search',
+                hintText: l10n.wishlistSearchHint,
                 hintStyle: theme.textTheme.bodySmall?.copyWith(color: tokens.muted),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
@@ -317,6 +324,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
 
   Widget _emptyState(CalmTokens tokens) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -325,9 +333,9 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
           children: [
             Icon(Icons.bookmark_outline, size: 48, color: tokens.muted.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
-            Text('No wants yet', style: theme.textTheme.titleMedium),
+            Text(l10n.wishlistEmptyTitle, style: theme.textTheme.titleMedium),
             const SizedBox(height: 4),
-            Text('Add something you are wishing for.',
+            Text(l10n.wishlistEmptySubtitle,
                 style: theme.textTheme.bodySmall?.copyWith(color: tokens.muted)),
           ],
         ),
@@ -348,6 +356,7 @@ class _SummaryBar extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
     final brightness = theme.brightness;
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: tokens.surface,
@@ -357,14 +366,14 @@ class _SummaryBar extends StatelessWidget {
       child: IntrinsicHeight(
         child: Row(
           children: [
-            _cell('Wishing', counts[WishlistCommitment.idle] ?? 0, tokens.muted, theme),
+            _cell(l10n.stageWishing, counts[WishlistCommitment.idle] ?? 0, tokens.muted, theme),
             _divider(tokens),
-            _cell('Planned', counts[WishlistCommitment.planned] ?? 0, tokens.clay, theme),
+            _cell(l10n.stagePlanned, counts[WishlistCommitment.planned] ?? 0, tokens.clay, theme),
             _divider(tokens),
-            _cell('Paying off', counts[WishlistCommitment.financed] ?? 0,
+            _cell(l10n.stagePayingOff, counts[WishlistCommitment.financed] ?? 0,
                 CategoryPalette.denim.resolve(brightness), theme),
             _divider(tokens),
-            _cell('Bought', counts[WishlistCommitment.bought] ?? 0, tokens.sage, theme),
+            _cell(l10n.stageBought, counts[WishlistCommitment.bought] ?? 0, tokens.sage, theme),
           ],
         ),
       ),
@@ -427,19 +436,20 @@ class _StatusChips extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           for (final f in _StatusFilter.values)
-            _chip(f, theme, tokens),
+            _chip(context, f, theme, tokens),
         ],
       ),
     );
   }
 
-  Widget _chip(_StatusFilter f, ThemeData theme, CalmTokens tokens) {
+  Widget _chip(BuildContext context, _StatusFilter f, ThemeData theme, CalmTokens tokens) {
     final selected = f == current;
+    final l10n = AppLocalizations.of(context);
     final label = switch (f) {
-      _StatusFilter.active => 'Active',
-      _StatusFilter.wishing => 'Wishing',
-      _StatusFilter.planned => 'Planned',
-      _StatusFilter.payingOff => 'Paying off',
+      _StatusFilter.active => l10n.stageActive,
+      _StatusFilter.wishing => l10n.stageWishing,
+      _StatusFilter.planned => l10n.stagePlanned,
+      _StatusFilter.payingOff => l10n.stagePayingOff,
     };
     return InkWell(
       borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
@@ -487,6 +497,7 @@ class _CategoryTrigger extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
     return InkWell(
       borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
       onTap: onTap,
@@ -502,7 +513,7 @@ class _CategoryTrigger extends StatelessWidget {
           children: [
             Icon(Icons.filter_list, size: 14, color: tokens.muted),
             const SizedBox(width: 7),
-            Text(activeCount == 0 ? 'All categories' : '$activeCount categor${activeCount == 1 ? 'y' : 'ies'}',
+            Text(activeCount == 0 ? l10n.wishlistAllCategories : l10n.wishlistCategoryCount(activeCount),
                 style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600, color: tokens.muted)),
             const SizedBox(width: 5),
@@ -526,6 +537,7 @@ class _SortMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
     return PopupMenuButton<_Sort>(
       onSelected: onChanged,
       color: tokens.surface,
@@ -542,7 +554,7 @@ class _SortMenu extends StatelessWidget {
           children: [
             Icon(Icons.sort, size: 14, color: tokens.muted),
             const SizedBox(width: 7),
-            Text('Sort: ${_label(current)}',
+            Text(l10n.wishlistSortLabel(_label(l10n, current)),
                 style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600, color: tokens.muted)),
           ],
@@ -550,15 +562,15 @@ class _SortMenu extends StatelessWidget {
       ),
       itemBuilder: (_) => [
         for (final s in _Sort.values)
-          PopupMenuItem(value: s, child: Text(_label(s))),
+          PopupMenuItem(value: s, child: Text(_label(l10n, s))),
       ],
     );
   }
 
-  String _label(_Sort s) => switch (s) {
-        _Sort.stage => 'Stage',
-        _Sort.name => 'Name',
-        _Sort.estimate => 'Estimate',
+  String _label(AppLocalizations l10n, _Sort s) => switch (s) {
+        _Sort.stage => l10n.sortStage,
+        _Sort.name => l10n.sortName,
+        _Sort.estimate => l10n.sortEstimate,
       };
 }
 
@@ -583,6 +595,7 @@ class _BoughtCollapse extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -614,10 +627,10 @@ class _BoughtCollapse extends StatelessWidget {
                     TextSpan(
                       children: [
                         TextSpan(
-                          text: '$count bought',
+                          text: l10n.wishlistBoughtCount(count),
                           style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        const TextSpan(text: ' · hidden'),
+                        TextSpan(text: l10n.wishlistBoughtHiddenSuffix),
                       ],
                     ),
                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/categories_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../application/wishlist_providers.dart';
@@ -63,7 +64,7 @@ class WantRow extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _titleRow(theme, tokens, isRepeat),
+                  _titleRow(context, theme, tokens, isRepeat),
                   const SizedBox(height: 5),
                   _metaLine(context, ref, theme, tokens, wide),
                 ],
@@ -79,12 +80,13 @@ class WantRow extends ConsumerWidget {
     );
   }
 
-  Widget _titleRow(ThemeData theme, CalmTokens tokens, bool isRepeat) {
+  Widget _titleRow(BuildContext context, ThemeData theme, CalmTokens tokens, bool isRepeat) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Flexible(
           child: Text(
-            want.name ?? 'Want',
+            want.name ?? l10n.wantUnnamedFallback,
             style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             overflow: TextOverflow.ellipsis,
           ),
@@ -102,6 +104,7 @@ class WantRow extends ConsumerWidget {
     CalmTokens tokens,
     bool wide,
   ) {
+    final l10n = AppLocalizations.of(context);
     final categories = ref.watch(categoriesProvider).value ?? const <Category>[];
     final categoryNames = {for (final c in categories) c.id: c.name};
     final children = <Widget>[
@@ -114,7 +117,7 @@ class WantRow extends ConsumerWidget {
           theme: theme,
         )
       else
-        Text(want._stageLabel,
+        Text(_stageLabel(l10n, want.status),
             style: theme.textTheme.labelSmall?.copyWith(color: tokens.muted)),
     ];
 
@@ -131,14 +134,17 @@ class WantRow extends ConsumerWidget {
     } else if (want.status == WishlistCommitment.financed) {
       children
         ..add(const SizedBox(width: 7))
-        ..add(Text('Paying off',
+        ..add(Text(l10n.stagePayingOff,
             style: theme.textTheme.labelSmall?.copyWith(
                 color: CategoryPalette.denim.resolve(theme.brightness),
                 fontWeight: FontWeight.w600)));
     } else if (want.status == WishlistCommitment.idle) {
       children
         ..add(const SizedBox(width: 7))
-        ..add(Text(want.recurrence == WishlistRecurrence.reusable ? 'plan any month' : 'plan on a month',
+        ..add(Text(
+            want.recurrence == WishlistRecurrence.reusable
+                ? l10n.wishlistPlanAnyMonth
+                : l10n.wishlistPlanOnAMonth,
             style: theme.textTheme.labelSmall?.copyWith(color: tokens.muted)));
     }
 
@@ -149,14 +155,12 @@ class WantRow extends ConsumerWidget {
       children: children,
     );
   }
-}
 
-extension on WishlistItem {
-  String get _stageLabel => switch (status) {
-        WishlistCommitment.idle => 'Wishing',
-        WishlistCommitment.planned => 'Planned',
-        WishlistCommitment.financed => 'Paying off',
-        WishlistCommitment.bought => 'Bought',
+  String _stageLabel(AppLocalizations l10n, WishlistCommitment status) => switch (status) {
+        WishlistCommitment.idle => l10n.stageWishing,
+        WishlistCommitment.planned => l10n.stagePlanned,
+        WishlistCommitment.financed => l10n.stagePayingOff,
+        WishlistCommitment.bought => l10n.stageBought,
       };
 }
 
@@ -193,6 +197,7 @@ class _RecurrenceTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (!isRepeat) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -200,7 +205,7 @@ class _RecurrenceTag extends StatelessWidget {
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
         ),
-        child: Text('One-time',
+        child: Text(l10n.recurrenceOneTime,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontSize: 9.5,
                   fontWeight: FontWeight.w600,
@@ -219,7 +224,7 @@ class _RecurrenceTag extends StatelessWidget {
         children: [
           Icon(Icons.repeat, size: 9, color: tokens.sageDeep),
           const SizedBox(width: 3),
-          Text('Repeat',
+          Text(l10n.recurrenceRepeat,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     fontSize: 9.5,
                     fontWeight: FontWeight.w600,

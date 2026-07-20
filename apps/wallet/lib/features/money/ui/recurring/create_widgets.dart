@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Expense ↔ Income segmented toggle shared by the create sheets. Income flips the
 /// sign and the accent to sage.
@@ -51,7 +52,10 @@ class DirectionToggle extends StatelessWidget {
         color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
       ),
-      child: Row(children: [segment('Expense', false), segment('Income', true)]),
+      child: Row(children: [
+        segment(AppLocalizations.of(context).directionExpense, false),
+        segment(AppLocalizations.of(context).directionIncome, true),
+      ]),
     );
   }
 }

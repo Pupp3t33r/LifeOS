@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'plan_board_view.dart';
 import 'plan_budget_view.dart';
 import 'plan_list_view.dart';
@@ -22,26 +23,27 @@ class _PlanScreenState extends State<PlanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: SegmentedButton<PlanView>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: PlanView.list,
-                icon: Icon(Icons.list_alt_outlined),
-                label: Text('List'),
+                icon: const Icon(Icons.list_alt_outlined),
+                label: Text(l10n.planViewList),
               ),
               ButtonSegment(
                 value: PlanView.board,
-                icon: Icon(Icons.grid_view_outlined),
-                label: Text('Board'),
+                icon: const Icon(Icons.grid_view_outlined),
+                label: Text(l10n.planViewBoard),
               ),
               ButtonSegment(
                 value: PlanView.budget,
-                icon: Icon(Icons.tune_outlined),
-                label: Text('Budget'),
+                icon: const Icon(Icons.tune_outlined),
+                label: Text(l10n.planViewBudget),
               ),
             ],
             selected: {_view},

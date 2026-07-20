@@ -91,24 +91,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // ---- write handlers --------------------------------------------------------
 
   Future<void> _setDisplayCurrency(String code) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await ref.read(preferencesRepositoryProvider).setDisplayCurrency(code);
       ref.invalidate(preferencesProvider);
     } catch (_) {
-      _snack("Couldn't update display currency.");
+      _snack(l10n.settingsCurrencyUpdateError);
     }
   }
 
   Future<void> _setMonthStartDay(int day) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await ref.read(preferencesRepositoryProvider).setMonthStartDay(day);
       ref.invalidate(preferencesProvider);
     } on DioException catch (error) {
       _snack(error.response?.statusCode == 409
-          ? 'Month start day is locked once a month has been closed.'
-          : "Couldn't update month start day.");
+          ? l10n.settingsMonthStartLockedError
+          : l10n.settingsMonthStartUpdateError);
     } catch (_) {
-      _snack("Couldn't update month start day.");
+      _snack(l10n.settingsMonthStartUpdateError);
     }
   }
 
@@ -143,12 +145,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _SearchField(controller: _searchController, onChanged: (v) {
-                  setState(() => _query = v.trim().toLowerCase());
-                }),
+                _SearchField(
+                  controller: _searchController,
+                  hintText: l10n.settingsSearchHint,
+                  onChanged: (v) {
+                    setState(() => _query = v.trim().toLowerCase());
+                  },
+                ),
                 Expanded(
                   child: visible.isEmpty
-                      ? _NoMatches(query: _query)
+                      ? _NoMatches(query: _query, l10n: l10n)
                       : Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -203,22 +209,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     final appearance = _Group(
       id: 'appearance',
-      title: 'Appearance',
+      title: l10n.settingsGroupAppearance,
       icon: Icons.palette_outlined,
       items: [
         _Item(
-          title: 'Theme',
-          subtitle: 'Follow the system, or force light or dark.',
+          title: l10n.settingsThemeTitle,
+          subtitle: l10n.settingsThemeSubtitle,
           keywords: const ['dark', 'light', 'mode', 'system', 'appearance'],
           stacked: true,
           control: _ThemeControl(
             mode: themeMode,
+            l10n: l10n,
             onChanged: (m) => ref.read(themeControllerProvider.notifier).setThemeMode(m),
           ),
         ),
         _Item(
-          title: 'Language',
-          subtitle: 'The language of the app.',
+          title: l10n.settingsLanguageTitle,
+          subtitle: l10n.settingsLanguageSubtitle,
           keywords: const ['locale', 'english', 'russian'],
           control: _LocaleControl(
             locale: locale,
@@ -232,12 +239,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     final money = _Group(
       id: 'money',
-      title: 'Money',
+      title: l10n.settingsGroupMoney,
       icon: Icons.account_balance_wallet_outlined,
       items: [
         _Item(
-          title: 'Display currency',
-          subtitle: 'What your totals roll up into.',
+          title: l10n.settingsCurrencyTitle,
+          subtitle: l10n.settingsCurrencySubtitle,
           keywords: const ['currency', 'usd', 'eur', 'money'],
           control: _CurrencyControl(
             value: prefsValue?.displayCurrency,
@@ -246,18 +253,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         _Item(
-          title: 'Month start day',
-          subtitle: 'The day your accounting month begins. Locks once a month is closed.',
+          title: l10n.settingsMonthStartTitle,
+          subtitle: l10n.settingsMonthStartSubtitle,
           keywords: const ['period', 'month', 'start', 'billing'],
           control: _MonthStartControl(
             value: prefsValue?.monthStartDay ?? 1,
             enabled: !prefsBusy,
             onChanged: _setMonthStartDay,
+            l10n: l10n,
           ),
         ),
         _Item(
-          title: 'Categories',
-          subtitle: 'Create, recolour, and archive your categories.',
+          title: l10n.settingsCategoriesTitle,
+          subtitle: l10n.settingsCategoriesSubtitle,
           keywords: const ['category', 'categories', 'colour', 'color', 'archive', 'tag'],
           onTap: () => context.push('/settings/categories'),
           control: const Icon(Icons.chevron_right),
@@ -271,12 +279,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (biometricSupported)
         _Group(
           id: 'security',
-          title: 'Security',
+          title: l10n.settingsGroupSecurity,
           icon: Icons.lock_outline,
           items: [
             _Item(
-              title: 'App lock',
-              subtitle: 'Require biometrics to open the app on this device.',
+              title: l10n.settingsAppLockTitle,
+              subtitle: l10n.settingsAppLockSubtitle,
               keywords: const ['biometric', 'face', 'fingerprint', 'lock', 'security'],
               control: Switch(value: appLockEnabled, onChanged: _setAppLock),
             ),
@@ -328,9 +336,14 @@ class _Item {
 // ---- chrome ------------------------------------------------------------------
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller, required this.onChanged});
+  const _SearchField({
+    required this.controller,
+    required this.hintText,
+    required this.onChanged,
+  });
 
   final TextEditingController controller;
+  final String hintText;
   final ValueChanged<String> onChanged;
 
   @override
@@ -342,7 +355,7 @@ class _SearchField extends StatelessWidget {
         controller: controller,
         onChanged: onChanged,
         decoration: InputDecoration(
-          hintText: 'Search settings',
+          hintText: hintText,
           prefixIcon: const Icon(Icons.search, size: 20),
           isDense: true,
           filled: true,
@@ -548,9 +561,10 @@ class _SettingRow extends StatelessWidget {
 }
 
 class _NoMatches extends StatelessWidget {
-  const _NoMatches({required this.query});
+  const _NoMatches({required this.query, required this.l10n});
 
   final String query;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -560,7 +574,7 @@ class _NoMatches extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          'No settings match "$query".',
+          l10n.settingsNoMatches(query),
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(color: muted),
         ),
@@ -572,19 +586,20 @@ class _NoMatches extends StatelessWidget {
 // ---- controls ----------------------------------------------------------------
 
 class _ThemeControl extends StatelessWidget {
-  const _ThemeControl({required this.mode, required this.onChanged});
+  const _ThemeControl({required this.mode, required this.l10n, required this.onChanged});
 
   final ThemeMode mode;
+  final AppLocalizations l10n;
   final ValueChanged<ThemeMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<ThemeMode>(
       showSelectedIcon: false,
-      segments: const [
-        ButtonSegment(value: ThemeMode.system, label: Text('System')),
-        ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-        ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+      segments: [
+        ButtonSegment(value: ThemeMode.system, label: Text(l10n.commonSystem)),
+        ButtonSegment(value: ThemeMode.light, label: Text(l10n.settingsThemeLight)),
+        ButtonSegment(value: ThemeMode.dark, label: Text(l10n.settingsThemeDark)),
       ],
       selected: {mode},
       onSelectionChanged: (selection) => onChanged(selection.first),
@@ -604,7 +619,7 @@ class _LocaleControl extends StatelessWidget {
     return _Dropdown<String>(
       value: locale?.languageCode ?? 'system',
       items: [
-        ('system', 'System'),
+        ('system', l10n.commonSystem),
         ('en', l10n.languageNameEnglish),
         ('ru', l10n.languageNameRussian),
       ],
@@ -638,18 +653,25 @@ class _CurrencyControl extends StatelessWidget {
 }
 
 class _MonthStartControl extends StatelessWidget {
-  const _MonthStartControl({required this.value, required this.enabled, required this.onChanged});
+  const _MonthStartControl({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+    required this.l10n,
+  });
 
   final int value;
   final bool enabled;
   final ValueChanged<int> onChanged;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
     return _Dropdown<int>(
       value: value,
       items: [
-        for (var day = 1; day <= 31; day++) (day, day == 1 ? '1 (calendar)' : '$day'),
+        for (var day = 1; day <= 31; day++)
+          (day, day == 1 ? l10n.settingsMonthStartCalendarLabel : '$day'),
       ],
       onChanged: enabled ? (day) => onChanged(day) : null,
     );

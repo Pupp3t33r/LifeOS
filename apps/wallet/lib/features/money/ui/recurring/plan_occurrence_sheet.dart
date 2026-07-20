@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/categories_providers.dart';
 import '../../data/outbox/recurring_outbox.dart';
 import '../../domain/category.dart';
@@ -121,6 +122,7 @@ class _PlanOccurrenceSheetState extends ConsumerState<_PlanOccurrenceSheet> {
     final nameById = {for (final c in categories) c.id: c.name};
     final (k, n) = _progress;
     final items = _recurring.items;
+    final l10n = AppLocalizations.of(context);
 
     return SheetContainer(
       bottomSheet: widget.bottomSheet,
@@ -129,7 +131,7 @@ class _PlanOccurrenceSheetState extends ConsumerState<_PlanOccurrenceSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Payment $k of $n · Payment plan',
+          Text(l10n.planOccurrenceProgress(k, n),
               style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
           const SizedBox(height: 12),
@@ -143,7 +145,7 @@ class _PlanOccurrenceSheetState extends ConsumerState<_PlanOccurrenceSheet> {
           const SizedBox(height: 16),
 
           if (items.isNotEmpty) ...[
-            Text("WHAT'S IN THE PLAN",
+            Text(l10n.planOccurrenceContentsLabel,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w700, letterSpacing: 1.0,
@@ -162,11 +164,12 @@ class _PlanOccurrenceSheetState extends ConsumerState<_PlanOccurrenceSheet> {
                     _ContentRow(
                       label: items[i].description ??
                           nameById[items[i].categoryId] ??
-                          'Item',
+                          l10n.createPlanItemFallback,
                       sub: nameById[items[i].categoryId],
                       note: items[i].referenceValue == null
                           ? null
-                          : 'MSRP ${formatMagnitude(items[i].referenceValue!.amount, _currency)}',
+                          : l10n.createPlanItemMsrpAnnotation(
+                              formatMagnitude(items[i].referenceValue!.amount, _currency)),
                       categoryId: items[i].categoryId,
                     ),
                   ],
@@ -178,17 +181,17 @@ class _PlanOccurrenceSheetState extends ConsumerState<_PlanOccurrenceSheet> {
             const SizedBox(height: 4),
 
           _PlanButton(
-            label: 'Mark paid',
+            label: l10n.planOccurrenceMarkPaid,
             filled: true,
             onTap: _enteredMagnitude == null ? null : _markPaid,
           ),
           const SizedBox(height: 8),
-          _PlanButton(label: 'Skip this one', filled: false, onTap: _skip),
+          _PlanButton(label: l10n.planOccurrenceSkip, filled: false, onTap: _skip),
           const SizedBox(height: 2),
           Center(
             child: TextButton(
               onPressed: _cancelPlan,
-              child: Text('Cancel plan · refund or no refund',
+              child: Text(l10n.planOccurrenceCancelLink,
                   style: theme.textTheme.bodySmall?.copyWith(color: tokens.clay, fontWeight: FontWeight.w600)),
             ),
           ),
@@ -256,17 +259,16 @@ class _AmountField extends StatelessWidget {
 /// The refund / no-refund choice on cancelling a plan (ADR-0028 §6). Returns true
 /// (refund), false (no refund), or null if dismissed.
 Future<bool?> _askRefund(BuildContext context) {
+  final l10n = AppLocalizations.of(context);
   return showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Cancel plan?'),
-      content: const Text(
-        'Future payments stop. Did this cancellation come with a refund?',
-      ),
+      title: Text(l10n.planOccurrenceCancelTitle),
+      content: Text(l10n.planOccurrenceCancelBody),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Keep plan')),
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('No refund')),
-        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('With refund')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.planOccurrenceKeepPlan)),
+        TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.planOccurrenceNoRefund)),
+        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.planOccurrenceWithRefund)),
       ],
     ),
   );

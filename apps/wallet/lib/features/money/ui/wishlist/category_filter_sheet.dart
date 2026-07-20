@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/category.dart';
 
 /// The category filter (design `wishlist-filter.html`): a multi-select with **OR
@@ -51,6 +52,7 @@ class _CategoryFilterSheetState extends State<_CategoryFilterSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
 
     return SafeArea(
       child: Padding(
@@ -63,14 +65,14 @@ class _CategoryFilterSheetState extends State<_CategoryFilterSheet> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
               child: Row(
                 children: [
-                  Text('Filter by category',
+                  Text(l10n.categoryFilterTitle,
                       style: theme.textTheme.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w700)),
                   const Spacer(),
                   if (_selected.isNotEmpty)
                     TextButton(
                       onPressed: () => setState(() => _selected = {}),
-                      child: const Text('Clear'),
+                      child: Text(l10n.commonClear),
                     ),
                 ],
               ),
@@ -112,8 +114,8 @@ class _CategoryFilterSheetState extends State<_CategoryFilterSheet> {
                       child: Center(
                         child: Text(
                           _selected.isEmpty
-                              ? 'Show all wants'
-                              : 'Show ${widget.categories.where((c) => _selected.contains(c.id)).length} categor${_selected.length == 1 ? 'y' : 'ies'}',
+                              ? l10n.categoryFilterShowAll
+                              : l10n.categoryFilterShowCount(_selected.length),
                           style: theme.textTheme.titleSmall?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/categories_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../data/outbox/recurring_outbox.dart';
@@ -101,8 +102,9 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
 
     if (!mounted) return;
     Navigator.of(context).pop();
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Payment plan added')),
+      SnackBar(content: Text(l10n.createPlanAdded)),
     );
   }
 
@@ -124,19 +126,20 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
   @override
   Widget build(BuildContext context) {
     final currency = _effectiveCurrency();
+    final l10n = AppLocalizations.of(context);
 
     return SheetContainer(
       bottomSheet: widget.bottomSheet,
-      title: '▤ Payment plan',
+      title: l10n.createPlanSheetTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DirectionToggle(isIncome: _isIncome, onChanged: (v) => setState(() => _isIncome = v)),
           const SizedBox(height: 16),
-          SheetTextField(controller: _nameCtrl, hint: 'What is it?  e.g. Gloomhaven pledge'),
+          SheetTextField(controller: _nameCtrl, hint: l10n.createPlanNameHint),
           const SizedBox(height: 12),
           PickerButton(
-            label: 'Currency',
+            label: l10n.createCurrencyLabel,
             value: currency,
             onTap: () async {
               final picked = await pickCurrency(context, selected: currency);
@@ -146,8 +149,8 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
           const SizedBox(height: 18),
 
           _SectionHeader(
-            title: 'Items',
-            subtitle: 'what you bought',
+            title: l10n.createPlanItemsTitle,
+            subtitle: l10n.createPlanItemsSubtitle,
             trailing: _items.isEmpty ? null : '${_items.length}',
           ),
           const SizedBox(height: 8),
@@ -157,12 +160,12 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
               currency: currency,
               onDelete: () => setState(() => _items.removeAt(i)),
             ),
-          _AddRow(label: 'Add item', accent: false, onTap: _addItem),
+          _AddRow(label: l10n.createPlanAddItem, accent: false, onTap: _addItem),
           const SizedBox(height: 18),
 
           _SectionHeader(
-            title: 'Payments',
-            subtitle: 'how you pay it',
+            title: l10n.createPlanPaymentsTitle,
+            subtitle: l10n.createPlanPaymentsSubtitle,
             trailing: formatSigned(_isIncome ? _paymentsTotal : -_paymentsTotal, currency),
           ),
           const SizedBox(height: 8),
@@ -174,7 +177,7 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
               currency: currency,
               onDelete: () => setState(() => _payments.removeAt(i)),
             ),
-          _AddRow(label: 'Add payment', accent: true, onTap: _addPayment),
+          _AddRow(label: l10n.createPlanAddPayment, accent: true, onTap: _addPayment),
           const SizedBox(height: 16),
 
           _PlanTotalBanner(
@@ -183,7 +186,7 @@ class _CreatePaymentPlanSheetState extends ConsumerState<CreatePaymentPlanSheet>
             currency: currency,
           ),
           const SizedBox(height: 16),
-          PrimarySaveButton(label: 'Save', enabled: _canSave, loading: _submitting, onTap: _save),
+          PrimarySaveButton(label: l10n.createSaveButton, enabled: _canSave, loading: _submitting, onTap: _save),
         ],
       ),
     );
@@ -230,6 +233,7 @@ class _ItemRow extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.55);
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -248,7 +252,7 @@ class _ItemRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.description ?? 'Item',
+                Text(item.description ?? l10n.createPlanItemFallback,
                     style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
                 if (item.categoryName != null)
                   Text(item.categoryName!,
@@ -259,7 +263,7 @@ class _ItemRow extends StatelessWidget {
           // The optional reference value (MSRP) reads as a muted annotation, never a cost.
           if (item.referenceValue != null)
             Text(
-              'MSRP ${formatMagnitude(item.referenceValue!, currency)}',
+              l10n.createPlanItemMsrpAnnotation(formatMagnitude(item.referenceValue!, currency)),
               style: theme.textTheme.labelSmall?.copyWith(color: muted),
             ),
           IconButton(
@@ -309,7 +313,7 @@ class _PaymentRow extends StatelessWidget {
           ),
           const SizedBox(width: 11),
           Expanded(
-            child: Text(_fullDate(payment.dueDate), style: theme.textTheme.bodyMedium),
+            child: Text(formatFullDate(context, payment.dueDate), style: theme.textTheme.bodyMedium),
           ),
           Text(
             formatSigned(magnitude, currency),
@@ -372,9 +376,10 @@ class _PlanTotalBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
     final label = count == 0
-        ? 'Add the payments that make up the plan'
-        : 'Plan total · $count payment${count == 1 ? '' : 's'}';
+        ? l10n.createPlanTotalEmpty
+        : l10n.createPlanTotalCount(count);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
       decoration: BoxDecoration(
@@ -423,30 +428,31 @@ Future<_ItemDraft?> _showItemComposer(
         final name = descCtrl.text.trim();
         final reference = double.tryParse(refCtrl.text.trim());
         final valid = name.isNotEmpty;
+        final l10n = AppLocalizations.of(context);
         return SheetContainer(
           bottomSheet: true,
-          title: 'Add item',
+          title: l10n.createPlanComposerItemTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SheetTextField(
                 controller: descCtrl,
-                hint: 'What is it?  e.g. Base game',
+                hint: l10n.createPlanComposerItemHint,
                 onChanged: () => setSheet(() {}),
               ),
               const SizedBox(height: 12),
               // Priceless — the only number is an optional reference (MSRP), never a cost.
               _ComposerAmount(
                 controller: refCtrl,
-                label: 'MSRP',
-                hint: 'optional',
+                label: l10n.createPlanComposerMsrpLabel,
+                hint: l10n.createPlanComposerMsrpHint,
                 suffix: currency,
                 onChanged: () => setSheet(() {}),
               ),
               const SizedBox(height: 12),
               PickerButton(
-                label: 'Category',
-                value: categoryName ?? 'Category',
+                label: l10n.createCategoryLabel,
+                value: categoryName ?? l10n.createCategoryLabel,
                 muted: categoryName == null,
                 dotColor: categoryId != null ? CategoryColors.slotFor(categoryId!).of(context) : null,
                 onTap: () async {
@@ -465,7 +471,7 @@ Future<_ItemDraft?> _showItemComposer(
               ),
               const SizedBox(height: 18),
               PrimarySaveButton(
-                label: 'Add item',
+                label: l10n.createPlanAddItem,
                 enabled: valid,
                 onTap: () => Navigator.of(context).pop(_ItemDraft(
                   referenceValue: reference != null && reference > 0 ? reference : null,
@@ -500,15 +506,16 @@ Future<_PaymentDraft?> _showPaymentComposer(
       builder: (context, setSheet) {
         final amount = double.tryParse(amountCtrl.text.trim());
         final valid = amount != null && amount > 0;
+        final l10n = AppLocalizations.of(context);
         return SheetContainer(
           bottomSheet: true,
-          title: 'Add payment',
+          title: l10n.createPlanComposerPaymentTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               PickerButton(
-                label: 'Date',
-                value: _fullDate(date),
+                label: l10n.createPlanComposerDateLabel,
+                value: formatFullDate(context, date),
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -521,10 +528,13 @@ Future<_PaymentDraft?> _showPaymentComposer(
               ),
               const SizedBox(height: 12),
               _ComposerAmount(
-                controller: amountCtrl, suffix: currency, onChanged: () => setSheet(() {})),
+                controller: amountCtrl,
+                suffix: currency,
+                label: l10n.createPlanComposerAmountLabel,
+                onChanged: () => setSheet(() {})),
               const SizedBox(height: 18),
               PrimarySaveButton(
-                label: 'Add payment',
+                label: l10n.createPlanAddPayment,
                 enabled: valid,
                 onTap: () => Navigator.of(context).pop(_PaymentDraft(
                   lineId: recurringUuidV4(),
@@ -578,11 +588,4 @@ class _ComposerAmount extends StatelessWidget {
       ),
     );
   }
-}
-
-String _fullDate(DateTime date) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-  return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }

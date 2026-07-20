@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
 import '../../../../app/theme/category_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/uuid.dart';
 import '../../application/categories_providers.dart';
 import '../../application/preferences_providers.dart';
@@ -86,11 +87,12 @@ class _WantSheetState extends ConsumerState<_WantSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return SheetContainer(
       bottomSheet: widget.bottomSheet,
       icon: _isEdit ? Icons.edit_outlined : Icons.bookmark_add_outlined,
-      title: _isEdit ? 'Edit want' : 'Add want',
+      title: _isEdit ? l10n.wantSheetEditTitle : l10n.wantSheetAddTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -98,12 +100,12 @@ class _WantSheetState extends ConsumerState<_WantSheet> {
             _StageBanner(want: widget.existing!),
             const SizedBox(height: 16),
           ],
-          const _FieldLabel('Name'),
+          _FieldLabel(l10n.wantSheetNameLabel),
           const SizedBox(height: 6),
-          SheetTextField(controller: _nameCtrl, hint: 'What do you want?'),
+          SheetTextField(controller: _nameCtrl, hint: l10n.wantSheetNameHint),
           const SizedBox(height: 16),
 
-          const _FieldLabel('Estimate (optional)'),
+          _FieldLabel(l10n.wantSheetEstimateLabel),
           const SizedBox(height: 6),
           MoneyAmountField(
             controller: _amountCtrl,
@@ -117,11 +119,11 @@ class _WantSheetState extends ConsumerState<_WantSheet> {
           ),
           const SizedBox(height: 16),
 
-          const _FieldLabel('Category'),
+          _FieldLabel(l10n.wantSheetCategoryLabel),
           const SizedBox(height: 6),
           PickerButton(
-            label: 'Category',
-            value: _categoryName ?? 'None',
+            label: l10n.wantSheetCategoryLabel,
+            value: _categoryName ?? l10n.commonNone,
             dotColor: _categoryId == null
                 ? null
                 : CategoryColors.slotFor(_categoryId!).resolve(theme.brightness),
@@ -143,7 +145,7 @@ class _WantSheetState extends ConsumerState<_WantSheet> {
           ),
           const SizedBox(height: 16),
 
-          const _FieldLabel('Recurrence'),
+          _FieldLabel(l10n.wantSheetRecurrenceLabel),
           const SizedBox(height: 6),
           _RecurrencePicker(
             value: _recurrence,
@@ -154,23 +156,23 @@ class _WantSheetState extends ConsumerState<_WantSheet> {
           ),
           if (_recurrence == WishlistRecurrence.reusable) ...[
             const SizedBox(height: 16),
-            const _FieldLabel('Unit'),
+            _FieldLabel(l10n.wantSheetUnitLabel),
             const SizedBox(height: 6),
             PickerButton(
-              label: 'Unit',
-              value: _unitLabel(_unitDimension),
+              label: l10n.wantSheetUnitLabel,
+              value: _unitLabel(l10n, _unitDimension),
               onTap: () => _pickUnitDimension(),
             ),
           ],
           const SizedBox(height: 16),
 
-          const _FieldLabel('Notes (optional)'),
+          _FieldLabel(l10n.wantSheetNotesLabel),
           const SizedBox(height: 6),
-          SheetTextField(controller: _notesCtrl, hint: 'Anything to remember…'),
+          SheetTextField(controller: _notesCtrl, hint: l10n.wantSheetNotesHint),
           const SizedBox(height: 24),
 
           PrimarySaveButton(
-            label: _isEdit ? 'Save changes' : 'Add want',
+            label: _isEdit ? l10n.commonSaveChanges : l10n.wantSheetAddTitle,
             enabled: _canSave,
             loading: _submitting,
             onTap: _save,
@@ -205,14 +207,15 @@ class _WantSheetState extends ConsumerState<_WantSheet> {
     return '—';
   }
 
-  String _unitLabel(UnitDimension? d) => switch (d) {
-        null || UnitDimension.pieces => 'Pieces',
-        UnitDimension.mass => 'Mass (kg / lb)',
-        UnitDimension.volume => 'Volume (L / gal)',
-        UnitDimension.length => 'Length (m / ft)',
+  String _unitLabel(AppLocalizations l10n, UnitDimension? d) => switch (d) {
+        null || UnitDimension.pieces => l10n.unitDimensionPieces,
+        UnitDimension.mass => l10n.unitDimensionMass,
+        UnitDimension.volume => l10n.unitDimensionVolume,
+        UnitDimension.length => l10n.unitDimensionLength,
       };
 
   Future<void> _pickUnitDimension() async {
+    final l10n = AppLocalizations.of(context);
     final picked = await showModalBottomSheet<UnitDimension>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -225,7 +228,7 @@ class _WantSheetState extends ConsumerState<_WantSheet> {
           children: [
             for (final d in UnitDimension.values)
               ListTile(
-                title: Text(_unitLabel(d)),
+                title: Text(_unitLabel(l10n, d)),
                 trailing: _unitDimension == d ? const Icon(Icons.check) : null,
                 onTap: () => Navigator.of(context).pop(d),
               ),
@@ -272,26 +275,27 @@ class _WantSheetState extends ConsumerState<_WantSheet> {
 
     if (!mounted) return;
     Navigator.of(context).pop();
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_isEdit ? 'Want saved' : 'Want added')),
+      SnackBar(content: Text(_isEdit ? l10n.wantSheetWantSaved : l10n.wantSheetWantAdded)),
     );
   }
 
   Future<void> _confirmRemove() async {
     final e = widget.existing!;
     final committed = e.status != WishlistCommitment.idle;
+    final l10n = AppLocalizations.of(context);
+    final displayName = e.name ?? l10n.wantSheetThisWantFallback;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove want?'),
+        title: Text(l10n.wantSheetRemoveTitle),
         content: Text(committed
-            ? '“${e.name ?? 'This want'}” will be removed from your wishlist. Its planned buy '
-                'keeps its line but stops tracking the want. Nothing has been paid, so no '
-                'money is affected.'
-            : '“${e.name ?? 'This want'}” will be removed from your wishlist.'),
+            ? l10n.wantSheetRemoveCommittedBody(displayName)
+            : l10n.wantSheetRemoveIdleBody(displayName)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.commonCancel)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.commonRemove)),
         ],
       ),
     );
@@ -301,7 +305,7 @@ class _WantSheetState extends ConsumerState<_WantSheet> {
     if (!mounted) return;
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Want removed')),
+      SnackBar(content: Text(l10n.wantSheetWantRemoved)),
     );
   }
 }
@@ -316,17 +320,18 @@ class _StageBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
     final brightness = theme.brightness;
+    final l10n = AppLocalizations.of(context);
     final color = switch (want.status) {
       WishlistCommitment.idle => tokens.muted,
       WishlistCommitment.planned => tokens.clay,
       WishlistCommitment.financed => CategoryPalette.denim.resolve(brightness),
       WishlistCommitment.bought => tokens.sage,
     };
-    final label = switch (want.status) {
-      WishlistCommitment.idle => 'Wishing',
-      WishlistCommitment.planned => 'Planned',
-      WishlistCommitment.financed => 'Paying off',
-      WishlistCommitment.bought => 'Bought',
+    final stageLabel = switch (want.status) {
+      WishlistCommitment.idle => l10n.stageWishing,
+      WishlistCommitment.planned => l10n.stagePlanned,
+      WishlistCommitment.financed => l10n.stagePayingOff,
+      WishlistCommitment.bought => l10n.stageBought,
     };
 
     return Container(
@@ -342,7 +347,7 @@ class _StageBanner extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Status: $label — derived, changed by planning or buying.',
+              l10n.wantSheetStatusBanner(stageLabel),
               style: theme.textTheme.bodySmall?.copyWith(color: color),
             ),
           ),
@@ -377,6 +382,7 @@ class _RecurrencePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
@@ -385,8 +391,8 @@ class _RecurrencePicker extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _segment(context, 'One-time', WishlistRecurrence.once),
-          _segment(context, 'Repeat', WishlistRecurrence.reusable),
+          _segment(context, l10n.recurrenceOneTime, WishlistRecurrence.once),
+          _segment(context, l10n.recurrenceRepeat, WishlistRecurrence.reusable),
         ],
       ),
     );
@@ -441,12 +447,13 @@ class _RemoveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       child: TextButton.icon(
         onPressed: onTap,
         icon: const Icon(Icons.delete_outline, size: 18),
-        label: const Text('Remove want'),
+        label: Text(l10n.wantSheetRemoveButton),
         style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
       ),
     );

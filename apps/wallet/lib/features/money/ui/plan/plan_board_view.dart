@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/all_planned_purchases_providers.dart';
 import '../../application/preferences_providers.dart';
 import '../../application/recurring_providers.dart';
@@ -12,12 +13,7 @@ import '../../domain/recurring/recurring_payment.dart';
 import '../../domain/unit_dimension.dart';
 import '../../domain/wishlist_item.dart';
 import '../../../../shared/uuid.dart';
-import '../recurring/recurring_shared.dart' show formatMagnitude;
-
-const List<String> _monthNames = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
+import '../recurring/recurring_shared.dart' show formatMagnitude, formatMonthYear;
 
 /// The **Board** view (Wallet ADR-0005 §4) — the try-on timeline. A forward run of month
 /// columns, each showing its committed weight (planned purchases + payment-plan
@@ -42,6 +38,7 @@ class _PlanBoardViewState extends ConsumerState<PlanBoardView> {
     final year = _year!;
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
 
     final firstMonth = year == now.year ? now.month : 1;
     final weights = _committedByMonth(year);
@@ -63,6 +60,8 @@ class _PlanBoardViewState extends ConsumerState<PlanBoardView> {
                   month: m,
                   weight: weights[m] ?? 0,
                   currency: _currency(),
+                  monthLabel: formatMonthYear(context, year, m),
+                  committedLabel: l10n.planBoardCommittedLabel,
                   onAccept: (want) => _plan(want, year, m),
                 ),
             ],
@@ -73,10 +72,10 @@ class _PlanBoardViewState extends ConsumerState<PlanBoardView> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Row(
             children: [
-              Text('Wishlist', style: theme.textTheme.titleSmall
+              Text(l10n.navWishlist, style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(width: 8),
-              Text('drag a want onto a month',
+              Text(l10n.planBoardTrayHint,
                   style: theme.textTheme.bodySmall?.copyWith(color: tokens.muted)),
             ],
           ),
@@ -84,7 +83,7 @@ class _PlanBoardViewState extends ConsumerState<PlanBoardView> {
         Expanded(
           child: tray.isEmpty
               ? Center(
-                  child: Text('No wants to plan — add some on the Wishlist tab.',
+                  child: Text(l10n.planBoardTrayEmpty,
                       style: theme.textTheme.bodyMedium?.copyWith(color: tokens.muted)),
                 )
               : SingleChildScrollView(
@@ -165,8 +164,10 @@ class _PlanBoardViewState extends ConsumerState<PlanBoardView> {
           ],
         );
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    final name = want.name ?? l10n.planBoardWantFallback;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Planned ${want.name ?? 'want'} for ${_monthNames[month - 1]} $year')),
+      SnackBar(content: Text(l10n.planBoardPlannedFor(name, formatMonthYear(context, year, month)))),
     );
   }
 }
@@ -177,6 +178,8 @@ class _MonthColumn extends StatelessWidget {
     required this.month,
     required this.weight,
     required this.currency,
+    required this.monthLabel,
+    required this.committedLabel,
     required this.onAccept,
   });
 
@@ -184,6 +187,8 @@ class _MonthColumn extends StatelessWidget {
   final int month;
   final double weight;
   final String currency;
+  final String monthLabel;
+  final String committedLabel;
   final ValueChanged<WishlistItem> onAccept;
 
   @override
@@ -207,10 +212,10 @@ class _MonthColumn extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${_monthNames[month - 1]} $year',
+              Text(monthLabel,
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
               const Spacer(),
-              Text('committed', style: theme.textTheme.labelSmall?.copyWith(color: tokens.muted)),
+              Text(committedLabel, style: theme.textTheme.labelSmall?.copyWith(color: tokens.muted)),
               Text(
                 weight == 0 ? '—' : '−${formatMagnitude(weight, currency)}',
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -235,7 +240,8 @@ class _WantChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
-    final label = want.name ?? 'Want';
+    final l10n = AppLocalizations.of(context);
+    final label = want.name ?? l10n.wantUnnamedFallback;
     final estimate = want.estimate;
     final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

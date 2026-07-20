@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/calm_tokens.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../application/all_planned_purchases_providers.dart';
 import '../../application/recurring_providers.dart';
 import '../../application/selected_period_providers.dart';
@@ -10,12 +11,7 @@ import '../../domain/recurring/recurring_payment.dart';
 import '../recurring/create_ongoing_sheet.dart';
 import '../recurring/create_payment_plan_sheet.dart';
 import '../recurring/create_planned_purchase_sheet.dart';
-import '../recurring/recurring_shared.dart' show formatMagnitude, formatSigned;
-
-const List<String> _monthNames = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
+import '../recurring/recurring_shared.dart' show formatMagnitude, formatSigned, formatMonthDay, formatMonthYear;
 
 /// The **List** view (Wallet ADR-0005 §3) — the definitions library. Grouped, editable
 /// shelves for the durable planning objects: **Ongoing** (Live recurring), **Payment
@@ -30,6 +26,7 @@ class PlanListView extends ConsumerWidget {
     final recurrings = ref.watch(recurringListProvider);
     final planned = ref.watch(allPlannedPurchasesProvider);
     final active = ref.watch(activePeriodProvider);
+    final l10n = AppLocalizations.of(context);
 
     final ongoing = (recurrings.value ?? const [])
         .where((x) => x.isActive && x.mode == ScheduleMode.live)
@@ -46,25 +43,28 @@ class PlanListView extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
       children: [
         _Shelf(
-          title: 'Ongoing',
-          subtitle: 'Repeats until you stop it',
+          title: l10n.planShelfOngoingTitle,
+          subtitle: l10n.planShelfOngoingSubtitle,
           onNew: () => showCreateOngoing(context),
-          emptyLabel: 'No ongoing payments yet',
+          emptyLabel: l10n.planShelfOngoingEmpty,
+          newLabel: l10n.commonNew,
           children: [for (final r in ongoing) _OngoingRow(r)],
         ),
         _Shelf(
-          title: 'Payment plans',
-          subtitle: 'One purchase, paid over a set of payments',
+          title: l10n.planShelfPlansTitle,
+          subtitle: l10n.planShelfPlansSubtitle,
           onNew: () => showCreatePaymentPlan(context),
-          emptyLabel: 'No payment plans yet',
+          emptyLabel: l10n.planShelfPlansEmpty,
+          newLabel: l10n.commonNew,
           children: [for (final r in plans) _PlanRow(r)],
         ),
         _Shelf(
-          title: 'Planned purchases',
-          subtitle: 'Things you plan to buy, by month',
+          title: l10n.planShelfBuysTitle,
+          subtitle: l10n.planShelfBuysSubtitle,
           onNew: () =>
               showCreatePlannedPurchase(context, year: active.year, month: active.month),
-          emptyLabel: 'Nothing planned yet',
+          emptyLabel: l10n.planShelfBuysEmpty,
+          newLabel: l10n.commonNew,
           children: [for (final p in buys) _PlannedRow(p)],
         ),
       ],
@@ -79,6 +79,7 @@ class _Shelf extends StatelessWidget {
     required this.onNew,
     required this.children,
     required this.emptyLabel,
+    required this.newLabel,
   });
 
   final String title;
@@ -86,6 +87,7 @@ class _Shelf extends StatelessWidget {
   final VoidCallback onNew;
   final List<Widget> children;
   final String emptyLabel;
+  final String newLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +116,7 @@ class _Shelf extends StatelessWidget {
                 TextButton.icon(
                   onPressed: onNew,
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('New'),
+                  label: Text(newLabel),
                 ),
               ],
             ),
@@ -157,11 +159,12 @@ class _OngoingRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
     final amount = recurring.estimatedAmount;
     return ListTile(
       leading: Icon(Icons.autorenew, color: tokens.sage),
       title: Text(recurring.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: const Text('Ongoing'),
+      subtitle: Text(l10n.planRowOngoingSubtitle),
       trailing: amount == null
           ? null
           : Text(
@@ -186,12 +189,13 @@ class _PlanRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
+    final l10n = AppLocalizations.of(context);
     final count = recurring.scheduleLines.length;
     final total = recurring.scheduleLines.fold<num>(0, (sum, x) => sum + x.amount.amount);
     return ListTile(
       leading: Icon(Icons.receipt_long_outlined, color: tokens.clay),
       title: Text(recurring.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text('$count payment${count == 1 ? '' : 's'}'),
+      subtitle: Text(l10n.planRowPaymentCount(count)),
       trailing: Text(
         '−${formatMagnitude(total, recurring.currency)}',
         style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
@@ -209,11 +213,12 @@ class _PlannedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = CalmTokens.of(theme.brightness);
-    final label = '${_monthNames[planned.month - 1]} ${planned.year}';
+    final l10n = AppLocalizations.of(context);
+    final label = formatMonthYear(context, planned.year, planned.month);
     final deadline = planned.deadline;
     return ListTile(
       leading: Icon(Icons.shopping_bag_outlined, color: tokens.clay),
-      title: Text(planned.description ?? 'Planned purchase',
+      title: Text(planned.description ?? l10n.planRowPlannedFallback,
           style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Row(
         children: [
@@ -227,7 +232,7 @@ class _PlannedRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(CalmTokens.radiusPill),
               ),
               child: Text(
-                'by ${_monthNames[deadline.month - 1]} ${deadline.day}',
+                l10n.planDeadlineByMonthDay(formatMonthDay(context, deadline.month, deadline.day)),
                 style: theme.textTheme.labelSmall?.copyWith(color: tokens.clay),
               ),
             ),
