@@ -94,10 +94,11 @@ class CalmTokens {
   );
 
   // ---- type (mode-independent) ----
-  // Font assets are not bundled yet (deferred with Style Dictionary); these
-  // family names fall back to the platform default until the fonts ship.
-  static const String fontDisplay = 'Bricolage Grotesque';
-  static const String fontBody = 'Spline Sans';
+  // Manrope variable font (ADR-0007): a single family across display + body,
+  // Latin + Cyrillic. Bundled at apps/wallet/fonts/Manrope-VariableFont.ttf;
+  // Flutter maps fontWeight onto the variable `wght` axis natively.
+  static const String fontDisplay = 'Manrope';
+  static const String fontBody = 'Manrope';
 
   // ---- radius (mode-independent) ----
   static const double radiusSm = 14;

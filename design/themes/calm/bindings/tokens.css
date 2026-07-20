@@ -28,8 +28,8 @@
   --lifeos-focus-ring:  rgba(94, 126, 107, 0.22);
 
   /* ---- type (mode-independent) ---- */
-  --lifeos-font-display:    "Bricolage Grotesque", sans-serif;
-  --lifeos-font-body:       "Spline Sans", sans-serif;
+  --lifeos-font-display:    "Manrope", sans-serif;
+  --lifeos-font-body:       "Manrope", sans-serif;
   --lifeos-weight-regular:  400;
   --lifeos-weight-medium:   500;
   --lifeos-weight-semibold: 600;
